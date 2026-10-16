@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Wildlands Online — Survival Prototype</title>
+<style>
+  :root { color-scheme: dark; --panel:rgba(10,18,26,.84); --line:rgba(255,255,255,.16); }
+  * { box-sizing:border-box }
+  html, body { width:100%; height:100%; min-height:100%; }
+  body { margin:0; overflow:hidden; overscroll-behavior:none; background:#101b20; color:#f3f5f7; font:14px system-ui,-apple-system,Segoe UI,sans-serif; touch-action:none; -webkit-user-select:none; user-select:none; }
+  canvas { display:block; touch-action:none; }
+  #hud { position:fixed; inset:0; pointer-events:none; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; backdrop-filter:blur(8px); box-shadow:0 8px 30px #0003 }
+  #brand { position:absolute; left:14px; top:14px; max-width:min(360px,calc(100vw - 28px)) }
+  #brand h1 { font-size:17px; letter-spacing:.08em; margin:0 0 4px; }
+  #brand p { margin:0; color:#bac7d1; font-size:12px; line-height:1.4 }
+  #stats { position:absolute; left:14px; top:104px; width:220px; }
+  .stat { margin:8px 0; }
+  .stat-head { display:flex; justify-content:space-between; color:#d7e1e8; font-size:12px; margin-bottom:4px }
+  .bar { height:7px; background:#283640; border-radius:20px; overflow:hidden }
+  .fill { height:100%; width:100%; transition:width .15s; border-radius:20px }
+  #healthFill { background:#ef6b65 } #hungerFill { background:#e9bd58 } #thirstFill { background:#55b8e8 } #xpFill { background:#7ddc9b }
+  #quest { position:absolute; right:14px; top:14px; width:250px }
+  #quest h2, #inventory h2 { font-size:13px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.1em }
+  #quest p { margin:5px 0; color:#c4d0d8; font-size:12px; line-height:1.45 }
+  #inventory { position:absolute; right:14px; bottom:14px; width:250px }
+  #items { display:grid; grid-template-columns:1fr 1fr; gap:6px }
+  .item { background:#ffffff0a; border:1px solid #ffffff14; border-radius:7px; padding:7px 8px; display:flex; justify-content:space-between; font-size:12px }
+  #hint { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); text-align:center; max-width:calc(100vw - 28px); white-space:nowrap }
+  #hint strong { color:#fff }
+  #toast { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:15px; font-weight:700; text-shadow:0 2px 8px #000; opacity:0; transition:opacity .2s; text-align:center; }
+  #start { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(#0a1416bb,#071017dd); z-index:5; padding:18px; }
+  #startCard { width:min(500px,100%); padding:24px; border-radius:18px; background:#101b21f2; border:1px solid #ffffff25; box-shadow:0 20px 80px #0008 }
+  #startCard h1 { margin:0 0 4px; font-size:26px; letter-spacing:.05em }
+  #startCard .sub { color:#9fb4bf; margin:0 0 18px }
+  .modeRow { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 }
+  button { cursor:pointer; border:1px solid #ffffff25; border-radius:10px; background:#243943; color:#fff; padding:11px 12px; font:inherit; }
+  button:hover { background:#31515e }
+  button.selected { border-color:#83d8a2; box-shadow:inset 0 0 0 1px #83d8a2; background:#25483d }
+  #play { width:100%; background:#347b5b; font-weight:800; font-size:15px; margin-top:8px }
+  #play:hover { background:#40966e }
+  .small { font-size:12px; color:#9fb4bf; line-height:1.5 }
+  #mobile { display:none; position:fixed; inset:auto 0 max(12px, env(safe-area-inset-bottom)); z-index:4; justify-content:space-between; align-items:end; padding:0 12px; pointer-events:none; gap:12px; }
+  #mobile .cluster { display:grid; grid-template-columns:repeat(3, minmax(42px, 52px)); gap:5px; pointer-events:auto; }
+  #mobile button { padding:0 8px; min-height:46px; background:#10212de8; border:1px solid #ffffff40; box-shadow:0 3px 10px #0005; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  #mobile .actions { display:grid; grid-template-columns:repeat(2, minmax(62px, 78px)); gap:6px; align-items:end; pointer-events:auto; }
+  #mobile .actions button { font-size:12px; font-weight:700; }
+  #lookHelp { display:none; position:fixed; right:12px; top:50%; transform:translateY(-50%); z-index:2; padding:7px 9px; border-radius:9px; background:#10212d99; color:#fff9; font-size:11px; pointer-events:none; }
+  @media (max-width:900px), (pointer:coarse) {
+    #quest { top:auto; bottom:200px; right:10px; width:min(190px, 44vw); padding:9px }
+    #quest p { font-size:11px }
+    #stats { top:100px; left:10px; width:min(175px, 44vw); padding:9px }
+    #inventory { right:10px; bottom:10px; width:min(190px, 44vw); padding:8px }
+    #brand { left:10px; top:max(10px, env(safe-area-inset-top)) }
+    #brand h1 { font-size:15px }
+    #brand p { max-width:230px; font-size:11px }
+    #hint { display:none }
+    #mobile { display:flex }
+    #lookHelp { display:block; }
+  }
+  @media (max-width:520px) {
+    #quest { bottom:205px; width:160px; }
+    #stats { top:86px; width:145px; }
+    #inventory { width:150px; }
+    .panel { border-radius:10px; }
+    #mobile { padding:0 8px; gap:5px; }
+    #mobile .cluster { grid-template-columns:repeat(3, 40px); gap:4px; }
+    #mobile button { min-height:42px; font-size:13px; }
+    #mobile .actions { grid-template-columns:repeat(2, 62px); gap:4px; }
+    #mobile .actions button { font-size:11px; }
+    #lookHelp { top:48%; right:6px; font-size:10px; }
+  }
+  @media (orientation:landscape) and (max-height:500px) {
+    #stats { top:78px; width:150px; }
+    #quest { bottom:150px; width:175px; }
+    #inventory { bottom:8px; width:175px; }
+    #mobile .cluster { grid-template-columns:repeat(3, 42px); }
+    #mobile button { min-height:38px; }
+    #mobile .actions { grid-template-columns:repeat(2, 66px); }
+  }
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival prototype · Island 01: The Shore</p></div>
+  <div id="stats" class="panel">
+    <div class="stat"><div class="stat-head"><span>Health</span><span id="healthNum">100</span></div><div class="bar"><div id="healthFill" class="fill"></div></div></div>
+    <div class="stat"><div class="stat-head"><span>Hunger</span><span id="hungerNum">100</span></div><div class="bar"><div id="hungerFill" class="fill"></div></div></div>
+    <div class="stat"><div class="stat-head"><span>Thirst</span><span id="thirstNum">100</span></div><div class="bar"><div id="thirstFill" class="fill"></div></div></div>
+    <div class="stat"><div class="stat-head"><span>Level <span id="levelNum">1</span></span><span id="xpText">0 / 100 XP</span></div><div class="bar"><div id="xpFill" class="fill"></div></div></div>
+  </div>
+  <div id="quest" class="panel"><h2>Current mission</h2><p id="mission">Gather 5 wood and 3 stone to prepare your first camp.</p><p id="levelText">Level 1 · Survivor</p><p id="worldText">World: Private solo</p></div>
+  <div id="inventory" class="panel"><h2>Backpack</h2><div id="items"></div></div>
+  <div id="hint" class="panel"><strong>WASD</strong> move · <strong>Mouse</strong> look · <strong>Click</strong> gather/attack · <strong>E</strong> interact · <strong>C</strong> craft campfire · <strong>Space</strong> jump</div>
+  <div id="toast"></div>
+</div>
+<div id="start">
+  <div id="startCard">
+    <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
+    <p class="sub">A 3D survival adventure prototype</p>
+    <p>Wake up on an untamed island. Gather resources, survive the wilds, and prepare a camp before nightfall.</p>
+    <div class="modeRow">
+      <button id="soloBtn" class="selected">🏝️ Private world</button>
+      <button id="onlineBtn">🌐 Multiplayer world</button>
+    </div>
+    <div id="networkFields" style="display:none;gap:8px;margin:10px 0">
+      <input id="playerName" maxlength="18" placeholder="Player name" value="Survivor" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
+      <select id="roomType" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
+        <option value="public">Public world</option><option value="private">Private world</option>
+      </select>
+      <input id="roomCode" maxlength="24" placeholder="World name (e.g. island-1)" value="island-1" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
+      <input id="roomPassword" maxlength="40" placeholder="Private world password (required for private)" type="password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
+      <button id="refreshRooms" type="button">Refresh public worlds</button>
+      <div id="roomBrowser" class="small">Public worlds will appear here when the server is running.</div>
+      <p class="small">Share the world name and password with friends for private worlds.</p>
+    </div>
+    <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
+    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On touchscreens, use the on-screen controls.</p>
+    <button id="play">ENTER THE ISLAND</button>
+    <p class="small" style="margin:12px 0 0">Online play requires this Node.js server to be running. Public rooms are listed; private rooms require the password. PvP and server-side saves are enabled in this build.</p>
+  </div>
+</div>
+<div id="lookHelp">Drag screen to look</div>
+<div id="mobile" aria-label="Touch controls">
+  <div class="cluster" aria-label="Movement">
+    <span></span><button data-key="KeyW" aria-label="Move forward">▲</button><span></span>
+    <button data-key="KeyA" aria-label="Move left">◀</button><button data-key="KeyS" aria-label="Move backward">▼</button><button data-key="KeyD" aria-label="Move right">▶</button>
+  </div>
+  <div class="actions">
+    <button id="gatherBtn">Gather / Hit</button><button id="interactBtn">Eat / Rest</button>
+    <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
+  </div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+let mode = 'solo';
+const soloBtn = document.getElementById('soloBtn'), onlineBtn = document.getElementById('onlineBtn');
+const networkFields = document.getElementById('networkFields');
+soloBtn.onclick = () => { mode='solo'; soloBtn.classList.add('selected'); onlineBtn.classList.remove('selected'); networkFields.style.display='none'; document.getElementById('modeInfo').textContent='Private solo world: no server connection required.'; };
+onlineBtn.onclick = () => { mode='online'; onlineBtn.classList.add('selected'); soloBtn.classList.remove('selected'); networkFields.style.display='grid'; document.getElementById('modeInfo').textContent='Multiplayer mode connects to the server you are hosting. Friends must open the same hosted address and join the same room.'; };
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9bd0d8);
+scene.fog = new THREE.Fog(0x9bd0d8, 32, 110);
+const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 250);
+const isTouchDevice = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+const renderer = new THREE.WebGLRenderer({antialias: !isTouchDevice, powerPreference: 'high-performance'});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouchDevice ? 1.35 : 1.75));
+renderer.shadowMap.enabled = !isTouchDevice;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xd7f3ff,0x47523b,2.0));
+const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
+const grassMat=mat(0x54884c), sandMat=mat(0xcbbd8c), waterMat=new THREE.MeshStandardMaterial({color:0x258eaa,roughness:.3,metalness:.1}), trunkMat=mat(0x68432b), leafMat=mat(0x286b42), leaf2Mat=mat(0x3c8749), stoneMat=mat(0x777e7e), rockDark=mat(0x525b5d), woodMat=mat(0x9a693b), playerMat=mat(0xe5c18a), shirtMat=mat(0x315e67), enemyMat=mat(0x9b5946), goldMat=mat(0xe5c45e);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(47,64),grassMat); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+const beach = new THREE.Mesh(new THREE.RingGeometry(43,47,64),sandMat); beach.rotation.x=-Math.PI/2; beach.position.y=.012; beach.receiveShadow=true; scene.add(beach);
+const water = new THREE.Mesh(new THREE.CircleGeometry(90,64),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
+const world = new THREE.Group(); scene.add(world);
+const resources = [], enemies = [], decorations=[];
+function addTree(x,z,scale=1){
+ const g=new THREE.Group();
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22*scale,.34*scale,2.2*scale,7),trunkMat); trunk.position.y=1.1*scale; trunk.castShadow=true; g.add(trunk);
+ for(let i=0;i<3;i++){ const crown=new THREE.Mesh(new THREE.ConeGeometry((1.15-i*.15)*scale,1.65*scale,7),i===1?leaf2Mat:leafMat); crown.position.y=(2.25+i*.6)*scale; crown.castShadow=true; g.add(crown); }
+ g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'wood',amount:3,hp:3,alive:true}); return g;
+}
+function addRock(x,z,scale=1){
+ const g=new THREE.Group(); const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.75*scale,0),stoneMat); r.position.y=.48*scale; r.scale.set(1.25,.8,1); r.rotation.set(.1,x*.4,z*.3); r.castShadow=true; r.receiveShadow=true; g.add(r);
+ const r2=new THREE.Mesh(new THREE.DodecahedronGeometry(.4*scale,0),rockDark); r2.position.set(.45*scale,.3*scale,.18*scale); r2.castShadow=true; g.add(r2);
+ g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'stone',amount:2,hp:2,alive:true}); return g;
+}
+function addBush(x,z){
+ const g=new THREE.Group(); for(let i=0;i<4;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.32,7,6),mat(i%2?0x467e3d:0x5c9149)); b.position.set(Math.sin(i*2)*.25,.3+Math.random()*.15,Math.cos(i*2)*.22); b.scale.set(1,.8,1);g.add(b);}
+ g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'berry',amount:2,hp:1,alive:true});
+}
+function addEnemy(x,z){
+ const g=new THREE.Group(); const body=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.75,4,7),enemyMat); body.position.y=.85; body.castShadow=true; g.add(body);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),mat(0xc27c60)); head.position.y=1.55; g.add(head);
+ const eyeMat=new THREE.MeshBasicMaterial({color:0x17191b});
+ for(const s of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.045,6,6),eyeMat); eye.position.set(s*.1,1.59,-.24);g.add(eye);}
+ g.position.set(x,0,z); world.add(g); enemies.push({mesh:g,hp:3,alive:true,cooldown:0});}
+for(let i=0;i<58;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*34,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.hypot(x,z)>7)addTree(x,z,.75+Math.random()*.6);}
+for(let i=0;i<37;i++){let a=Math.random()*Math.PI*2,r=5+Math.random()*38;addRock(Math.cos(a)*r,Math.sin(a)*r,.65+Math.random()*.8);}
+for(let i=0;i<18;i++){let a=Math.random()*Math.PI*2,r=6+Math.random()*32;addBush(Math.cos(a)*r,Math.sin(a)*r);}
+for(let i=0;i<7;i++){let a=Math.random()*Math.PI*2,r=15+Math.random()*24;addEnemy(Math.cos(a)*r,Math.sin(a)*r);}
+const player = new THREE.Group();
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(.36,.75,4,8),shirtMat); body.position.y=.9; body.castShadow=true; player.add(body);
+const head = new THREE.Mesh(new THREE.SphereGeometry(.26,12,10),playerMat); head.position.y=1.55; head.castShadow=true; player.add(head);
+const pack = new THREE.Mesh(new THREE.BoxGeometry(.35,.42,.18),woodMat); pack.position.set(0,1.05,.34); pack.castShadow=true; player.add(pack);
+player.position.set(0,0,0); scene.add(player);
+
+// Multiplayer client state. The authoritative room/session server is server.js.
+let socket = null, mySocketId = null;
+const remotePlayers = new Map();
+function makeRemotePlayer(color=0x6fa6df) {
+  const g = new THREE.Group();
+  const bm = new THREE.Mesh(new THREE.CapsuleGeometry(.36,.75,4,8), mat(color));
+  bm.position.y=.9; g.add(bm);
+  const hm = new THREE.Mesh(new THREE.SphereGeometry(.26,12,10), mat(0xe5c18a));
+  hm.position.y=1.55; g.add(hm);
+  scene.add(g); return g;
+}
+function connectMultiplayer() {
+  if (typeof io === 'undefined') { toast('Socket.IO failed to load. Check internet connection.'); return false; }
+  socket = io();
+  socket.on('connect', () => {
+    mySocketId = socket.id;
+    socket.emit('joinWorld', {
+      name: (document.getElementById('playerName').value || 'Survivor').trim().slice(0,18),
+      room: (document.getElementById('roomCode').value || 'island-1').trim().slice(0,24),
+      roomType: document.getElementById('roomType').value,
+      password: document.getElementById('roomPassword').value
+    });
+    toast('Connected to multiplayer server');
+  });
+  socket.on('worldState', (players) => {
+    for (const p of players) if (p.id !== mySocketId) addOrUpdateRemote(p);
+  });
+  socket.on('playerJoined', (p) => { if (p.id !== mySocketId) { addOrUpdateRemote(p); toast(p.name+' joined the island'); } });
+  socket.on('playerMoved', (p) => { if (p.id !== mySocketId) addOrUpdateRemote(p); });
+  socket.on('playerLeft', (id) => { const p=remotePlayers.get(id); if(p){scene.remove(p.mesh);remotePlayers.delete(id);} });
+  socket.on('serverMessage', (m) => toast(m));
+  socket.on('joinError', (m) => { toast(m); document.getElementById('start').style.display='flex'; });
+  socket.on('roomList', (rooms) => {
+    const el=document.getElementById('roomBrowser');
+    if(!rooms.length){el.textContent='No public worlds yet. You can create one by joining a public world name.';return;}
+    el.innerHTML='<strong>Public worlds</strong><br>'+rooms.map(r=>`<button type="button" data-room="${String(r.name).replace(/[^a-zA-Z0-9_-]/g,'')}" style="margin:4px 4px 0 0;padding:5px 8px">${r.name} · ${r.players} player(s)</button>`).join('');
+    el.querySelectorAll('button[data-room]').forEach(b=>b.onclick=()=>{document.getElementById('roomCode').value=b.dataset.room;document.getElementById('roomType').value='public';});
+  });
+  socket.on('yourSave', (save) => {
+    if(!save)return;
+    if(save.inventory) Object.assign(inventory,save.inventory);
+    if(Number.isFinite(save.health)) health=save.health;
+    if(Number.isFinite(save.hunger)) hunger=save.hunger;
+    if(Number.isFinite(save.thirst)) thirst=save.thirst;
+    if(Number.isFinite(save.xp)) xp=save.xp;
+    if(Number.isFinite(save.level)) level=save.level;
+    updateHUD(); toast('Your saved progress was loaded');
+  });
+  socket.on('pvpResult', (result) => {
+    if(result.targetId===mySocketId && Number.isFinite(result.health)){health=result.health;updateHUD();toast('You were hit by '+result.attackerName);}
+    else if(result.attackerId===mySocketId) toast(result.message||'PvP attack sent');
+  });
+  socket.on('connect_error', () => toast('Could not connect. Is the multiplayer server running?'));
+  return true;
+}
+function addOrUpdateRemote(p) {
+  let rp=remotePlayers.get(p.id);
+  if(!rp){rp={mesh:makeRemotePlayer(p.color || 0x6fa6df),name:p.name||'Player',target:{x:p.x||0,z:p.z||0,rot:p.rot||0}};remotePlayers.set(p.id,rp);}
+  rp.name=p.name||rp.name;rp.target={x:p.x||0,z:p.z||0,rot:p.rot||0};
+}
+function sendNetworkState() {
+  if(socket && socket.connected && mode==='online') {
+    socket.emit('move', {x:player.position.x, z:player.position.z, rot:player.rotation.y});
+    if(Math.floor(elapsed)%5===0 && Math.floor(elapsed)!==Math.floor(elapsed-.11)) {
+      socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory,health,hunger,thirst,xp,level});
+    }
+  }
+}
+
+const campfires=[];
+const inventory={wood:0,stone:0,berry:0,food:0, campfire:0};
+let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
+const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,night=0;
+const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
+const toastEl=document.getElementById('toast'); let toastTimer=0;
+function toast(msg){toastEl.textContent=msg;toastEl.style.opacity=1;toastTimer=2.2;}
+function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL UP! You reached level '+level);}}
+function updateHUD(){
+ for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=Math.max(0,val)+'%';document.getElementById(name+'Num').textContent=Math.ceil(val);}
+ document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
+ document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',berry:'🫐 Berries',food:'🍖 Cooked food',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('');
+ document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
+ document.getElementById('worldText').textContent='World: '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
+ const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
+ document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire.`;
+}
+function nearestResource(){
+ let best=null,bd=4.5;
+ for(const r of resources){if(!r.alive)continue;const d=player.position.distanceTo(r.mesh.position);if(d<bd){bd=d;best=r;}}
+ return best;
+}
+function gather(){
+ if(dead)return;
+ const r=nearestResource();
+ if(!r){toast('Move closer to a tree, rock, or berry bush');return;}
+ r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]+=r.amount;gainXP(r.type==='wood'?12: r.type==='stone'?14:8);toast(`Collected ${r.amount} ${r.type}`);updateHUD();}
+ else toast('Gathering…');
+}
+function attack(){
+ if(dead)return;
+ if(mode==='online' && socket && socket.connected){
+   let remoteTarget=null, remoteDistance=3.4;
+   for(const [id,rp] of remotePlayers){const d=player.position.distanceTo(rp.mesh.position);if(d<remoteDistance){remoteDistance=d;remoteTarget=id;}}
+   if(remoteTarget){socket.emit('pvpAttack',{targetId:remoteTarget});return;}
+ }
+ let target=null,bd=3.4;
+ for(const e of enemies){if(!e.alive)continue;const d=player.position.distanceTo(e.mesh.position);if(d<bd){bd=d;target=e;}}
+ if(!target){gather();return;}
+ target.hp--;gainXP(4);toast(target.hp<=0?'Wildling defeated!':'You hit a wildling!');
+ if(target.hp<=0){target.alive=false;world.remove(target.mesh);inventory.food+=1;gainXP(30);updateHUD();}
+}
+function craft(){
+ if(inventory.campfire>0){toast('You already built your first campfire');return;}
+ if(inventory.wood<5||inventory.stone<3){toast(`Need 5 wood and 3 stone (you have ${inventory.wood} wood, ${inventory.stone} stone)`);return;}
+ inventory.wood-=5;inventory.stone-=3;inventory.campfire++;
+ const g=new THREE.Group();const base=new THREE.Mesh(new THREE.CylinderGeometry(.7,.8,.18,9),rockDark);base.position.y=.1;g.add(base);
+ for(let i=0;i<3;i++){const log=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,1.05,7),trunkMat);log.rotation.z=Math.PI/2;log.rotation.y=i*Math.PI/3;log.position.y=.28;g.add(log);}
+ const flame=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,7),new THREE.MeshBasicMaterial({color:0xff9a38}));flame.position.y=.72;g.add(flame);
+ const light=new THREE.PointLight(0xff9a48,1.7,9);light.position.y=1;g.add(light);
+ g.position.set(player.position.x+Math.sin(yaw)*1.8,0,player.position.z-Math.cos(yaw)*1.8);scene.add(g);campfires.push({g,flame,light});gainXP(35);toast('Campfire crafted! Your first camp is ready.');updateHUD();
+}
+function interact(){
+ if(dead)return;
+ if(inventory.food>0){inventory.food--;hunger=Math.min(100,hunger+28);health=Math.min(100,health+6);toast('You ate cooked food');updateHUD();return;}
+ if(inventory.berry>0){inventory.berry--;hunger=Math.min(100,hunger+12);toast('You ate berries');updateHUD();return;}
+ if(inventory.campfire>0){health=Math.min(100,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
+ toast('Find berries or defeat a wildling for food. Press C to craft a campfire.');
+}
+function setPointer(){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();}
+document.getElementById('play').onclick=()=>{
+  if(mode==='online' && !connectMultiplayer()) return;
+  document.getElementById('start').style.display='none';
+  if(!isTouchDevice && innerWidth>700)setPointer();
+  toast(mode==='solo'?'Survive the island. Drag to look, use the touch buttons to move.':'Joining multiplayer island…');
+};
+document.getElementById('refreshRooms').onclick=()=>{
+  if(!socket){socket=io();socket.on('connect',()=>socket.emit('listRooms'));socket.on('roomList',rooms=>renderRoomList(rooms));}
+  else socket.emit('listRooms');
+};
+function renderRoomList(rooms){
+ const el=document.getElementById('roomBrowser');
+ if(!rooms.length){el.textContent='No public worlds yet. Create one by joining a public world name.';return;}
+ el.innerHTML='<strong>Public worlds</strong><br>'+rooms.map(r=>`<button type="button" data-room="${String(r.name).replace(/[^a-zA-Z0-9_-]/g,'')}" style="margin:4px 4px 0 0;padding:5px 8px">${r.name} · ${r.players} player(s)</button>`).join('');
+ el.querySelectorAll('button[data-room]').forEach(b=>b.onclick=()=>{document.getElementById('roomCode').value=b.dataset.room;document.getElementById('roomType').value='public';});
+}
+let lookPointer = null, lastLookX = 0, lastLookY = 0, lookMoved = false;
+renderer.domElement.addEventListener('pointerdown', e => {
+  if(document.getElementById('start').style.display!=='none') return;
+  if(e.pointerType === 'touch') {
+    // Reserve the left side for movement buttons; drag elsewhere to turn/look.
+    if(e.clientX > innerWidth * .30) {
+      lookPointer = e.pointerId; lastLookX = e.clientX; lastLookY = e.clientY; lookMoved = false;
+      try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
+    }
+  }
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if(e.pointerType === 'touch' && e.pointerId === lookPointer) {
+    const dx = e.clientX - lastLookX, dy = e.clientY - lastLookY;
+    if(Math.abs(dx)+Math.abs(dy)>2) lookMoved = true;
+    yaw -= dx * .006;
+    pitch = Math.max(-.75, Math.min(.35, pitch + dy * .004));
+    lastLookX = e.clientX; lastLookY = e.clientY;
+    e.preventDefault();
+  }
+});
+renderer.domElement.addEventListener('pointerup', e => {
+  if(e.pointerId === lookPointer) {
+    // A short tap on the look area attacks/gathers; a drag only turns the camera.
+    if(!lookMoved) attack();
+    lookPointer = null;
+  }
+});
+renderer.domElement.addEventListener('pointercancel', e => { if(e.pointerId===lookPointer) lookPointer=null; });
+renderer.domElement.addEventListener('click', e=>{
+  if(document.getElementById('start').style.display==='none' && !isTouchDevice) {
+    if(!locked && innerWidth>700) setPointer(); else attack();
+  }
+});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;});
+document.addEventListener('mousemove',e=>{if(locked){yaw-=e.movementX*.0022;pitch-=e.movementY*.0018;pitch=Math.max(-.75,Math.min(.35,pitch));}});
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyC')craft();if(e.code==='KeyE')interact();if(e.code==='Space'&&!e.repeat&&player.position.y<.03)player.userData.vy=5.2;});
+document.addEventListener('keyup',e=>keys[e.code]=false);
+document.querySelectorAll('[data-key]').forEach(b=>{
+  const k=b.dataset.key;
+  const down=e=>{e.preventDefault();keys[k]=true;};
+  const up=e=>{e.preventDefault();keys[k]=false;};
+  b.addEventListener('pointerdown',down);
+  b.addEventListener('pointerup',up);
+  b.addEventListener('pointercancel',up);
+  b.addEventListener('lostpointercapture',()=>{keys[k]=false;});
+});
+document.getElementById('gatherBtn').onclick=attack;
+document.getElementById('interactBtn').onclick=interact;
+document.getElementById('craftBtn').onclick=craft;
+document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
+let prev=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);const dt=Math.min((now-prev)/1000,.05);prev=now;elapsed+=dt;attackCooldown-=dt;
+ if(document.getElementById('start').style.display==='none'&&!dead){
+  let f=0,s=0;if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyA||keys.ArrowLeft)s-=1;if(keys.KeyD||keys.ArrowRight)s+=1;
+  const len=Math.hypot(f,s)||1;f/=len;s/=len;
+  const speed=keys.ShiftLeft?7:4.7;
+  player.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed*dt;
+  player.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed*dt;
+  const radius=Math.hypot(player.position.x,player.position.z);if(radius>44){player.position.x*=44/radius;player.position.z*=44/radius;}
+  const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}
+  if(f||s)player.rotation.y=yaw;
+  if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
+  hunger=Math.max(0,hunger-dt*.17);thirst=Math.max(0,thirst-dt*.27);
+  if(hunger===0||thirst===0)health=Math.max(0,health-dt*1.6);
+  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<13&&d>1.3){e.mesh.position.x+=dx/d*dt*.8;e.mesh.position.z+=dz/d*dt*.8;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<1.35){e.cooldown-=dt;if(e.cooldown<=0){health=Math.max(0,health-7);e.cooldown=1.4;toast('A wildling hit you!');}}}
+  if(health<=0){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';}
+  if(Math.floor(elapsed)%2===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt))updateHUD();
+ }
+ // Gentle day/night tint
+ const cycle=(Math.sin(elapsed*.035)+1)/2;sun.intensity=.55+cycle*1.8;scene.background.setHSL(.52,.35,.42+cycle*.2);scene.fog.color.copy(scene.background);
+ for(const c of campfires){c.flame.scale.y=.85+Math.sin(elapsed*9)*.12;c.light.intensity=1.4+Math.sin(elapsed*11)*.3;}
+ for (const rp of remotePlayers.values()) {
+   rp.mesh.position.x += (rp.target.x-rp.mesh.position.x)*Math.min(1,dt*10);
+   rp.mesh.position.z += (rp.target.z-rp.mesh.position.z)*Math.min(1,dt*10);
+   rp.mesh.rotation.y = rp.target.rot;
+ }
+ const target=new THREE.Vector3(player.position.x,player.position.y+1.25,player.position.z);
+ const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));
+ camera.position.set(target.x-dir.x*5.5,target.y-dir.y*5.5+1.2,target.z-dir.z*5.5);camera.lookAt(target.clone().add(dir.multiplyScalar(2)));
+ renderer.render(scene,camera);
+ if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)toastEl.style.opacity=0;}
+}
+requestAnimationFrame(animate);
+window.addEventListener('beforeunload',()=>{if(socket&&socket.connected&&mode==='online')socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory,health,hunger,thirst,xp,level});});
+function resizeGame(){
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouchDevice ? 1.35 : 1.75));
+}
+window.addEventListener('resize',resizeGame);
+window.addEventListener('orientationchange',()=>setTimeout(resizeGame,180));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)resizeGame();});
+updateHUD();
+</script>
+</body>
+</html>
