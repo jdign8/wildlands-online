@@ -57,6 +57,7 @@
   #mobile .actions button { font-size:12px; font-weight:700; }
   #lookHelp { display:none; position:fixed; right:12px; top:50%; transform:translateY(-50%); z-index:2; padding:7px 9px; border-radius:9px; background:#10212d99; color:#fff9; font-size:11px; pointer-events:none; }
   @media (max-width:900px), (pointer:coarse) {
+    #tradePanel { bottom:118px !important; max-height:42vh; overflow:auto; }
     #quest { top:auto; bottom:225px; right:10px; width:min(190px, 44vw); padding:9px }
     #quest p { font-size:11px }
     #stats { top:100px; left:10px; width:min(175px, 44vw); padding:9px }
@@ -113,6 +114,17 @@
     </div>
     <div id="items"></div>
   </div>
+  <div id="tradePanel" class="panel" style="display:none;position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(320px,calc(100vw - 20px));z-index:12;pointer-events:auto">
+    <strong id="tradeTitle">Village Trading</strong>
+    <p id="tradeDescription" style="font-size:12px;margin:5px 0 8px">Trade goods with the villagers.</p>
+    <div id="woodTradeOptions"><button id="tradeWoodBtn">Trade 30 wood → 1 coin</button></div>
+    <div id="armourTradeOptions" style="display:none;gap:4px;flex-direction:column">
+      <button id="stoneArmourBtn">Stone armour · 3 coins (+25 max health)</button>
+      <button id="ironArmourBtn">Iron armour · 7 coins (+50 max health)</button>
+      <button id="crystalArmourBtn">Crystal armour · 12 coins (+80 max health)</button>
+    </div>
+    <button id="closeTradeBtn" style="margin-top:5px">Close</button>
+  </div>
   <div id="hint" class="panel"><strong>WASD</strong> move · <strong>Mouse</strong> look · <strong>Click</strong> gather/attack · <strong>E</strong> interact · <strong>C</strong> craft campfire · <strong>Space</strong> jump</div>
   <div id="toast"></div>
 </div>
@@ -120,7 +132,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore six islands, including Hearthstone Village, with forest, meadow, mining and snowy habitats. Craft a boat, fish for food, mine ores and use stronger swords.</p>
+    <p>Explore eight islands, including a winding mountain trail with a summit chest and Coincrest Village, where you can trade wood for coins and buy stone, iron or crystal armour.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -181,7 +193,8 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'}];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:78,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'}];
+const mountainPathLocal=[[0,63],[-12,49],[-21,34],[-20,20],[-10,8],[6,-2],[14,-15],[10,-28],[0,-35],[-8,-25],[-8,-10],[0,-5]];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
   const shape=new THREE.Shape(); const points=96;
@@ -196,7 +209,7 @@ function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
 for (let i=0;i<islandCenters.length;i++) {
   const c=islandCenters[i], r=c.radius;
   const beach=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r,1.0,i+1),sandMat); beach.rotation.x=-Math.PI/2; beach.position.set(c.x,.005,c.z); beach.receiveShadow=true; scene.add(beach);
-  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:grassMat;
+  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark: c.biome==='village'?mat(0x709b5a):grassMat;
   const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
 const water = new THREE.Mesh(new THREE.CircleGeometry(520,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
@@ -242,15 +255,16 @@ for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*58;addEne
 for(const [x,z] of [[-58,-12],[-43,48],[-12,-61],[26,57],[59,18],[42,-43],[-61,31],[9,68]]) addOre(x,z,'iron');
 // Populate the additional islands with their own resources and wildlings.
 for (const c of islandCenters.slice(1)) {
-  const treeCount=c.biome==='snow'?10:c.biome==='meadow'?8:28;
+  const treeCount=c.biome==='snow'?10:c.biome==='meadow'?8:c.biome==='mountain'?4:c.biome==='village'?14:28;
   for(let i=0;i<treeCount;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*(c.radius-18);addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
   for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
   if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
   if(c.biome==='mines'){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
-  if(c.name!=='Hearthstone Village'){for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+  if(c.name!=='Hearthstone Village'&&c.biome!=='village'){for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
 const villageHouses=[], villagers=[];
+let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null;
 // Hearthstone Village: enterable cottages, harmless villagers and a loot chest.
 {
  const c=islandCenters.find(i=>i.name==='Hearthstone Village');
@@ -292,6 +306,33 @@ const villageHouses=[], villagers=[];
  }
  villager(c.x-4,c.z-7,0x6a9e65,'farmer');villager(c.x+7,c.z+5,0xb85c47,'trader');villager(c.x+22,c.z-2,0x668ab6,'villager');
 }
+// Coincrest Village: two marked houses, one for wood-to-coin trades and one for armour upgrades.
+{
+ const c=islandCenters.find(i=>i.name==='Coincrest Village');
+ const wallMat=mat(0xd7bd91), roofMat=mat(0x526d79), signMat=mat(0x4a3425);
+ function tradeHouse(x,z,label,accent){
+  const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.BoxGeometry(8,4.2,6),wallMat);base.position.y=2.1;base.castShadow=true;base.receiveShadow=true;g.add(base);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(6.1,3.1,4),roofMat);roof.position.y=5.6;roof.rotation.y=Math.PI/4;roof.castShadow=true;g.add(roof);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(1.15,2.1,.15),signMat);door.position.set(0,1.05,3.08);g.add(door);
+  const sign=new THREE.Mesh(new THREE.BoxGeometry(4.8,1.05,.18),mat(accent));sign.position.set(0,3.2,3.18);g.add(sign);
+  g.position.set(x,0,z);world.add(g);decorations.push(g);
+ }
+ tradeHouse(c.x-16,c.z-12,'WOOD EXCHANGE',0x987046);
+ tradeHouse(c.x+16,c.z-12,'ARMOURY',0x617b8d);
+ const well=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.8,.65,10),rockDark);well.position.set(c.x,.33,c.z+12);world.add(well);
+ function tradeVillager(x,z,color,job,name){
+  const g=new THREE.Group(),shirt=mat(color),skin=mat(0xf0c6a0),pants=mat(0x485b67);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.55,4,8),shirt);torso.position.y=.95;g.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),skin);head.position.y=1.52;g.add(head);
+  const hat=new THREE.Mesh(new THREE.CylinderGeometry(.27,.31,.16,8),mat(color));hat.position.y=1.76;g.add(hat);
+  for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.08,.34,3,6),skin);arm.position.set(side*.35,.98,0);g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.32,3,6),pants);leg.position.set(side*.13,.34,0);g.add(leg);}
+  g.position.set(x,0,z);world.add(g);villagers.push({mesh:g,job,name});
+ }
+ tradeVillager(c.x-16,c.z-5,0x9b6b43,'woodTrader','Bram the Wood Trader');
+ tradeVillager(c.x+16,c.z-5,0x647f9c,'armourer','Ada the Armourer');
+ const signpost=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;signpost.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(4.5,.85,.18),woodMat);board.position.set(0,1.55,0);signpost.add(board);signpost.position.set(c.x,0,c.z+24);world.add(signpost);
+}
 // Small flower patches and grass tufts soften the island edges and make the world feel less like flat circles.
 for(const c of islandCenters.filter(c=>c.biome!=='snow')){
  for(let i=0;i<95;i++){
@@ -302,6 +343,54 @@ for(const c of islandCenters.filter(c=>c.biome!=='snow')){
 // Snowy island details: white caps on evergreen trees and pale ice boulders.
 for(const c of islandCenters.filter(c=>c.biome==='snow')){
  for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*42,x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;const cap=new THREE.Mesh(new THREE.SphereGeometry(.8,8,6),snowMat);cap.scale.set(1,.45,1);cap.position.set(x,.55,z);world.add(cap);decorations.push(cap);}
+}
+// Signature landmarks make Sunmeadow Isle and Frostpeak Island feel like different destinations.
+{
+ const c=islandCenters.find(c=>c.biome==='meadow');
+ // A giant old meadow tree with a broad, warm canopy.
+ const tree=new THREE.Group();
+ const bark=mat(0x79513a), canopy=mat(0x477f3c), canopyLight=mat(0x72a94b);
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.55,7.2,10),bark);trunk.position.y=3.6;trunk.castShadow=true;tree.add(trunk);
+ for(let i=0;i<5;i++){const branch=new THREE.Mesh(new THREE.CylinderGeometry(.22,.38,3.2,7),bark);branch.position.set(Math.cos(i*1.256)*1.15,5.1,Math.sin(i*1.256)*1.15);branch.rotation.z=Math.cos(i*1.256)*-.7;branch.rotation.x=Math.sin(i*1.256)*.7;tree.add(branch);}
+ for(let i=0;i<9;i++){const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(2.4+(i%3)*.35,1),i%2?canopy:canopyLight);crown.position.set(Math.cos(i*2.4)*2.1,7.2+(i%3)*.55,Math.sin(i*2.4)*2.1);crown.scale.y=.8;crown.castShadow=true;tree.add(crown);}
+ tree.position.set(c.x-13,0,c.z+5);world.add(tree);decorations.push(tree);
+ // A ring of standing stones gives explorers a landmark to find.
+ const ringX=c.x+17,ringZ=c.z-12,stoneRingMat=mat(0x9a9b78);
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;const stone=new THREE.Mesh(new THREE.DodecahedronGeometry(.9+(i%3)*.18,0),stoneRingMat);stone.scale.set(.8,1.65,.55);stone.position.set(ringX+Math.cos(a)*6,.95,ringZ+Math.sin(a)*6);stone.rotation.y=a;stone.castShadow=true;world.add(stone);decorations.push(stone);}
+ // Dense patches of colourful flowers form a meadow trail around the tree and stone ring.
+ const meadowFlowers=[mat(0xffd84d),mat(0xff8eb7),mat(0xffffff),mat(0xa98cff),mat(0xffa15c)];
+ for(let i=0;i<170;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*43,x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;const f=new THREE.Group();const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,.28,5),mat(0x398143));stem.position.y=.14;f.add(stem);const bloom=new THREE.Mesh(new THREE.SphereGeometry(.13,7,6),meadowFlowers[Math.floor(Math.random()*meadowFlowers.length)]);bloom.position.y=.31;f.add(bloom);f.position.set(x,.025,z);world.add(f);decorations.push(f);}
+ // A little fallen log beside the flower trail.
+ const log=new THREE.Mesh(new THREE.CylinderGeometry(.32,.38,4.5,8),bark);log.rotation.z=Math.PI/2;log.position.set(c.x+28,.32,c.z+19);log.castShadow=true;world.add(log);decorations.push(log);
+}
+{
+ const c=islandCenters.find(c=>c.biome==='snow');
+ // A frozen lake with a blue ice surface and a raised frosty rim.
+ const iceMat=new THREE.MeshStandardMaterial({color:0x8bd9ed,roughness:.2,metalness:.12,transparent:true,opacity:.9});
+ const lake=new THREE.Mesh(new THREE.CircleGeometry(10.5,40),iceMat);lake.rotation.x=-Math.PI/2;lake.position.set(c.x-12,.055,c.z+8);world.add(lake);decorations.push(lake);
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(10.5,.42,8,40),mat(0xf8ffff));rim.rotation.x=Math.PI/2;rim.position.set(c.x-12,.12,c.z+8);world.add(rim);decorations.push(rim);
+ // Jagged blue ice spires rise from a glacier on the far side of the island.
+ const iceCrystal=mat(0x76cfe8,.25),iceBright=mat(0xc5f4ff,.22);
+ for(let i=0;i<13;i++){const x=c.x+20+(Math.random()-.5)*16,z=c.z+18+(Math.random()-.5)*18,h=1.8+Math.random()*4.2;const shard=new THREE.Mesh(new THREE.ConeGeometry(.65+Math.random()*.55,h,5),i%3===0?iceBright:iceCrystal);shard.position.set(x,h/2,z);shard.rotation.z=(Math.random()-.5)*.22;shard.rotation.x=(Math.random()-.5)*.18;shard.castShadow=true;world.add(shard);decorations.push(shard);}
+ // Snowdrifts and frosted pine tips make the cold terrain read differently from the green islands.
+ for(let i=0;i<24;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*42,x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;const drift=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),mat(0xf7fbff));drift.scale.set(1.5,.35,1);drift.position.set(x,.16,z);world.add(drift);decorations.push(drift);}
+ // A small frozen arch acts as a distinctive landmark near the icy shore.
+ const arch=new THREE.Mesh(new THREE.TorusGeometry(3.1,.48,8,18,Math.PI),iceBright);arch.position.set(c.x+1,2.3,c.z-34);arch.rotation.z=Math.PI;arch.castShadow=true;world.add(arch);decorations.push(arch);
+}
+// Crownspire Mountain: a steep rocky cone, one narrow switchback trail, and a summit treasure chest.
+{
+ const c=islandCenters.find(i=>i.name==='Crownspire Mountain');
+ const mountainMat=mat(0x59615f), ridgeMat=mat(0x737c79), pathMat=mat(0xaaa99b), snowCap=mat(0xe4eeee);
+ const cone=new THREE.Mesh(new THREE.ConeGeometry(41,14,11,4),mountainMat);cone.position.set(c.x,7,c.z-5);cone.castShadow=true;cone.receiveShadow=true;world.add(cone);decorations.push(cone);
+ for(let i=0;i<9;i++){const a=i*Math.PI*2/9,r=34+Math.random()*5,h=3+Math.random()*4;const peak=new THREE.Mesh(new THREE.ConeGeometry(4+Math.random()*2,h,5),ridgeMat);peak.position.set(c.x+Math.cos(a)*r,h/2,c.z-5+Math.sin(a)*r);peak.rotation.z=(Math.random()-.5)*.12;peak.castShadow=true;world.add(peak);decorations.push(peak);}
+ // Stone stepping path follows a single switchback route. Its elevation follows the mountain slope.
+ for(let seg=0;seg<mountainPathLocal.length-1;seg++){
+  const [ax,az]=mountainPathLocal[seg],[bx,bz]=mountainPathLocal[seg+1];const len=Math.hypot(bx-ax,bz-az),steps=Math.max(2,Math.ceil(len/2.3));
+  for(let j=0;j<=steps;j++){const t=j/steps,x=ax+(bx-ax)*t,z=az+(bz-az)*t,rad=Math.hypot(x,z+5),y=Math.max(.08,14*(1-Math.min(rad,40)/40));const stone=new THREE.Mesh(new THREE.CylinderGeometry(1.55,1.7,.22,7),pathMat);stone.position.set(c.x+x,y-.08,c.z+z);stone.rotation.y=(seg%2)*.18;stone.receiveShadow=true;world.add(stone);decorations.push(stone);}
+ }
+ // Snow on the highest ridges.
+ for(let i=0;i<5;i++){const cap=new THREE.Mesh(new THREE.ConeGeometry(3.2,2.3,5),snowCap);cap.position.set(c.x+(i-2)*3,11.9,c.z-7+Math.abs(i-2)*1.5);world.add(cap);decorations.push(cap);}
+ mountainChest=new THREE.Group();const chestBody=new THREE.Mesh(new THREE.BoxGeometry(1.5,.85,1.05),mat(0x8a542a));chestBody.position.y=.55;mountainChest.add(chestBody);const lid=new THREE.Mesh(new THREE.BoxGeometry(1.55,.28,1.1),mat(0xc18a3e));lid.position.set(0,1.1,0);mountainChest.add(lid);const clasp=new THREE.Mesh(new THREE.BoxGeometry(.18,.3,.08),goldMat);clasp.position.set(0,.78,-.57);mountainChest.add(clasp);mountainChest.position.set(c.x,14,c.z-5);world.add(mountainChest);
 }
 // Freshwater springs are marked by small bright-blue pools near each island's centre.
 const springs=[];
@@ -331,6 +420,16 @@ const belt=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.1,12),beltMat);belt.
 const pack = new THREE.Group();const packBody=new THREE.Mesh(new THREE.BoxGeometry(.34,.42,.19),woodMat);packBody.position.y=0;pack.add(packBody);const packTop=new THREE.Mesh(new THREE.BoxGeometry(.25,.12,.2),trunkMat);packTop.position.set(0,.2,0);pack.add(packTop);pack.position.set(0,1.04,.32);player.add(pack);
 const swordHolder=new THREE.Group();swordHolder.position.set(.42,1.02,-.1);player.add(swordHolder);
 player.position.set(0,0,0); scene.add(player);
+// Armour meshes sit over the player's clothes and change appearance when upgraded.
+const armorVisualGroups={};
+function makeArmorVisual(type,color,shine=0){
+ const group=new THREE.Group(),metal=new THREE.MeshStandardMaterial({color,roughness:.34,metalness:shine,emissive:type==='crystal'?0x123d45:0x000000,emissiveIntensity:.25});
+ const chest=new THREE.Mesh(new THREE.BoxGeometry(.68,.72,.3),metal);chest.position.set(0,1.04,-.02);chest.castShadow=true;group.add(chest);
+ const helmet=new THREE.Mesh(type==='crystal'?new THREE.OctahedronGeometry(.3,0):new THREE.SphereGeometry(.29,8,6,0,Math.PI*2,0,Math.PI*.72),metal);helmet.position.set(0,1.64,0);helmet.scale.set(1,1,.95);helmet.castShadow=true;group.add(helmet);
+ for(const side of [-1,1]){const shoulder=new THREE.Mesh(new THREE.DodecahedronGeometry(.23,0),metal);shoulder.position.set(side*.39,1.28,0);shoulder.castShadow=true;group.add(shoulder);const shin=new THREE.Mesh(new THREE.BoxGeometry(.22,.38,.24),metal);shin.position.set(side*.15,.42,-.015);group.add(shin);}
+ group.visible=false;player.add(group);armorVisualGroups[type]=group;
+}
+makeArmorVisual('stone',0x7f898e,.15);makeArmorVisual('iron',0xd2dce1,.7);makeArmorVisual('crystal',0x52dce8,.35);
 
 // Multiplayer client state. The authoritative room/session server is server.js.
 let socket = null, mySocketId = null;
@@ -371,7 +470,7 @@ function connectMultiplayer() {
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
-    if(save.inventory){Object.assign(inventory,save.inventory);craftedBoat=!!save.inventory.craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
+    if(save.inventory){Object.assign(inventory,save.inventory);armorType=save.inventory.armorType||null;maxHealth=100+(armorType&&armorDefs[armorType]?armorDefs[armorType].bonus:0);refreshArmorVisual();craftedBoat=!!save.inventory.craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
     if(Number.isFinite(save.health)) health=save.health;
     if(Number.isFinite(save.hunger)) hunger=save.hunger;
     if(Number.isFinite(save.thirst)) thirst=save.thirst;
@@ -393,7 +492,7 @@ function addOrUpdateRemote(p) {
   if(!rp){rp={mesh:makeRemotePlayer(p.color || 0x6fa6df),name:p.name||'Player',target:{x:p.x||0,z:p.z||0,rot:p.rot||0}};remotePlayers.set(p.id,rp);}
   rp.name=p.name||rp.name;rp.target={x:p.x||0,z:p.z||0,rot:p.rot||0};
 }
-function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,weaponDurability:{...weaponDurability},equippedWeapon:equippedWeapon||null};}
+function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,armorType,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,weaponDurability:{...weaponDurability},equippedWeapon:equippedWeapon||null};}
 function sendNetworkState() {
   if(socket && socket.connected && mode==='online') {
     socket.emit('move', {x:player.position.x, z:player.position.z, rot:player.rotation.y});
@@ -404,13 +503,15 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire:0};
+const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire:0,coins:0};
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
 let fishingCasts=0;
 
 const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4},maxDurability:15},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3},maxDurability:30},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4},maxDurability:50},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3,maxDurability:70}};
 const ownedWeapons={};const weaponDurability={};let equippedWeapon=null;
-let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
+let health=100,maxHealth=100,armorType=null,hunger=100,thirst=100,xp=0,level=1,dead=false;
+const armorDefs={stone:{name:'Stone armour',cost:3,bonus:25,reduction:.1,tier:1},iron:{name:'Iron armour',cost:7,bonus:50,reduction:.2,tier:2},crystal:{name:'Crystal armour',cost:12,bonus:80,reduction:.3,tier:3}};
+function refreshArmorVisual(){for(const [type,group] of Object.entries(armorVisualGroups))group.visible=type===armorType;}
 const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,night=0,wasNight=false,nightWaveCount=0;
 const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
 const toastEl=document.getElementById('toast'); let toastTimer=0;
@@ -434,10 +535,10 @@ function ensureBoatVisual(){
 }
 function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
- for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=Math.max(0,val)+'%';document.getElementById(name+'Num').textContent=Math.ceil(val);}
+ for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🐟 Food',water:'💧 Water',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
- document.getElementById('weaponStatus').textContent=equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage';
+ document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🐟 Food',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
+ document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  document.getElementById('sailBtn').textContent=craftedBoat?'Sail to next island':'Sail (craft boat first)';
@@ -573,6 +674,7 @@ function sailToNextIsland(){
  const next=islandCenters[activeIsland];
  // Arrive near the shore so the player can disembark safely.
  player.position.set(next.x,0,next.z+next.radius-15);player.userData.vy=0;
+ if(next.name==='Crownspire Mountain'){player.position.x=next.x;player.position.z=next.z+63;}
  boatPosition={x:player.position.x,z:player.position.z+2.5};
  if(boatVisual){boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}
  if(mode==='online'&&socket&&socket.connected)sendNetworkState();
@@ -590,19 +692,28 @@ function interact(){
  }
  const nearbyHouse=villageHouses.find(h=>Math.hypot(player.position.x-h.x,player.position.z-h.z)<4.5);
  if(nearbyHouse){activeHouse=nearbyHouse;nearbyHouse.shell.visible=false;nearbyHouse.interior.visible=true;player.position.set(nearbyHouse.x,0,nearbyHouse.z);aboardBoat=false;toast(nearbyHouse.hasChest?'You entered the cottage. Walk to the chest and press E to open it. Press E again to leave.':'You entered the cottage. Look around, then press E to leave.');return;}
+ if(activeIsland===6 && mountainChest && !mountainChestOpened && Math.hypot(player.position.x-mountainChest.position.x,player.position.z-mountainChest.position.z)<4.5){mountainChestOpened=true;mountainChest.rotation.x=-.12;inventory.iron+=5;inventory.crystal+=2;inventory.coins+=5;inventory.food+=3;gainXP(100);toast('SUMMIT TREASURE! Found 5 iron, 2 rare crystals, 5 coins and 3 food!');updateHUD();return;}
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
- if(nearbyVillager){toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;}
+ if(nearbyVillager){
+  if(nearbyVillager.job==='woodTrader'||nearbyVillager.job==='armourer'){
+   tradeNPC=nearbyVillager;tradeMode=nearbyVillager.job;document.getElementById('tradePanel').style.display='block';
+   document.getElementById('tradeTitle').textContent=nearbyVillager.job==='woodTrader'?'🪵 Wood Exchange':'🛡️ Village Armoury';
+   document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`;
+   document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';return;
+  }
+  toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;
+ }
  const nearbyBed=beds.find(b=>Math.hypot(player.position.x-b.x,player.position.z-b.z)<3.5);
  if(nearbyBed){
   const cycleValue=(Math.sin(elapsed*.035)+1)/2;
   if(cycleValue>=.18){toast('You can only sleep at night.');return;}
   let attempts=0;while((Math.sin(elapsed*.035)+1)/2<.35&&attempts<400){elapsed+=.5;attempts++;}
-  health=Math.min(100,health+20);hunger=Math.max(0,hunger-3);thirst=Math.max(0,thirst-3);
+  health=Math.min(maxHealth,health+20);hunger=Math.max(0,hunger-3);thirst=Math.max(0,thirst-3);
   toast('You slept until morning. The island is calmer for now.');updateHUD();return;
  }
- if(inventory.food>0){inventory.food--;hunger=Math.min(100,hunger+28);health=Math.min(100,health+6);toast('You ate cooked food');updateHUD();return;}
+ if(inventory.food>0){inventory.food--;hunger=Math.min(100,hunger+28);health=Math.min(maxHealth,health+6);toast('You ate cooked food');updateHUD();return;}
  if(inventory.berry>0){inventory.berry--;hunger=Math.min(100,hunger+12);toast('You ate berries');updateHUD();return;}
- if(inventory.campfire>0){health=Math.min(100,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
+ if(inventory.campfire>0){health=Math.min(maxHealth,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
  toast('Find berries or defeat a wildling for food. Press C to craft a campfire.');
 }
 function setPointer(){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();}
@@ -687,6 +798,10 @@ document.getElementById('fishBtn').onclick=fish;
 document.getElementById('craftBoatBtn').onclick=craftBoat;
 document.getElementById('craftRodBtn').onclick=craftFishingRod;
 document.getElementById('interactBtn').onclick=interact;
+document.getElementById('closeTradeBtn').onclick=()=>{document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;};
+document.getElementById('tradeWoodBtn').onclick=()=>{if(tradeMode!=='woodTrader'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Bram at the Wood Exchange to trade.');return;}if(inventory.wood<30){toast(`You need 30 wood. You have ${inventory.wood}.`);return;}inventory.wood-=30;inventory.coins+=1;document.getElementById('tradeDescription').textContent=`Trade complete! You now have ${inventory.coins} coins.`;toast('Traded 30 wood for 1 coin!');updateHUD();};
+function buyArmour(type){if(tradeMode!=='armourer'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Ada at the Armoury to buy armour.');return;}const def=armorDefs[type],current=armorType?armorDefs[armorType]:null;if(current&&current.tier>=def.tier){toast(`You already have ${current.name} or better.`);return;}if(inventory.coins<def.cost){toast(`${def.name} costs ${def.cost} coins. You have ${inventory.coins}.`);return;}inventory.coins-=def.cost;armorType=type;maxHealth=100+def.bonus;health=maxHealth;refreshArmorVisual();document.getElementById('tradeDescription').textContent=`Equipped ${def.name}! Maximum health is now ${maxHealth}.`;toast(`${def.name} equipped! Max health increased to ${maxHealth}.`);updateHUD();}
+document.getElementById('stoneArmourBtn').onclick=()=>buyArmour('stone');document.getElementById('ironArmourBtn').onclick=()=>buyArmour('iron');document.getElementById('crystalArmourBtn').onclick=()=>buyArmour('crystal');
 document.getElementById('craftBtn').onclick=craft;
 document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
 document.getElementById('drinkBtn').onclick=drinkWater;
@@ -704,8 +819,14 @@ function animate(now){
   player.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed*dt;
   player.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed*dt;
   const island=islandCenters[activeIsland];const ox=player.position.x-island.x,oz=player.position.z-island.z,radius=Math.hypot(ox,oz),limit=island.radius-4;if(radius>limit){player.position.x=island.x+ox/radius*limit;player.position.z=island.z+oz/radius*limit;}
-  const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}
+  if(activeIsland===6){
+   // Project movement onto the one switchback trail; off-trail shortcuts are blocked.
+   let bestDist=Infinity,bestX=0,bestZ=0;
+   for(let i=0;i<mountainPathLocal.length-1;i++){const [ax,az]=mountainPathLocal[i],[bx,bz]=mountainPathLocal[i+1],vx=bx-ax,vz=bz-az,l2=vx*vx+vz*vz;const t=Math.max(0,Math.min(1,((player.position.x-island.x-ax)*vx+(player.position.z-island.z-az)*vz)/l2));const px=ax+vx*t,pz=az+vz*t,d=Math.hypot(player.position.x-island.x-px,player.position.z-island.z-pz);if(d<bestDist){bestDist=d;bestX=px;bestZ=pz;}}
+   player.position.x=island.x+bestX;player.position.z=island.z+bestZ;const summitRadius=Math.hypot(bestX,bestZ+5);player.position.y=Math.max(0,14*(1-Math.min(summitRadius,40)/40));player.userData.vy=0;
+  }else{const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}}
   if(f||s)player.rotation.y=yaw;
+  if(tradeNPC&&player.position.distanceTo(tradeNPC.mesh.position)>7){document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;}
   if(craftedBoat){ensureBoatVisual();if(boatVisual){if(aboardBoat){boatPosition={x:player.position.x,z:player.position.z+0.38};boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}else{boatVisual.position.set(boatPosition.x,0,boatPosition.z);}}}
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
   hunger=Math.max(0,hunger-dt*.17);thirst=Math.max(0,thirst-dt*.27);
@@ -723,7 +844,7 @@ function animate(now){
   }
   wasNight=isNight;night=isNight?1:0;
   const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isNight?'🌙 Night · 50 extra monsters spawned':'☀️ Day';
-  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<1.45){e.cooldown-=dt;if(e.cooldown<=0){health=Math.max(0,health-e.damage);e.cooldown=e.attackInterval;toast(e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
+  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<1.45){e.cooldown-=dt;if(e.cooldown<=0){const mitigation=armorType?armorDefs[armorType].reduction:0;health=Math.max(0,health-e.damage*(1-mitigation));e.cooldown=e.attackInterval;toast(e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
   if(health<=0){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';}
   if(Math.floor(elapsed)%2===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt))updateHUD();
  }
