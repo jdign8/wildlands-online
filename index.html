@@ -147,9 +147,9 @@
   </div>
   <div class="actions">
     <button id="gatherBtn">Gather / Mine</button><button id="swordBtn">Sword / Hit</button>
-    <button id="interactBtn">Eat / Rest</button><button id="fishBtn">Fish</button>
+    <button id="interactBtn">Interact / Eat</button><button id="fishBtn">Fish</button>
     <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
-    <button id="drinkBtn">Drink</button><button id="sailBtn">Sail</button>
+    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="sailBtn">Sail</button>
   </div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -241,24 +241,48 @@ for (const c of islandCenters.slice(1)) {
   if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
   if(c.biome==='mines'){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
-  for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}
+  if(c.name!=='Hearthstone Village'){for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
-// Hearthstone Village: a small cluster of funny crooked cottages around a central square.
+// Hearthstone Village: enterable cottages, harmless villagers and a loot chest.
 {
  const c=islandCenters.find(i=>i.name==='Hearthstone Village');
  const cottageMat=mat(0xe2c18a), roofMat=mat(0x9b5942), doorMat=mat(0x4a3025), windowMat=new THREE.MeshStandardMaterial({color:0x83d9ed,emissive:0x244b55});
- function cottage(x,z,scale=1){
-  const g=new THREE.Group();
-  const base=new THREE.Mesh(new THREE.BoxGeometry(5*scale,3.2*scale,4.2*scale),cottageMat);base.position.y=1.6*scale;base.castShadow=true;base.receiveShadow=true;g.add(base);
-  const roof=new THREE.Mesh(new THREE.ConeGeometry(3.8*scale,2.5*scale,4),roofMat);roof.position.y=4.25*scale;roof.rotation.y=Math.PI/4;roof.castShadow=true;g.add(roof);
-  const door=new THREE.Mesh(new THREE.BoxGeometry(.85*scale,1.8*scale,.12*scale),doorMat);door.position.set(0,.9*scale,-2.16*scale);g.add(door);
-  for(const side of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(.7*scale,.65*scale,.12*scale),windowMat);win.position.set(side*1.35*scale,2*scale,-2.17*scale);g.add(win);}
-  g.position.set(x,0,z);g.rotation.y=(Math.random()-.5)*.22;world.add(g);decorations.push(g);
+ function cottage(x,z,scale=1,hasChest=false){
+  const shell=new THREE.Group(), interior=new THREE.Group();
+  const w=5*scale,d=4.2*scale,h=3.2*scale,wall=.22*scale;
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(w,.16*scale,d),woodMat);floor.position.y=.08*scale;interior.add(floor);
+  // Three walls plus two short front walls leave a real doorway opening.
+  const parts=[
+   [w,h,wall,0,h/2,-d/2], [wall,h,d,-w/2,h/2,0], [wall,h,d,w/2,h/2,0],
+   [w*.34,h,wall,-w*.33,h/2,d/2], [w*.34,h,wall,w*.33,h/2,d/2],
+   [w*.34,.35*scale,wall,0,h-.175*scale,d/2]
+  ];
+  for(const [sx,sy,sz,px,py,pz] of parts){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),cottageMat);m.position.set(px,py,pz);m.castShadow=true;m.receiveShadow=true;shell.add(m);}
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(3.8*scale,2.5*scale,4),roofMat);roof.position.y=4.25*scale;roof.rotation.y=Math.PI/4;roof.castShadow=true;shell.add(roof);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(.82*scale,1.75*scale,.1*scale),doorMat);door.position.set(0,.88*scale,d/2+.02);shell.add(door);
+  for(const side of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(.7*scale,.65*scale,.1*scale),windowMat);win.position.set(side*1.35*scale,2*scale,-d/2-.02);shell.add(win);}
+  // Cozy interior furniture.
+  const bed=new THREE.Mesh(new THREE.BoxGeometry(1.45*scale,.32*scale,1.9*scale),mat(0x638d93));bed.position.set(-1.15*scale,.27*scale,-.75*scale);interior.add(bed);
+  const table=new THREE.Mesh(new THREE.BoxGeometry(1.05*scale,.16*scale,.75*scale),woodMat);table.position.set(.9*scale,.85*scale,-.45*scale);interior.add(table);
+  for(const sx of [-.35,.35]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.09*scale,.75*scale,.09*scale),trunkMat);leg.position.set(.9*scale,.43*scale,-.45*scale+sx*scale);interior.add(leg);}
+  let chest=null;
+  if(hasChest){chest=new THREE.Group();const box=new THREE.Mesh(new THREE.BoxGeometry(.8,.48,.55),mat(0x98652e));box.position.y=.28;chest.add(box);const lid=new THREE.Mesh(new THREE.BoxGeometry(.82,.18,.58),mat(0xc18a3e));lid.position.set(0,.59,0);chest.add(lid);const clasp=new THREE.Mesh(new THREE.BoxGeometry(.12,.2,.04),goldMat);clasp.position.set(0,.42,-.3);chest.add(clasp);chest.position.set(.95,.16,-1.25);interior.add(chest);}
+  const house={x,z,scale,shell,interior,hasChest,chest,opened:false};
+  shell.position.set(x,0,z);interior.position.set(x,0,z);interior.visible=false;world.add(shell);world.add(interior);villageHouses.push(house);
  }
- cottage(c.x-17,c.z-12,1);cottage(c.x+14,c.z-14,.9);cottage(c.x-14,c.z+13,.82);cottage(c.x+17,c.z+12,1.05);
- const well=new THREE.Mesh(new THREE.CylinderGeometry(2,2.3,.7,10),rockDark);well.position.set(c.x,c.y||.35,c.z);well.position.y=.35;world.add(well);
+ cottage(c.x-17,c.z-12,1,false);cottage(c.x+14,c.z-14,.9,true);cottage(c.x-14,c.z+13,.82,false);cottage(c.x+17,c.z+12,1.05,false);
+ const well=new THREE.Mesh(new THREE.CylinderGeometry(2,2.3,.7,10),rockDark);well.position.set(c.x,.35,c.z);world.add(well);
  const waterInside=new THREE.Mesh(new THREE.CircleGeometry(1.45,16),waterMat);waterInside.rotation.x=-Math.PI/2;waterInside.position.set(c.x,.72,c.z);world.add(waterInside);
- const sign=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;sign.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(3.6,.75,.18),woodMat);board.position.set(0,1.55,0);sign.add(board);sign.position.set(c.x,c.y||0,c.z+23);world.add(sign);
+ const sign=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;sign.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(3.6,.75,.18),woodMat);board.position.set(0,1.55,0);sign.add(board);sign.position.set(c.x,0,c.z+23);world.add(sign);
+ function villager(x,z,color,job){
+  const g=new THREE.Group(),shirt=mat(color),skin=mat(0xf0c6a0),pants=mat(0x485b67),eyes=new THREE.MeshBasicMaterial({color:0x172026});
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.52,4,8),shirt);torso.position.y=.94;g.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),skin);head.position.y=1.5;g.add(head);
+  const hat=new THREE.Mesh(new THREE.CylinderGeometry(.26,.3,.14,8),mat(color===0xb85c47?0xe2c18a:0x477b55));hat.position.y=1.74;g.add(hat);
+  for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.025,6,6),eyes);eye.position.set(side*.075,1.52,-.205);g.add(eye);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.08,.34,3,6),skin);arm.position.set(side*.35,.98,0);g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.32,3,6),pants);leg.position.set(side*.13,.34,0);g.add(leg);}
+  g.position.set(x,0,z);world.add(g);villagers.push({mesh:g,job,name:job==='farmer'?'Pip the Farmer':job==='trader'?'Moss the Trader':'Wren the Villager'});
+ }
+ villager(c.x-4,c.z-7,0x6a9e65,'farmer');villager(c.x+7,c.z+5,0xb85c47,'trader');villager(c.x+22,c.z-2,0x668ab6,'villager');
 }
 // Small flower patches and grass tufts soften the island edges and make the world feel less like flat circles.
 for(const c of islandCenters.filter(c=>c.biome!=='snow')){
@@ -373,7 +397,8 @@ function sendNetworkState() {
 
 const campfires=[];
 const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire:0};
-let craftedBoat=false, fishingRod=false, boatVisual=null;
+let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
+const villageHouses=[], villagers=[];
 const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4}},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3}},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4}},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3}};
 const ownedWeapons={};let equippedWeapon=null;
 let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
@@ -396,7 +421,7 @@ function ensureBoatVisual(){
  }
  const bow=new THREE.Mesh(new THREE.ConeGeometry(.57,.45,4),plankMat); bow.rotation.x=Math.PI/2; bow.position.set(0,.12,-1.28); bow.castShadow=true; boatVisual.add(bow);
  const rope=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,6,12),ropeMat); rope.rotation.x=Math.PI/2; rope.position.set(0,.22,.75); boatVisual.add(rope);
- boatVisual.visible=true; scene.add(boatVisual);
+ boatVisual.visible=true; boatVisual.position.set(boatPosition.x,0,boatPosition.z); scene.add(boatVisual);
 }
 function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
@@ -407,6 +432,7 @@ function updateHUD(){
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  document.getElementById('sailBtn').textContent=craftedBoat?'Sail to next island':'Sail (craft boat first)';
+ document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':(craftedBoat?'Board boat':'Boat');
  document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${fishingRod?'built':'not built'}`;
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire.`;
@@ -486,7 +512,7 @@ function drinkWater(){
 function craftBoat(){
  if(craftedBoat){toast('You already crafted a boat.');return;}
  if(inventory.wood<5||inventory.stone<2){toast(`Boat needs 5 wood and 2 stone. You have ${inventory.wood} wood and ${inventory.stone} stone.`);return;}
- inventory.wood-=5;inventory.stone-=2;craftedBoat=true;ensureBoatVisual();toast('Boat crafted! Your raft is now visible beneath you. Use the movement controls to move, or tap Sail to travel to the next island.');updateHUD();
+ inventory.wood-=5;inventory.stone-=2;craftedBoat=true;aboardBoat=false;boatPosition={x:player.position.x+2,z:player.position.z+1.5};ensureBoatVisual();if(boatVisual)boatVisual.position.set(boatPosition.x,0,boatPosition.z);toast('Boat crafted! Walk near it and tap Board boat. Tap Leave boat when you reach land.');updateHUD();
 }
 function craftFishingRod(){
  if(fishingRod){toast('You already have a fishing rod.');return;}
@@ -500,19 +526,48 @@ function fish(){
  if(dist<c.radius-13){toast('Move closer to the shoreline to fish.');return;}
  const catchCount=1+(Math.random()<.22?1:0);inventory.food+=catchCount;gainXP(10*catchCount);toast(`You caught ${catchCount} fish! Use Eat / Rest to eat food.`);updateHUD();
 }
+function boardOrLeaveBoat(){
+ if(!craftedBoat||!boatVisual){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ if(aboardBoat){
+  const c=islandCenters[activeIsland],dx=player.position.x-c.x,dz=player.position.z-c.z,d=Math.hypot(dx,dz)||1;
+  // Step off onto the nearest safe part of the current island.
+  player.position.set(c.x+dx/d*Math.min(c.radius-12,Math.max(8,d)),0,c.z+dz/d*Math.min(c.radius-12,Math.max(8,d)));
+  aboardBoat=false;boatPosition={x:player.position.x+2,z:player.position.z+1.5};boatVisual.position.set(boatPosition.x,0,boatPosition.z);
+  toast('You stepped off the boat. Walk around the island; tap Board boat to get back on.');
+ }else{
+  const d=Math.hypot(player.position.x-boatPosition.x,player.position.z-boatPosition.z);
+  if(d>6){toast('Walk closer to your wooden boat first.');return;}
+  aboardBoat=true;toast('You climbed into the boat. Tap Leave boat when you want to get off.');
+ }
+ updateHUD();
+}
 function sailToNextIsland(){
  if(dead)return;
  if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
- // Travel is available from anywhere on the island; no precise shoreline positioning required.
+ if(!aboardBoat){toast('Board your boat before sailing.');return;}
  activeIsland=(activeIsland+1)%islandCenters.length;
  const next=islandCenters[activeIsland];
- player.position.set(next.x,0,next.z+8);player.userData.vy=0;
- if(boatVisual){boatVisual.position.set(player.position.x,0,player.position.z+0.38);boatVisual.rotation.y=player.rotation.y;}
+ // Arrive near the shore so the player can disembark safely.
+ player.position.set(next.x,0,next.z+next.radius-15);player.userData.vy=0;
+ boatPosition={x:player.position.x,z:player.position.z+2.5};
+ if(boatVisual){boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}
  if(mode==='online'&&socket&&socket.connected)sendNetworkState();
- toast('Sailed to '+next.name+'! Find the blue spring for fresh water.');updateHUD();
+ toast('Arrived at '+next.name+'! Tap Leave boat to explore on foot.');updateHUD();
 }
 function interact(){
  if(dead)return;
+ if(activeHouse){
+  const h=activeHouse;
+  if(h.hasChest && !h.opened && h.chest && Math.hypot(player.position.x-(h.x+.95),player.position.z-(h.z-1.25))<3){
+   h.opened=true;h.chest.rotation.x=-.8;inventory.wood+=4;inventory.stone+=3;inventory.berry+=3;inventory.food+=2;inventory.water+=1;gainXP(20);toast('Chest opened! Found 4 wood, 3 stone, 3 berries, 2 food and 1 water.');updateHUD();return;
+  }
+  // E exits the cottage; the roof/walls return outside.
+  h.interior.visible=false;h.shell.visible=true;player.position.set(h.x,0,h.z+4.2);activeHouse=null;toast('You stepped outside the cottage.');return;
+ }
+ const nearbyHouse=villageHouses.find(h=>Math.hypot(player.position.x-h.x,player.position.z-h.z)<4.5);
+ if(nearbyHouse){activeHouse=nearbyHouse;nearbyHouse.shell.visible=false;nearbyHouse.interior.visible=true;player.position.set(nearbyHouse.x,0,nearbyHouse.z);aboardBoat=false;toast(nearbyHouse.hasChest?'You entered the cottage. Walk to the chest and press E to open it. Press E again to leave.':'You entered the cottage. Look around, then press E to leave.');return;}
+ const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
+ if(nearbyVillager){toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;}
  if(inventory.food>0){inventory.food--;hunger=Math.min(100,hunger+28);health=Math.min(100,health+6);toast('You ate cooked food');updateHUD();return;}
  if(inventory.berry>0){inventory.berry--;hunger=Math.min(100,hunger+12);toast('You ate berries');updateHUD();return;}
  if(inventory.campfire>0){health=Math.min(100,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
@@ -592,6 +647,7 @@ document.getElementById('craftBtn').onclick=craft;
 document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
 document.getElementById('drinkBtn').onclick=drinkWater;
 document.getElementById('sailBtn').onclick=sailToNextIsland;
+document.getElementById('boardBoatBtn').onclick=boardOrLeaveBoat;
 document.getElementById('craftSwordBtn').onclick=craftSword;
 document.getElementById('equipSwordBtn').onclick=equipSword;
 let prev=performance.now();
@@ -600,13 +656,13 @@ function animate(now){
  if(document.getElementById('start').style.display==='none'&&!dead){
   let f=0,s=0;if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyA||keys.ArrowLeft)s-=1;if(keys.KeyD||keys.ArrowRight)s+=1;
   const len=Math.hypot(f,s)||1;f/=len;s/=len;
-  const speed=keys.ShiftLeft?7:4.7;
+  const speed=aboardBoat?2.8:(keys.ShiftLeft?7:4.7);
   player.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed*dt;
   player.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed*dt;
   const island=islandCenters[activeIsland];const ox=player.position.x-island.x,oz=player.position.z-island.z,radius=Math.hypot(ox,oz),limit=island.radius-4;if(radius>limit){player.position.x=island.x+ox/radius*limit;player.position.z=island.z+oz/radius*limit;}
   const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}
   if(f||s)player.rotation.y=yaw;
-  if(craftedBoat){ensureBoatVisual();if(boatVisual){boatVisual.position.set(player.position.x,0,player.position.z+0.38);boatVisual.rotation.y=player.rotation.y;}}
+  if(craftedBoat){ensureBoatVisual();if(boatVisual){if(aboardBoat){boatPosition={x:player.position.x,z:player.position.z+0.38};boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}else{boatVisual.position.set(boatPosition.x,0,boatPosition.z);}}}
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
   hunger=Math.max(0,hunger-dt*.17);thirst=Math.max(0,thirst-dt*.27);
   if(hunger===0||thirst===0)health=Math.max(0,health-dt*1.6);
