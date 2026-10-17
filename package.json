@@ -2,7 +2,7 @@
   "name": "wildlands-online",
   "version": "0.8.0",
   "private": true,
-  "description": "Wildlands Online survival prototype with five biome islands, craftable boat, fishing, mining, sword combat and iPad controls",
+  "description": "Wildlands Online survival prototype with six islands including Hearthstone Village, easier boat crafting, fishing, mining, sword combat and iPad controls",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

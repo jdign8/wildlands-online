@@ -115,7 +115,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore five islands with forest, meadow, mining and snowy habitats. Craft a boat, fish for food, mine ores and use stronger swords.</p>
+    <p>Explore six islands, including Hearthstone Village, with forest, meadow, mining and snowy habitats. Craft a boat, fish for food, mine ores and use stronger swords.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -176,7 +176,7 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'}];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'}];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
   const shape=new THREE.Shape(); const points=96;
@@ -240,6 +240,23 @@ for (const c of islandCenters.slice(1)) {
   if(c.biome==='mines'){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}
+}
+// Hearthstone Village: a small cluster of funny crooked cottages around a central square.
+{
+ const c=islandCenters.find(i=>i.name==='Hearthstone Village');
+ const cottageMat=mat(0xe2c18a), roofMat=mat(0x9b5942), doorMat=mat(0x4a3025), windowMat=new THREE.MeshStandardMaterial({color:0x83d9ed,emissive:0x244b55});
+ function cottage(x,z,scale=1){
+  const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.BoxGeometry(5*scale,3.2*scale,4.2*scale),cottageMat);base.position.y=1.6*scale;base.castShadow=true;base.receiveShadow=true;g.add(base);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(3.8*scale,2.5*scale,4),roofMat);roof.position.y=4.25*scale;roof.rotation.y=Math.PI/4;roof.castShadow=true;g.add(roof);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(.85*scale,1.8*scale,.12*scale),doorMat);door.position.set(0,.9*scale,-2.16*scale);g.add(door);
+  for(const side of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(.7*scale,.65*scale,.12*scale),windowMat);win.position.set(side*1.35*scale,2*scale,-2.17*scale);g.add(win);}
+  g.position.set(x,0,z);g.rotation.y=(Math.random()-.5)*.22;world.add(g);decorations.push(g);
+ }
+ cottage(c.x-17,c.z-12,1);cottage(c.x+14,c.z-14,.9);cottage(c.x-14,c.z+13,.82);cottage(c.x+17,c.z+12,1.05);
+ const well=new THREE.Mesh(new THREE.CylinderGeometry(2,2.3,.7,10),rockDark);well.position.set(c.x,c.y||.35,c.z);well.position.y=.35;world.add(well);
+ const waterInside=new THREE.Mesh(new THREE.CircleGeometry(1.45,16),waterMat);waterInside.rotation.x=-Math.PI/2;waterInside.position.set(c.x,.72,c.z);world.add(waterInside);
+ const sign=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;sign.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(3.6,.75,.18),woodMat);board.position.set(0,1.55,0);sign.add(board);sign.position.set(c.x,c.y||0,c.z+23);world.add(sign);
 }
 // Small flower patches and grass tufts soften the island edges and make the world feel less like flat circles.
 for(const c of islandCenters.filter(c=>c.biome!=='snow')){
@@ -354,7 +371,7 @@ function sendNetworkState() {
 
 const campfires=[];
 const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire:0};
-let craftedBoat=false, fishingRod=false;
+let craftedBoat=false, fishingRod=false, boatVisual=null;
 const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4}},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3}},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4}},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3}};
 const ownedWeapons={};let equippedWeapon=null;
 let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
@@ -363,14 +380,31 @@ const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
 const toastEl=document.getElementById('toast'); let toastTimer=0;
 function toast(msg){toastEl.textContent=msg;toastEl.style.opacity=1;toastTimer=2.2;}
 function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL UP! You reached level '+level);}}
+function ensureBoatVisual(){
+ if(boatVisual || !craftedBoat) return;
+ boatVisual=new THREE.Group();
+ const hullMat=mat(0x79502f), plankMat=mat(0xb7834f), ropeMat=mat(0xd8c18b);
+ // A small, visible wooden raft with a raised bow and cross-bracing.
+ const hull=new THREE.Mesh(new THREE.BoxGeometry(1.55,.18,2.45),hullMat); hull.position.y=.02; hull.castShadow=true; hull.receiveShadow=true; boatVisual.add(hull);
+ for(let i=-2;i<=2;i++){
+  const plank=new THREE.Mesh(new THREE.BoxGeometry(1.48,.09,.38),plankMat); plank.position.set(0,.14,i*.43); plank.castShadow=true; boatVisual.add(plank);
+ }
+ for(const side of [-1,1]){
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(.09,.18,2.3),hullMat); rail.position.set(side*.72,.22,0); rail.castShadow=true; boatVisual.add(rail);
+ }
+ const bow=new THREE.Mesh(new THREE.ConeGeometry(.57,.45,4),plankMat); bow.rotation.x=Math.PI/2; bow.position.set(0,.12,-1.28); bow.castShadow=true; boatVisual.add(bow);
+ const rope=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,6,12),ropeMat); rope.rotation.x=Math.PI/2; rope.position.set(0,.22,.75); boatVisual.add(rope);
+ boatVisual.visible=true; scene.add(boatVisual);
+}
 function updateHUD(){
+ if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=Math.max(0,val)+'%';document.getElementById(name+'Num').textContent=Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
  document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🐟 Food',water:'💧 Water',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>Owned</strong></div>`).join('');
  document.getElementById('weaponStatus').textContent=equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage`:'Equipped: fists · Craft a sword to improve damage';
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
- document.getElementById('sailBtn').textContent='Sail';
+ document.getElementById('sailBtn').textContent=craftedBoat?'Sail to next island':'Sail (craft boat first)';
  document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${fishingRod?'built':'not built'}`;
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire.`;
@@ -449,8 +483,8 @@ function drinkWater(){
 }
 function craftBoat(){
  if(craftedBoat){toast('You already crafted a boat.');return;}
- if(inventory.wood<12||inventory.stone<5){toast(`Boat needs 12 wood and 5 stone. You have ${inventory.wood} wood and ${inventory.stone} stone.`);return;}
- inventory.wood-=12;inventory.stone-=5;craftedBoat=true;toast('Boat crafted! Go to a shoreline and tap Sail to visit the next island.');updateHUD();
+ if(inventory.wood<5||inventory.stone<2){toast(`Boat needs 5 wood and 2 stone. You have ${inventory.wood} wood and ${inventory.stone} stone.`);return;}
+ inventory.wood-=5;inventory.stone-=2;craftedBoat=true;ensureBoatVisual();toast('Boat crafted! Your raft is now visible beneath you. Use the movement controls to move, or tap Sail to travel to the next island.');updateHUD();
 }
 function craftFishingRod(){
  if(fishingRod){toast('You already have a fishing rod.');return;}
@@ -466,13 +500,12 @@ function fish(){
 }
 function sailToNextIsland(){
  if(dead)return;
- if(!craftedBoat){toast('You must craft a boat first: 12 wood + 5 stone.');return;}
- const c=islandCenters[activeIsland];
- const dist=Math.hypot(player.position.x-c.x,player.position.z-c.z);
- if(dist<c.radius-19){toast('Find the wooden raft at the shoreline before sailing.');return;}
+ if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ // Travel is available from anywhere on the island; no precise shoreline positioning required.
  activeIsland=(activeIsland+1)%islandCenters.length;
  const next=islandCenters[activeIsland];
  player.position.set(next.x,0,next.z+8);player.userData.vy=0;
+ if(boatVisual){boatVisual.position.set(player.position.x,0,player.position.z+0.38);boatVisual.rotation.y=player.rotation.y;}
  if(mode==='online'&&socket&&socket.connected)sendNetworkState();
  toast('Sailed to '+next.name+'! Find the blue spring for fresh water.');updateHUD();
 }
@@ -571,6 +604,7 @@ function animate(now){
   const island=islandCenters[activeIsland];const ox=player.position.x-island.x,oz=player.position.z-island.z,radius=Math.hypot(ox,oz),limit=island.radius-4;if(radius>limit){player.position.x=island.x+ox/radius*limit;player.position.z=island.z+oz/radius*limit;}
   const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}
   if(f||s)player.rotation.y=yaw;
+  if(craftedBoat){ensureBoatVisual();if(boatVisual){boatVisual.position.set(player.position.x,0,player.position.z+0.38);boatVisual.rotation.y=player.rotation.y;}}
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
   hunger=Math.max(0,hunger-dt*.17);thirst=Math.max(0,thirst-dt*.27);
   if(hunger===0||thirst===0)health=Math.max(0,health-dt*1.6);
