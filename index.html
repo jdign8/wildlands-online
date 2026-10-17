@@ -52,6 +52,8 @@
   #mobile .cluster { display:grid; grid-template-columns:repeat(3, minmax(42px, 52px)); gap:5px; pointer-events:auto; }
   #mobile button { padding:0 8px; min-height:46px; background:#10212de8; border:1px solid #ffffff40; box-shadow:0 3px 10px #0005; touch-action:none; -webkit-tap-highlight-color:transparent; }
   #mobile .actions { display:grid; grid-template-columns:repeat(2, minmax(62px, 78px)); gap:6px; align-items:end; pointer-events:auto; }
+  /* Keep the action buttons centered so they don't cover the backpack on touch screens. */
+  @media (max-width:900px), (pointer:coarse) { #mobile .actions { position:fixed; left:50%; bottom:max(10px, env(safe-area-inset-bottom)); transform:translateX(-50%); } }
   #mobile .actions button { font-size:12px; font-weight:700; }
   #lookHelp { display:none; position:fixed; right:12px; top:50%; transform:translateY(-50%); z-index:2; padding:7px 9px; border-radius:9px; background:#10212d99; color:#fff9; font-size:11px; pointer-events:none; }
   @media (max-width:900px), (pointer:coarse) {
@@ -69,6 +71,7 @@
     #lookHelp { display:block; }
   }
   @media (max-width:520px) {
+    #mobile .actions { bottom:max(10px, env(safe-area-inset-bottom)); }
     #quest { bottom:225px; width:160px; }
     #stats { top:86px; width:145px; }
     #inventory { width:150px; top:76px; max-height:calc(100vh - 92px); }
@@ -399,6 +402,7 @@ function sendNetworkState() {
 const campfires=[];
 const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire:0};
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
+let fishingCasts=0;
 
 const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4}},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3}},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4}},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3}};
 const ownedWeapons={};let equippedWeapon=null;
@@ -525,7 +529,9 @@ function fish(){
  if(!fishingRod){toast('Craft a fishing rod first: 3 wood + 1 iron ore.');return;}
  const c=islandCenters[activeIsland],dist=Math.hypot(player.position.x-c.x,player.position.z-c.z);
  if(dist<c.radius-13){toast('Move closer to the shoreline to fish.');return;}
- const catchCount=1+(Math.random()<.22?1:0);inventory.food+=catchCount;gainXP(10*catchCount);toast(`You caught ${catchCount} fish! Use Eat / Rest to eat food.`);updateHUD();
+ fishingCasts++;
+ if(fishingCasts%10!==0){toast(`Cast ${fishingCasts%10}/10 — keep fishing to catch one.`);return;}
+ inventory.food+=1;gainXP(10);toast('10 casts completed — you caught 1 fish! Use Eat / Rest to eat food.');updateHUD();
 }
 function boardOrLeaveBoat(){
  if(!craftedBoat||!boatVisual){toast('Craft a boat first: 5 wood + 2 stone.');return;}
