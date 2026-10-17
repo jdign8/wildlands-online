@@ -126,6 +126,11 @@
     <div id="medicineTradeOptions" style="display:none;gap:4px;flex-direction:column">
       <button id="buyMedicineBtn">Buy medicine · 1 coin (restore full health)</button>
     </div>
+    <div id="fishTradeOptions" style="display:none;gap:4px;flex-direction:column">
+      <button id="sellSalmonBtn">Sell 1 salmon → 3 coins</button>
+      <button id="sellCodBtn">Sell 1 cod → 2 coins</button>
+      <button id="sellWhitingBtn">Sell 1 whiting → 1 coin</button>
+    </div>
     <button id="closeTradeBtn" style="margin-top:5px">Close</button>
   </div>
   <div id="hint" class="panel"><strong>WASD</strong> move · <strong>Mouse</strong> look · <strong>Click</strong> gather/attack · <strong>E</strong> interact · <strong>C</strong> craft campfire · <strong>Space</strong> jump</div>
@@ -266,6 +271,30 @@ for (const c of islandCenters.slice(1)) {
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'){ for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
+// Pinewatch Isle's signature fishing dock. Fishing is only allowed from this dock.
+{
+ const c=islandCenters.find(i=>i.name==='Pinewatch Isle');
+ const dock=new THREE.Group();
+ const planks=mat(0x9a7047), plankEdge=mat(0x67472f), ropeMat=mat(0xc8b17d), lanternMat=new THREE.MeshStandardMaterial({color:0xffd27a,emissive:0xffa52b,emissiveIntensity:1.2});
+ // A long timber pier reaches from the island shore out over the water.
+ for(let i=0;i<15;i++){const plank=new THREE.Mesh(new THREE.BoxGeometry(7.2,.28,1.8),i%3===0?plankEdge:planks);plank.position.set(0,.42,18+i*2.05);plank.castShadow=true;plank.receiveShadow=true;dock.add(plank);}
+ for(const x of [-3.25,3.25]){for(let i=0;i<8;i++){const post=new THREE.Mesh(new THREE.CylinderGeometry(.22,.27,2.2,7),trunkMat);post.position.set(x,-.05,20+i*4.05);post.castShadow=true;dock.add(post);}
+  for(let i=0;i<7;i++){const rail=new THREE.Mesh(new THREE.BoxGeometry(.16,.18,4.1),plankEdge);rail.position.set(x,1.05,21.9+i*4.05);dock.add(rail);}}
+ // Open fishing end with a sign and warm lanterns.
+ const signPost=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,2.4,7),trunkMat);signPost.position.set(-2.4,1.2,17);dock.add(signPost);
+ const signBoard=new THREE.Mesh(new THREE.BoxGeometry(3.1,.85,.2),planks);signBoard.position.set(-2.4,2.15,17);dock.add(signBoard);
+ const signText=new THREE.Mesh(new THREE.BoxGeometry(2.45,.12,.06),ropeMat);signText.position.set(-2.4,2.18,16.88);dock.add(signText);
+ for(const x of [-3.1,3.1]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,2.8,7),trunkMat);pole.position.set(x,1.4,18);dock.add(pole);const lamp=new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),lanternMat);lamp.position.set(x,2.95,18);dock.add(lamp);}
+ dock.position.set(c.x,0,c.z);world.add(dock);decorations.push(dock);
+ // Pinewatch's fish buyer stands beside the end of the dock and buys each fish type for a different price.
+ const g=new THREE.Group(),shirt=mat(0x3d8790),skin=mat(0xf0c6a0),pants=mat(0x485b67);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.55,4,8),shirt);torso.position.y=.95;g.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),skin);head.position.y=1.52;g.add(head);
+ const hat=new THREE.Mesh(new THREE.CylinderGeometry(.29,.33,.16,8),mat(0xd8b46b));hat.position.y=1.76;g.add(hat);
+ for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.08,.34,3,6),skin);arm.position.set(side*.35,.98,0);g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.32,3,6),pants);leg.position.set(side*.13,.34,0);g.add(leg);}
+ g.position.set(c.x+6.8,0,c.z+39.5);world.add(g);villagers.push({mesh:g,job:'fishTrader',name:'Finn the Fish Buyer'});
+}
+
 // Emberpeak Volcano Isle: a towering volcano that erupts during every night cycle.
 let volcanoIsland=null, volcanoVent=null, volcanoLavaSpout=null, volcanoGlow=null, volcanoEruptionRocks=[], volcanoDamageCooldown=0;
 {
@@ -652,7 +681,7 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire:0,coins:0};
+const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,salmon:0,cod:0,whiting:0,water:2,campfire:0,coins:0};
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
 let fishingCasts=0;
 
@@ -686,7 +715,7 @@ function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🐟 Food',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
+ document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
@@ -795,11 +824,17 @@ function craftFishingRod(){
 function fish(){
  if(dead)return;
  if(!fishingRod){toast('Craft a fishing rod first: 3 wood + 1 iron ore.');return;}
- const c=islandCenters[activeIsland],dist=Math.hypot(player.position.x-c.x,player.position.z-c.z);
- if(dist<c.radius-13){toast('Move closer to the shoreline to fish.');return;}
+ const pinewatch=islandCenters[1],dockX=pinewatch.x,dockZ=pinewatch.z+43;
+ const dockDistance=Math.hypot(player.position.x-dockX,player.position.z-dockZ);
+ if(activeIsland!==1||dockDistance>12){toast('You can only fish from the fishing dock on Pinewatch Isle.');return;}
  fishingCasts++;
- if(fishingCasts%10!==0){toast(`Cast ${fishingCasts%10}/10 — keep fishing to catch one.`);return;}
- inventory.food+=1;gainXP(10);toast('10 casts completed — you caught 1 fish! Use Eat / Rest to eat food.');updateHUD();
+ // Each cast is an independent 1-in-10 chance, not a guaranteed catch every tenth cast.
+ if(Math.random()>=0.1){toast(`Cast ${fishingCasts}: no bite this time. Every cast has a 1-in-10 chance — try again!`);return;}
+ const roll=Math.random();let fishType,fishName;
+ if(roll<0.25){fishType='salmon';fishName='Salmon';}
+ else if(roll<0.65){fishType='cod';fishName='Cod';}
+ else{fishType='whiting';fishName='Whiting';}
+ inventory[fishType]++;gainXP(10);toast(`You caught a ${fishName}! Each fish restores different hunger: salmon 45, cod 35, whiting 20. Press Interact / Eat to eat a fish.`);updateHUD();
 }
 function boardOrLeaveBoat(){
  if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
@@ -861,11 +896,11 @@ function interact(){
  }
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
  if(nearbyVillager){
-  if(nearbyVillager.job==='woodTrader'||nearbyVillager.job==='armourer'||nearbyVillager.job==='medic'){
+  if(['woodTrader','armourer','medic','fishTrader'].includes(nearbyVillager.job)){
    tradeNPC=nearbyVillager;tradeMode=nearbyVillager.job;document.getElementById('tradePanel').style.display='block';
-   document.getElementById('tradeTitle').textContent=nearbyVillager.job==='woodTrader'?'🪵 Wood Exchange':nearbyVillager.job==='armourer'?'🛡️ Village Armoury':'🧪 Village Healer';
-   document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':nearbyVillager.job==='armourer'?`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`:`You have ${inventory.coins} coins. Buy medicine for 1 coin to restore your health to full.`;
-   document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';document.getElementById('medicineTradeOptions').style.display=nearbyVillager.job==='medic'?'flex':'none';return;
+   document.getElementById('tradeTitle').textContent=nearbyVillager.job==='woodTrader'?'🪵 Wood Exchange':nearbyVillager.job==='armourer'?'🛡️ Village Armoury':nearbyVillager.job==='medic'?'🧪 Village Healer':'🎣 Pinewatch Fish Buyer';
+   document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':nearbyVillager.job==='armourer'?`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`:nearbyVillager.job==='medic'?`You have ${inventory.coins} coins. Buy medicine for 1 coin to restore your health to full.`:`Sell fish caught at the Pinewatch dock: salmon for 3 coins, cod for 2 coins, or whiting for 1 coin. You have ${inventory.salmon} salmon, ${inventory.cod} cod and ${inventory.whiting} whiting.`;
+   document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';document.getElementById('medicineTradeOptions').style.display=nearbyVillager.job==='medic'?'flex':'none';document.getElementById('fishTradeOptions').style.display=nearbyVillager.job==='fishTrader'?'flex':'none';return;
   }
   if(nearbyVillager.job==='arenaMaster'){toast(castleArenaRewarded?'Arena Master Tor: You are the castle champion!':'Arena Master Tor: Walk through the castle gate to face 3 tough wildlings. Defeat them to earn 8 coins and 100 XP!');return;} toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;
  }
@@ -877,6 +912,9 @@ function interact(){
   health=Math.min(maxHealth,health+20);hunger=Math.max(0,hunger-3);thirst=Math.max(0,thirst-3);
   toast('You slept until morning. The island is calmer for now.');updateHUD();return;
  }
+ if(inventory.salmon>0){inventory.salmon--;hunger=Math.min(100,hunger+45);health=Math.min(maxHealth,health+8);toast('You ate salmon: +45 hunger and +8 health.');updateHUD();return;}
+ if(inventory.cod>0){inventory.cod--;hunger=Math.min(100,hunger+35);health=Math.min(maxHealth,health+6);toast('You ate cod: +35 hunger and +6 health.');updateHUD();return;}
+ if(inventory.whiting>0){inventory.whiting--;hunger=Math.min(100,hunger+20);health=Math.min(maxHealth,health+3);toast('You ate whiting: +20 hunger and +3 health.');updateHUD();return;}
  if(inventory.food>0){inventory.food--;hunger=Math.min(100,hunger+28);health=Math.min(maxHealth,health+6);toast('You ate cooked food');updateHUD();return;}
  if(inventory.berry>0){inventory.berry--;hunger=Math.min(100,hunger+12);toast('You ate berries');updateHUD();return;}
  if(inventory.campfire>0){health=Math.min(maxHealth,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
@@ -967,6 +1005,16 @@ document.getElementById('interactBtn').onclick=interact;
 document.getElementById('closeTradeBtn').onclick=()=>{document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;};
 document.getElementById('buyMedicineBtn').onclick=()=>{if(tradeMode!=='medic'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Mira at the Medicine House to buy medicine.');return;}if(health>=maxHealth){toast('Your health is already full!');return;}if(inventory.coins<1){toast('Medicine costs 1 coin. You do not have enough coins.');return;}inventory.coins-=1;health=maxHealth;document.getElementById('tradeDescription').textContent=`Medicine bought! Your health is fully restored to ${maxHealth}. You have ${inventory.coins} coins left.`;toast('Medicine used! Health fully restored.');updateHUD();};
 document.getElementById('tradeWoodBtn').onclick=()=>{if(tradeMode!=='woodTrader'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Bram at the Wood Exchange to trade.');return;}if(inventory.wood<30){toast(`You need 30 wood. You have ${inventory.wood}.`);return;}inventory.wood-=30;inventory.coins+=1;document.getElementById('tradeDescription').textContent=`Trade complete! You now have ${inventory.coins} coins.`;toast('Traded 30 wood for 1 coin!');updateHUD();};
+function sellFish(type,price,label){
+ if(tradeMode!=='fishTrader'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Finn at the Pinewatch fishing dock to sell fish.');return;}
+ if(inventory[type]<1){toast(`You don't have any ${label.toLowerCase()} to sell.`);return;}
+ inventory[type]--;inventory.coins+=price;
+ document.getElementById('tradeDescription').textContent=`Sold 1 ${label} for ${price} coin${price===1?'':'s'}. Fish left: ${inventory.salmon} salmon, ${inventory.cod} cod, ${inventory.whiting} whiting. You have ${inventory.coins} coins.`;
+ toast(`Sold 1 ${label} for ${price} coin${price===1?'':'s'}!`);updateHUD();
+}
+document.getElementById('sellSalmonBtn').onclick=()=>sellFish('salmon',3,'Salmon');
+document.getElementById('sellCodBtn').onclick=()=>sellFish('cod',2,'Cod');
+document.getElementById('sellWhitingBtn').onclick=()=>sellFish('whiting',1,'Whiting');
 function buyArmour(type){if(tradeMode!=='armourer'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Ada at the Armoury to buy armour.');return;}const def=armorDefs[type],current=armorType?armorDefs[armorType]:null;if(current&&current.tier>=def.tier){toast(`You already have ${current.name} or better.`);return;}if(inventory.coins<def.cost){toast(`${def.name} costs ${def.cost} coins. You have ${inventory.coins}.`);return;}inventory.coins-=def.cost;armorType=type;maxHealth=100+def.bonus;health=maxHealth;refreshArmorVisual();document.getElementById('tradeDescription').textContent=`Equipped ${def.name}! Maximum health is now ${maxHealth}.`;toast(`${def.name} equipped! Max health increased to ${maxHealth}.`);updateHUD();}
 document.getElementById('stoneArmourBtn').onclick=()=>buyArmour('stone');document.getElementById('ironArmourBtn').onclick=()=>buyArmour('iron');document.getElementById('crystalArmourBtn').onclick=()=>buyArmour('crystal');
 document.getElementById('craftBtn').onclick=craft;
