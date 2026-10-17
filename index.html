@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Wildlands Online — Survival Prototype</title>
+<title>Wildlands Online — Survival Adventure v0.7</title>
 <style>
-  :root { color-scheme: dark; --panel:rgba(10,18,26,.84); --line:rgba(255,255,255,.16); }
+  :root { color-scheme: dark; --panel:rgba(9,22,27,.88); --line:rgba(210,239,225,.2); }
   * { box-sizing:border-box }
   html, body { width:100%; height:100%; min-height:100%; }
-  body { margin:0; overflow:hidden; overscroll-behavior:none; background:#101b20; color:#f3f5f7; font:14px system-ui,-apple-system,Segoe UI,sans-serif; touch-action:none; -webkit-user-select:none; user-select:none; }
+  body { margin:0; overflow:hidden; overscroll-behavior:none; background:#152a26; color:#f3f5f7; font:14px system-ui,-apple-system,Segoe UI,sans-serif; touch-action:none; -webkit-user-select:none; user-select:none; }
   canvas { display:block; touch-action:none; }
   #hud { position:fixed; inset:0; pointer-events:none; }
-  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; backdrop-filter:blur(8px); box-shadow:0 8px 30px #0003 }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px; backdrop-filter:blur(12px); box-shadow:0 10px 32px #0004 }
   #brand { position:absolute; left:14px; top:14px; max-width:min(360px,calc(100vw - 28px)) }
   #brand h1 { font-size:17px; letter-spacing:.08em; margin:0 0 4px; }
   #brand p { margin:0; color:#bac7d1; font-size:12px; line-height:1.4 }
@@ -25,7 +25,12 @@
   #quest h2, #inventory h2 { font-size:13px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.1em }
   #quest p { margin:5px 0; color:#c4d0d8; font-size:12px; line-height:1.45 }
   #inventory { position:absolute; right:14px; bottom:14px; width:250px }
-  #items { display:grid; grid-template-columns:1fr 1fr; gap:6px }
+  #items { display:grid; grid-template-columns:1fr 1fr; gap:5px }
+  #weaponBox { margin-top:8px; border-top:1px solid #ffffff1c; padding-top:8px; display:grid; gap:6px }
+  #weaponSelect { width:100%; padding:7px; border-radius:8px; color:#fff; background:#1c3437; border:1px solid #ffffff30; font:inherit; font-size:12px }
+  #weaponButtons { display:grid; grid-template-columns:1fr 1fr; gap:5px }
+  #weaponButtons button { padding:7px 5px; font-size:11px; font-weight:700 }
+  #weaponStatus { font-size:11px; color:#bcd8c9; line-height:1.3 }
   .item { background:#ffffff0a; border:1px solid #ffffff14; border-radius:7px; padding:7px 8px; display:flex; justify-content:space-between; font-size:12px }
   #hint { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); text-align:center; max-width:calc(100vw - 28px); white-space:nowrap }
   #hint strong { color:#fff }
@@ -48,10 +53,10 @@
   #mobile .actions button { font-size:12px; font-weight:700; }
   #lookHelp { display:none; position:fixed; right:12px; top:50%; transform:translateY(-50%); z-index:2; padding:7px 9px; border-radius:9px; background:#10212d99; color:#fff9; font-size:11px; pointer-events:none; }
   @media (max-width:900px), (pointer:coarse) {
-    #quest { top:auto; bottom:200px; right:10px; width:min(190px, 44vw); padding:9px }
+    #quest { top:auto; bottom:225px; right:10px; width:min(190px, 44vw); padding:9px }
     #quest p { font-size:11px }
     #stats { top:100px; left:10px; width:min(175px, 44vw); padding:9px }
-    #inventory { right:10px; top:112px; bottom:auto; width:min(190px, 44vw); padding:8px }
+    #inventory { right:10px; top:112px; bottom:auto; width:min(190px, 44vw); max-height:calc(100vh - 300px); overflow:auto; padding:8px }
     /* Keep the backpack above the touch buttons so they never cover each other. */
     #mobile { left:0; right:0; bottom:max(10px, env(safe-area-inset-bottom)); }
     #brand { left:10px; top:max(10px, env(safe-area-inset-top)) }
@@ -62,9 +67,9 @@
     #lookHelp { display:block; }
   }
   @media (max-width:520px) {
-    #quest { bottom:205px; width:160px; }
+    #quest { bottom:225px; width:160px; }
     #stats { top:86px; width:145px; }
-    #inventory { width:150px; top:155px; }
+    #inventory { width:150px; top:155px; max-height:calc(100vh - 300px); }
     .panel { border-radius:10px; }
     #mobile { padding:0 8px; gap:5px; }
     #mobile .cluster { grid-template-columns:repeat(3, 40px); gap:4px; }
@@ -76,7 +81,7 @@
   @media (orientation:landscape) and (max-height:500px) {
     #stats { top:78px; width:150px; }
     #quest { bottom:150px; width:175px; }
-    #inventory { top:112px; bottom:auto; width:175px; }
+    #inventory { top:112px; bottom:auto; width:175px; max-height:calc(100vh - 200px); overflow:auto; }
     #mobile .cluster { grid-template-columns:repeat(3, 42px); }
     #mobile button { min-height:38px; }
     #mobile .actions { grid-template-columns:repeat(2, 66px); }
@@ -85,7 +90,7 @@
 </head>
 <body>
 <div id="hud">
-  <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival prototype · Expanded Island 01: The Shore</p></div>
+  <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival adventure · Visual & Weapons Update</p></div>
   <div id="stats" class="panel">
     <div class="stat"><div class="stat-head"><span>Health</span><span id="healthNum">100</span></div><div class="bar"><div id="healthFill" class="fill"></div></div></div>
     <div class="stat"><div class="stat-head"><span>Hunger</span><span id="hungerNum">100</span></div><div class="bar"><div id="hungerFill" class="fill"></div></div></div>
@@ -93,15 +98,21 @@
     <div class="stat"><div class="stat-head"><span>Level <span id="levelNum">1</span></span><span id="xpText">0 / 100 XP</span></div><div class="bar"><div id="xpFill" class="fill"></div></div></div>
   </div>
   <div id="quest" class="panel"><h2>Current mission</h2><p id="mission">Gather 5 wood and 3 stone to prepare your first camp.</p><p id="levelText">Level 1 · Survivor</p><p id="worldText">World: Private solo</p></div>
-  <div id="inventory" class="panel"><h2>Backpack</h2><div id="items"></div></div>
+  <div id="inventory" class="panel"><h2>Backpack</h2><div id="items"></div>
+    <div id="weaponBox"><strong style="font-size:11px;letter-spacing:.08em;text-transform:uppercase">⚔️ Weapons bench</strong>
+      <select id="weaponSelect" aria-label="Choose sword to craft"><option value="wood">Wooden Sword · 10 damage</option><option value="stone">Stone Sword · 20 damage</option><option value="iron">Iron Sword · 35 damage</option><option value="crystal">Crystal Sword · 50 damage</option></select>
+      <div id="weaponButtons"><button id="craftSwordBtn">Craft sword</button><button id="equipSwordBtn">Equip sword</button></div>
+      <div id="weaponStatus">Equipped: fists · Craft a sword to improve damage.</div>
+    </div>
+  </div>
   <div id="hint" class="panel"><strong>WASD</strong> move · <strong>Mouse</strong> look · <strong>Click</strong> gather/attack · <strong>E</strong> interact · <strong>C</strong> craft campfire · <strong>Space</strong> jump</div>
   <div id="toast"></div>
 </div>
 <div id="start">
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
-    <p class="sub">A 3D survival adventure prototype</p>
-    <p>Wake up on a much larger untamed island. Explore farther inland, gather resources, survive the wilds, and prepare a camp before nightfall.</p>
+    <p class="sub">A 3D survival adventure</p>
+    <p>Explore a handcrafted-feeling island world, craft stronger swords, drink fresh water, and sail between three islands.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -118,9 +129,9 @@
       <p class="small">Share the world name and password with friends for private worlds.</p>
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
-    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them.</p>
+    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Drink to manage thirst, Sail near a raft, and craft swords from the backpack.</p>
     <button id="play">ENTER THE ISLAND</button>
-    <p class="small" style="margin:12px 0 0">Online play requires this Node.js server to be running. Public rooms are listed; private rooms require the password. PvP and server-side saves are enabled in this build.</p>
+    <p class="small" style="margin:12px 0 0">Online play requires this Node.js server to be running. Public rooms are listed; private rooms require the password. This is an evolving prototype; some multiplayer features are still experimental.</p>
   </div>
 </div>
 <div id="lookHelp">Drag right side to look</div>
@@ -132,6 +143,7 @@
   <div class="actions">
     <button id="gatherBtn">Gather / Hit</button><button id="interactBtn">Eat / Rest</button>
     <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
+    <button id="drinkBtn">Drink</button><button id="sailBtn">Sail</button>
   </div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -145,8 +157,8 @@ soloBtn.onclick = () => { mode='solo'; soloBtn.classList.add('selected'); online
 onlineBtn.onclick = () => { mode='online'; onlineBtn.classList.add('selected'); soloBtn.classList.remove('selected'); networkFields.style.display='grid'; document.getElementById('modeInfo').textContent='Multiplayer mode connects to the server you are hosting. Friends must open the same hosted address and join the same room.'; };
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9bd0d8);
-scene.fog = new THREE.Fog(0x9bd0d8, 32, 110);
-const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 250);
+scene.fog = new THREE.Fog(0x9bd0d8, 90, 520);
+const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 800);
 const isTouchDevice = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const renderer = new THREE.WebGLRenderer({antialias: !isTouchDevice, powerPreference: 'high-performance'});
 renderer.setSize(innerWidth, innerHeight);
@@ -158,17 +170,35 @@ document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xd7f3ff,0x47523b,2.0));
 const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
-const grassMat=mat(0x54884c), sandMat=mat(0xcbbd8c), waterMat=new THREE.MeshStandardMaterial({color:0x258eaa,roughness:.3,metalness:.1}), trunkMat=mat(0x68432b), leafMat=mat(0x286b42), leaf2Mat=mat(0x3c8749), stoneMat=mat(0x777e7e), rockDark=mat(0x525b5d), woodMat=mat(0x9a693b), playerMat=mat(0xe5c18a), shirtMat=mat(0x315e67), enemyMat=mat(0x9b5946), goldMat=mat(0xe5c45e);
-const ground = new THREE.Mesh(new THREE.CircleGeometry(95,96),grassMat); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-const beach = new THREE.Mesh(new THREE.RingGeometry(88,95,96),sandMat); beach.rotation.x=-Math.PI/2; beach.position.y=.012; beach.receiveShadow=true; scene.add(beach);
-const water = new THREE.Mesh(new THREE.CircleGeometry(160,96),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
+const grassMat=mat(0x4c8750), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
+const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95},{x:220,z:0,name:'Pinewatch Isle',radius:62},{x:-220,z:18,name:'Redstone Cay',radius:62}];
+const islandGrounds=[];
+function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
+  const shape=new THREE.Shape(); const points=96;
+  for(let i=0;i<=points;i++){
+    const a=i/points*Math.PI*2;
+    const wobble=1+0.045*Math.sin(a*3+seed)+0.028*Math.sin(a*7+seed*1.7)+0.018*Math.cos(a*11-seed);
+    const x=Math.cos(a)*radius*scale*wobble, y=Math.sin(a)*radius*scale*wobble;
+    if(i===0)shape.moveTo(x,y);else shape.lineTo(x,y);
+  }
+  return new THREE.ShapeGeometry(shape,2);
+}
+for (let i=0;i<islandCenters.length;i++) {
+  const c=islandCenters[i], r=c.radius;
+  const beach=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r,1.0,i+1),sandMat); beach.rotation.x=-Math.PI/2; beach.position.set(c.x,.005,c.z); beach.receiveShadow=true; scene.add(beach);
+  const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),grassMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
+}
+const water = new THREE.Mesh(new THREE.CircleGeometry(460,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
 const world = new THREE.Group(); scene.add(world);
 const resources = [], enemies = [], decorations=[];
 function addTree(x,z,scale=1){
  const g=new THREE.Group();
- const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22*scale,.34*scale,2.2*scale,7),trunkMat); trunk.position.y=1.1*scale; trunk.castShadow=true; g.add(trunk);
- for(let i=0;i<3;i++){ const crown=new THREE.Mesh(new THREE.ConeGeometry((1.15-i*.15)*scale,1.65*scale,7),i===1?leaf2Mat:leafMat); crown.position.y=(2.25+i*.6)*scale; crown.castShadow=true; g.add(crown); }
- g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'wood',amount:3,hp:3,alive:true}); return g;
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.19*scale,.32*scale,2.05*scale,9),trunkMat); trunk.position.y=1.02*scale; trunk.castShadow=true; g.add(trunk);
+ const branchMat=mat(0x79553a);
+ for(let side of [-1,1]){const br=new THREE.Mesh(new THREE.CylinderGeometry(.07*scale,.11*scale,.9*scale,6),branchMat);br.position.set(side*.38*scale,1.45*scale,0);br.rotation.z=side*.75;g.add(br);}
+ for(let i=0;i<5;i++){const rad=(.66+(i%2)*.16)*scale;const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(rad,1),i%3===0?leaf2Mat:leafMat);crown.position.set(Math.sin(i*2.4)*.38*scale,(2.2+Math.floor(i/2)*.43)*scale,Math.cos(i*2.4)*.34*scale);crown.scale.y=1.15;crown.castShadow=true;g.add(crown);}
+ g.rotation.y=Math.random()*Math.PI*2;g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'wood',amount:3,hp:3,alive:true}); return g;
 }
 function addRock(x,z,scale=1){
  const g=new THREE.Group(); const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.75*scale,0),stoneMat); r.position.y=.48*scale; r.scale.set(1.25,.8,1); r.rotation.set(.1,x*.4,z*.3); r.castShadow=true; r.receiveShadow=true; g.add(r);
@@ -180,31 +210,69 @@ function addBush(x,z){
  g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'berry',amount:2,hp:1,alive:true});
 }
 function addEnemy(x,z){
- const g=new THREE.Group(); const body=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.75,4,7),enemyMat); body.position.y=.85; body.castShadow=true; g.add(body);
- const head=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),mat(0xc27c60)); head.position.y=1.55; g.add(head);
+ const g=new THREE.Group(); const hide=mat(0x5e7350), skin=mat(0xb98668), dark=mat(0x2c332a);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.56,5,9),hide);torso.position.y=.93;torso.castShadow=true;g.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.245,16,12),skin);head.position.y=1.53;head.castShadow=true;g.add(head);
+ const hair=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8,0,Math.PI*2,0,Math.PI*.55),dark);hair.position.set(0,1.62,.015);g.add(hair);
  const eyeMat=new THREE.MeshBasicMaterial({color:0x17191b});
- for(const s of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.045,6,6),eyeMat); eye.position.set(s*.1,1.59,-.24);g.add(eye);}
+ for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),eyeMat);eye.position.set(side*.085,1.55,-.218);g.add(eye);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.42,3,6),hide);arm.position.set(side*.39,.95,0);arm.rotation.z=side*.16;g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.36,3,6),dark);leg.position.set(side*.16,.32,0);g.add(leg);}
  g.position.set(x,0,z); world.add(g); enemies.push({mesh:g,hp:3,alive:true,cooldown:0});}
 for(let i=0;i<105;i++){let a=Math.random()*Math.PI*2,r=10+Math.random()*76,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.hypot(x,z)>7)addTree(x,z,.75+Math.random()*.6);}
 for(let i=0;i<72;i++){let a=Math.random()*Math.PI*2,r=7+Math.random()*82;addRock(Math.cos(a)*r,Math.sin(a)*r,.65+Math.random()*.8);}
 for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*72;addBush(Math.cos(a)*r,Math.sin(a)*r);}
 for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*58;addEnemy(Math.cos(a)*r,Math.sin(a)*r);}
+// Populate the two additional islands with their own resources and wildlings.
+for (const c of islandCenters.slice(1)) {
+  for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*43;addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
+  for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*45;addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
+  for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*40;addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}
+  for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*30;addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}
+}
+// Small flower patches and grass tufts soften the island edges and make the world feel less like flat circles.
+for(const c of islandCenters){
+ for(let i=0;i<95;i++){
+  const a=Math.random()*Math.PI*2,r=10+Math.random()*(c.radius-17),x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;
+  if(Math.random()<.48){const f=new THREE.Group();for(let j=0;j<3;j++){const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.18,4),leafMat);stem.position.set((j-1)*.07,.09,0);stem.rotation.z=(j-1)*.2;f.add(stem);const bloom=new THREE.Mesh(new THREE.SphereGeometry(.075,7,6),flowerMats[Math.floor(Math.random()*flowerMats.length)]);bloom.position.set((j-1)*.07,.2,0);f.add(bloom);}f.position.set(x,.025,z);world.add(f);decorations.push(f);}
+ }
+}
+// Freshwater springs are marked by small bright-blue pools near each island's centre.
+const springs=[];
+for(const c of islandCenters){
+  const pool=new THREE.Mesh(new THREE.CircleGeometry(3.2,24),new THREE.MeshStandardMaterial({color:0x57d7ee,roughness:.22,metalness:.05}));
+  pool.rotation.x=-Math.PI/2;pool.position.set(c.x+5,.035,c.z-4);scene.add(pool);springs.push({x:c.x+5,z:c.z-4});
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(3.2,.12,6,24),sandMat);rim.rotation.x=Math.PI/2;rim.position.set(c.x+5,.06,c.z-4);scene.add(rim);
+}
+// Simple rafts at the beaches visually mark where island travel is available.
+const rafts=[];
+for(let i=0;i<islandCenters.length;i++){
+ const c=islandCenters[i], edge=c.radius-5, g=new THREE.Group();
+ for(let j=-1;j<=1;j++){const log=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,4.2,8),woodMat);log.rotation.z=Math.PI/2;log.position.set(0,.18,j*.48);g.add(log);}
+ const cross=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,2.1,8),trunkMat);cross.rotation.x=Math.PI/2;cross.position.set(0,.28,0);g.add(cross);
+ g.position.set(c.x,.02,c.z-edge);scene.add(g);rafts.push(g);
+}
+let activeIsland=0;
 const player = new THREE.Group();
-const body = new THREE.Mesh(new THREE.CapsuleGeometry(.36,.75,4,8),shirtMat); body.position.y=.9; body.castShadow=true; player.add(body);
-const head = new THREE.Mesh(new THREE.SphereGeometry(.26,12,10),playerMat); head.position.y=1.55; head.castShadow=true; player.add(head);
-const pack = new THREE.Mesh(new THREE.BoxGeometry(.35,.42,.18),woodMat); pack.position.set(0,1.05,.34); pack.castShadow=true; player.add(pack);
+const skinMat=mat(0xe9c39b), pantsMat=mat(0x354b58), bootMat=mat(0x40372e), hairMat=mat(0x49382c), beltMat=mat(0x65462f);
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(.31,.58,5,10),shirtMat); body.position.y=1.02; body.castShadow=true; player.add(body);
+const neck=new THREE.Mesh(new THREE.CylinderGeometry(.09,.1,.15,10),skinMat);neck.position.y=1.39;player.add(neck);
+const head = new THREE.Mesh(new THREE.SphereGeometry(.245,18,14),skinMat); head.position.y=1.59; head.castShadow=true; player.add(head);
+const hair=new THREE.Mesh(new THREE.SphereGeometry(.25,14,9,0,Math.PI*2,0,Math.PI*.55),hairMat);hair.position.set(0,1.68,.01);player.add(hair);
+const eyeMat=new THREE.MeshBasicMaterial({color:0x172026});
+for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.027,8,6),eyeMat);eye.position.set(side*.082,1.59,-.225);player.add(eye);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.43,4,8),skinMat);arm.position.set(side*.39,1.0,-.015);arm.rotation.z=side*.12;arm.castShadow=true;player.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.115,.42,4,8),pantsMat);leg.position.set(side*.15,.42,0);leg.castShadow=true;player.add(leg);const boot=new THREE.Mesh(new THREE.BoxGeometry(.22,.13,.31),bootMat);boot.position.set(side*.15,.12,-.045);player.add(boot);}
+const belt=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.1,12),beltMat);belt.position.y=.78;player.add(belt);
+const pack = new THREE.Group();const packBody=new THREE.Mesh(new THREE.BoxGeometry(.34,.42,.19),woodMat);packBody.position.y=0;pack.add(packBody);const packTop=new THREE.Mesh(new THREE.BoxGeometry(.25,.12,.2),trunkMat);packTop.position.set(0,.2,0);pack.add(packTop);pack.position.set(0,1.04,.32);player.add(pack);
+const swordHolder=new THREE.Group();swordHolder.position.set(.42,1.02,-.1);player.add(swordHolder);
 player.position.set(0,0,0); scene.add(player);
 
 // Multiplayer client state. The authoritative room/session server is server.js.
 let socket = null, mySocketId = null;
 const remotePlayers = new Map();
 function makeRemotePlayer(color=0x6fa6df) {
-  const g = new THREE.Group();
-  const bm = new THREE.Mesh(new THREE.CapsuleGeometry(.36,.75,4,8), mat(color));
-  bm.position.y=.9; g.add(bm);
-  const hm = new THREE.Mesh(new THREE.SphereGeometry(.26,12,10), mat(0xe5c18a));
-  hm.position.y=1.55; g.add(hm);
-  scene.add(g); return g;
+  const g=new THREE.Group(), shirt=mat(color), skin=mat(0xe9c39b), pants=mat(0x354b58);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.31,.58,5,10),shirt);torso.position.y=1.02;g.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.245,16,12),skin);head.position.y=1.59;g.add(head);
+  for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.43,3,7),skin);arm.position.set(side*.39,1,0);g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.4,3,7),pants);leg.position.set(side*.15,.4,0);g.add(leg);}
+  const pack=new THREE.Mesh(new THREE.BoxGeometry(.34,.42,.19),woodMat);pack.position.set(0,1.04,.32);g.add(pack);scene.add(g);return g;
 }
 function connectMultiplayer() {
   if (typeof io === 'undefined') { toast('Socket.IO failed to load. Check internet connection.'); return false; }
@@ -235,7 +303,7 @@ function connectMultiplayer() {
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
-    if(save.inventory) Object.assign(inventory,save.inventory);
+    if(save.inventory){Object.assign(inventory,save.inventory);ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
     if(Number.isFinite(save.health)) health=save.health;
     if(Number.isFinite(save.hunger)) hunger=save.hunger;
     if(Number.isFinite(save.thirst)) thirst=save.thirst;
@@ -255,17 +323,20 @@ function addOrUpdateRemote(p) {
   if(!rp){rp={mesh:makeRemotePlayer(p.color || 0x6fa6df),name:p.name||'Player',target:{x:p.x||0,z:p.z||0,rot:p.rot||0}};remotePlayers.set(p.id,rp);}
   rp.name=p.name||rp.name;rp.target={x:p.x||0,z:p.z||0,rot:p.rot||0};
 }
+function saveInventoryPayload(){return {...inventory,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,equippedWeapon:equippedWeapon||null};}
 function sendNetworkState() {
   if(socket && socket.connected && mode==='online') {
     socket.emit('move', {x:player.position.x, z:player.position.z, rot:player.rotation.y});
     if(Math.floor(elapsed)%5===0 && Math.floor(elapsed)!==Math.floor(elapsed-.11)) {
-      socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory,health,hunger,thirst,xp,level});
+      socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory:saveInventoryPayload(),health,hunger,thirst,xp,level});
     }
   }
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,berry:0,food:0, campfire:0};
+const inventory={wood:0,stone:0,berry:0,food:0,water:2,campfire:0};
+const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4}},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3}},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:5,stone:5}},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:5,stone:8},level:3}};
+const ownedWeapons={};let equippedWeapon=null;
 let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
 const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,night=0;
 const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
@@ -275,9 +346,11 @@ function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL
 function updateHUD(){
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=Math.max(0,val)+'%';document.getElementById(name+'Num').textContent=Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',berry:'🫐 Berries',food:'🍖 Cooked food',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('');
+ document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',berry:'🫐 Berries',food:'🍖 Food',water:'💧 Water',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>Owned</strong></div>`).join('');
+ document.getElementById('weaponStatus').textContent=equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage`:'Equipped: fists · Craft a sword to improve damage';
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
- document.getElementById('worldText').textContent='World: '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
+ document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
+ document.getElementById('sailBtn').textContent='Sail';
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire.`;
 }
@@ -303,8 +376,30 @@ function attack(){
  let target=null,bd=3.4;
  for(const e of enemies){if(!e.alive)continue;const d=player.position.distanceTo(e.mesh.position);if(d<bd){bd=d;target=e;}}
  if(!target){gather();return;}
- target.hp--;gainXP(4);toast(target.hp<=0?'Wildling defeated!':'You hit a wildling!');
+ target.hp-=(equippedWeapon?weaponDefs[equippedWeapon].damage/10:1);gainXP(4);toast(target.hp<=0?'Wildling defeated!':`You hit a wildling with ${equippedWeapon?weaponDefs[equippedWeapon].name:'your fists'}!`);
  if(target.hp<=0){target.alive=false;world.remove(target.mesh);inventory.food+=1;gainXP(30);updateHUD();}
+}
+function refreshSwordVisual(){
+ while(swordHolder.children.length)swordHolder.remove(swordHolder.children[0]);
+ if(!equippedWeapon)return;
+ const def=weaponDefs[equippedWeapon], bladeMat=new THREE.MeshStandardMaterial({color:def.color,metalness:equippedWeapon==='wood'?.05:.65,roughness:.32,emissive:equippedWeapon==='crystal'?0x167c9b:0x000000,emissiveIntensity:.55});
+ const blade=new THREE.Mesh(new THREE.BoxGeometry(.075,.62,.12),bladeMat);blade.position.set(0,.36,-.12);blade.rotation.z=-.12;swordHolder.add(blade);
+ const guard=new THREE.Mesh(new THREE.BoxGeometry(.28,.055,.09),trunkMat);guard.position.set(0,.06,-.12);swordHolder.add(guard);
+ const grip=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.22,8),woodMat);grip.position.set(0,-.07,-.12);swordHolder.add(grip);
+ const pommel=new THREE.Mesh(new THREE.SphereGeometry(.065,8,6),goldMat);pommel.position.set(0,-.2,-.12);swordHolder.add(pommel);
+}
+function craftSword(){
+ const key=document.getElementById('weaponSelect').value,def=weaponDefs[key];
+ if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}`);return;}
+ const missing=Object.entries(def.cost).filter(([k,v])=>inventory[k]<v);
+ if(missing.length){toast(`Need ${missing.map(([k,v])=>`${Math.max(0,v-inventory[k])} more ${k}`).join(' and ')}`);return;}
+ for(const [k,v] of Object.entries(def.cost))inventory[k]-=v;
+ ownedWeapons[key]=true;equippedWeapon=key;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped · ${def.damage} damage`);updateHUD();
+}
+function equipSword(){
+ const key=document.getElementById('weaponSelect').value;
+ if(!ownedWeapons[key]){toast(`Craft a ${weaponDefs[key].name} first`);return;}
+ equippedWeapon=key;refreshSwordVisual();toast(`${weaponDefs[key].name} equipped`);updateHUD();
 }
 function craft(){
  if(inventory.campfire>0){toast('You already built your first campfire');return;}
@@ -315,6 +410,29 @@ function craft(){
  const flame=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,7),new THREE.MeshBasicMaterial({color:0xff9a38}));flame.position.y=.72;g.add(flame);
  const light=new THREE.PointLight(0xff9a48,1.7,9);light.position.y=1;g.add(light);
  g.position.set(player.position.x+Math.sin(yaw)*1.8,0,player.position.z-Math.cos(yaw)*1.8);scene.add(g);campfires.push({g,flame,light});gainXP(35);toast('Campfire crafted! Your first camp is ready.');updateHUD();
+}
+function drinkWater(){
+ if(dead)return;
+ const spring=springs[activeIsland];
+ const nearSpring=Math.hypot(player.position.x-spring.x,player.position.z-spring.z)<7;
+ if(nearSpring){
+   if(inventory.water<3)inventory.water++;
+   thirst=Math.min(100,thirst+42);
+   toast('You drank fresh spring water · bottles refilled nearby');updateHUD();return;
+ }
+ if(inventory.water>0){inventory.water--;thirst=Math.min(100,thirst+38);toast('You drank bottled water');updateHUD();return;}
+ toast('No water left! Find the blue spring pool on this island or travel to another island.');
+}
+function sailToNextIsland(){
+ if(dead)return;
+ const c=islandCenters[activeIsland];
+ const dist=Math.hypot(player.position.x-c.x,player.position.z-c.z);
+ if(dist<c.radius-19){toast('Find the wooden raft at the shoreline before sailing.');return;}
+ activeIsland=(activeIsland+1)%islandCenters.length;
+ const next=islandCenters[activeIsland];
+ player.position.set(next.x,0,next.z+8);player.userData.vy=0;
+ if(mode==='online'&&socket&&socket.connected)sendNetworkState();
+ toast('Sailed to '+next.name+'! Find the blue spring for fresh water.');updateHUD();
 }
 function interact(){
  if(dead)return;
@@ -391,6 +509,10 @@ document.getElementById('gatherBtn').onclick=attack;
 document.getElementById('interactBtn').onclick=interact;
 document.getElementById('craftBtn').onclick=craft;
 document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
+document.getElementById('drinkBtn').onclick=drinkWater;
+document.getElementById('sailBtn').onclick=sailToNextIsland;
+document.getElementById('craftSwordBtn').onclick=craftSword;
+document.getElementById('equipSwordBtn').onclick=equipSword;
 let prev=performance.now();
 function animate(now){
  requestAnimationFrame(animate);const dt=Math.min((now-prev)/1000,.05);prev=now;elapsed+=dt;attackCooldown-=dt;
@@ -400,7 +522,7 @@ function animate(now){
   const speed=keys.ShiftLeft?7:4.7;
   player.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed*dt;
   player.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed*dt;
-  const radius=Math.hypot(player.position.x,player.position.z);if(radius>91){player.position.x*=91/radius;player.position.z*=91/radius;}
+  const island=islandCenters[activeIsland];const ox=player.position.x-island.x,oz=player.position.z-island.z,radius=Math.hypot(ox,oz),limit=island.radius-4;if(radius>limit){player.position.x=island.x+ox/radius*limit;player.position.z=island.z+oz/radius*limit;}
   const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}
   if(f||s)player.rotation.y=yaw;
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
@@ -425,7 +547,7 @@ function animate(now){
  if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)toastEl.style.opacity=0;}
 }
 requestAnimationFrame(animate);
-window.addEventListener('beforeunload',()=>{if(socket&&socket.connected&&mode==='online')socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory,health,hunger,thirst,xp,level});});
+window.addEventListener('beforeunload',()=>{if(socket&&socket.connected&&mode==='online')socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory:saveInventoryPayload(),health,hunger,thirst,xp,level});});
 function resizeGame(){
   camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);

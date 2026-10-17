@@ -1,8 +1,8 @@
 {
   "name": "wildlands-online",
-  "version": "0.4.0",
+  "version": "0.7.0",
   "private": true,
-  "description": "Wildlands Online browser survival game with iPad touch controls and multiplayer prototype",
+  "description": "Wildlands Online browser survival game with improved visuals, sword crafting, iPad touch controls and multiplayer prototype",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
