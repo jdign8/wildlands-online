@@ -82,7 +82,8 @@ io.on('connection',socket=>{
     const key=socket.data.saveKey;if(!key)return;
     const clamp=(v,min,max,def)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):def;
     const inventory={};
-    for(const k of ['wood','stone','berry','food','water','campfire'])inventory[k]=clamp(data.inventory?.[k],0,999,0);
+    for(const k of ['wood','stone','iron','crystal','berry','food','water','campfire'])inventory[k]=clamp(data.inventory?.[k],0,999,0);
+    inventory.craftedBoat=data.inventory?.craftedBoat===true; inventory.fishingRod=data.inventory?.fishingRod===true;
     for(const k of ['woodSword','stoneSword','ironSword','crystalSword'])inventory[k]=data.inventory?.[k]===true;
     inventory.equippedWeapon=['wood','stone','iron','crystal'].includes(data.inventory?.equippedWeapon)?data.inventory.equippedWeapon:null;
     saves[key]={

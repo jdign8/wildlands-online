@@ -90,7 +90,7 @@
 </head>
 <body>
 <div id="hud">
-  <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival adventure · Visual & Weapons Update</p></div>
+  <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival adventure · Islands, crafting & habitats</p></div>
   <div id="stats" class="panel">
     <div class="stat"><div class="stat-head"><span>Health</span><span id="healthNum">100</span></div><div class="bar"><div id="healthFill" class="fill"></div></div></div>
     <div class="stat"><div class="stat-head"><span>Hunger</span><span id="hungerNum">100</span></div><div class="bar"><div id="hungerFill" class="fill"></div></div></div>
@@ -103,6 +103,8 @@
       <select id="weaponSelect" aria-label="Choose sword to craft"><option value="wood">Wooden Sword · 10 damage</option><option value="stone">Stone Sword · 20 damage</option><option value="iron">Iron Sword · 35 damage</option><option value="crystal">Crystal Sword · 50 damage</option></select>
       <div id="weaponButtons"><button id="craftSwordBtn">Craft sword</button><button id="equipSwordBtn">Equip sword</button></div>
       <div id="weaponStatus">Equipped: fists · Craft a sword to improve damage.</div>
+      <div id="weaponButtons"><button id="craftBoatBtn">Craft boat</button><button id="craftRodBtn">Craft fishing rod</button></div>
+      <div id="travelStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Boat: not built · Rod: not built</div>
     </div>
   </div>
   <div id="hint" class="panel"><strong>WASD</strong> move · <strong>Mouse</strong> look · <strong>Click</strong> gather/attack · <strong>E</strong> interact · <strong>C</strong> craft campfire · <strong>Space</strong> jump</div>
@@ -112,7 +114,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore a handcrafted-feeling island world, craft stronger swords, drink fresh water, and sail between three islands.</p>
+    <p>Explore five islands with forest, meadow, mining and snowy habitats. Craft a boat, fish for food, mine ores and use stronger swords.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -129,7 +131,7 @@
       <p class="small">Share the world name and password with friends for private worlds.</p>
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
-    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Drink to manage thirst, Sail near a raft, and craft swords from the backpack.</p>
+    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands.</p>
     <button id="play">ENTER THE ISLAND</button>
     <p class="small" style="margin:12px 0 0">Online play requires this Node.js server to be running. Public rooms are listed; private rooms require the password. This is an evolving prototype; some multiplayer features are still experimental.</p>
   </div>
@@ -141,7 +143,8 @@
     <button data-key="KeyA" aria-label="Move left">◀</button><button data-key="KeyS" aria-label="Move backward">▼</button><button data-key="KeyD" aria-label="Move right">▶</button>
   </div>
   <div class="actions">
-    <button id="gatherBtn">Gather / Hit</button><button id="interactBtn">Eat / Rest</button>
+    <button id="gatherBtn">Gather / Mine</button><button id="swordBtn">Sword / Hit</button>
+    <button id="interactBtn">Eat / Rest</button><button id="fishBtn">Fish</button>
     <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
     <button id="drinkBtn">Drink</button><button id="sailBtn">Sail</button>
   </div>
@@ -172,7 +175,7 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95},{x:220,z:0,name:'Pinewatch Isle',radius:62},{x:-220,z:18,name:'Redstone Cay',radius:62}];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'}];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
   const shape=new THREE.Shape(); const points=96;
@@ -187,9 +190,10 @@ function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
 for (let i=0;i<islandCenters.length;i++) {
   const c=islandCenters[i], r=c.radius;
   const beach=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r,1.0,i+1),sandMat); beach.rotation.x=-Math.PI/2; beach.position.set(c.x,.005,c.z); beach.receiveShadow=true; scene.add(beach);
-  const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),grassMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
+  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:grassMat;
+  const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
-const water = new THREE.Mesh(new THREE.CircleGeometry(460,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
+const water = new THREE.Mesh(new THREE.CircleGeometry(520,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
 const world = new THREE.Group(); scene.add(world);
 const resources = [], enemies = [], decorations=[];
 function addTree(x,z,scale=1){
@@ -209,6 +213,11 @@ function addBush(x,z){
  const g=new THREE.Group(); for(let i=0;i<4;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.32,7,6),mat(i%2?0x467e3d:0x5c9149)); b.position.set(Math.sin(i*2)*.25,.3+Math.random()*.15,Math.cos(i*2)*.22); b.scale.set(1,.8,1);g.add(b);}
  g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'berry',amount:2,hp:1,alive:true});
 }
+function addOre(x,z,type='iron'){
+ const g=new THREE.Group(); const oreMat=type==='crystal'?mat(0x59e6ef,.3):mat(0x7e8a91,.45);
+ for(let i=0;i<4;i++){const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(.35+Math.random()*.18,0),oreMat);chunk.position.set((Math.random()-.5)*.7,.3+Math.random()*.35,(Math.random()-.5)*.55);chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);}
+ g.position.set(x,0,z);world.add(g);resources.push({mesh:g,type,amount:type==='crystal'?1:2,hp:2,alive:true});return g;
+}
 function addEnemy(x,z){
  const g=new THREE.Group(); const hide=mat(0x5e7350), skin=mat(0xb98668), dark=mat(0x2c332a);
  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.56,5,9),hide);torso.position.y=.93;torso.castShadow=true;g.add(torso);
@@ -223,17 +232,24 @@ for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*72;addBush
 for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*58;addEnemy(Math.cos(a)*r,Math.sin(a)*r);}
 // Populate the two additional islands with their own resources and wildlings.
 for (const c of islandCenters.slice(1)) {
-  for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*43;addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
-  for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*45;addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
-  for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*40;addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}
-  for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*30;addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}
+  const treeCount=c.biome==='snow'?10:c.biome==='meadow'?8:28;
+  for(let i=0;i<treeCount;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*(c.radius-18);addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
+  for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
+  if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+  if(c.biome==='mines'){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
+  if(c.biome==='snow'){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
+  for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}
 }
 // Small flower patches and grass tufts soften the island edges and make the world feel less like flat circles.
-for(const c of islandCenters){
+for(const c of islandCenters.filter(c=>c.biome!=='snow')){
  for(let i=0;i<95;i++){
   const a=Math.random()*Math.PI*2,r=10+Math.random()*(c.radius-17),x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;
   if(Math.random()<.48){const f=new THREE.Group();for(let j=0;j<3;j++){const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.18,4),leafMat);stem.position.set((j-1)*.07,.09,0);stem.rotation.z=(j-1)*.2;f.add(stem);const bloom=new THREE.Mesh(new THREE.SphereGeometry(.075,7,6),flowerMats[Math.floor(Math.random()*flowerMats.length)]);bloom.position.set((j-1)*.07,.2,0);f.add(bloom);}f.position.set(x,.025,z);world.add(f);decorations.push(f);}
  }
+}
+// Snowy island details: white caps on evergreen trees and pale ice boulders.
+for(const c of islandCenters.filter(c=>c.biome==='snow')){
+ for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*42,x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;const cap=new THREE.Mesh(new THREE.SphereGeometry(.8,8,6),snowMat);cap.scale.set(1,.45,1);cap.position.set(x,.55,z);world.add(cap);decorations.push(cap);}
 }
 // Freshwater springs are marked by small bright-blue pools near each island's centre.
 const springs=[];
@@ -242,7 +258,7 @@ for(const c of islandCenters){
   pool.rotation.x=-Math.PI/2;pool.position.set(c.x+5,.035,c.z-4);scene.add(pool);springs.push({x:c.x+5,z:c.z-4});
   const rim=new THREE.Mesh(new THREE.TorusGeometry(3.2,.12,6,24),sandMat);rim.rotation.x=Math.PI/2;rim.position.set(c.x+5,.06,c.z-4);scene.add(rim);
 }
-// Simple rafts at the beaches visually mark where island travel is available.
+// Shoreline launch markers. A crafted boat is required before travel works.
 const rafts=[];
 for(let i=0;i<islandCenters.length;i++){
  const c=islandCenters[i], edge=c.radius-5, g=new THREE.Group();
@@ -303,7 +319,7 @@ function connectMultiplayer() {
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
-    if(save.inventory){Object.assign(inventory,save.inventory);ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
+    if(save.inventory){Object.assign(inventory,save.inventory);craftedBoat=!!save.inventory.craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
     if(Number.isFinite(save.health)) health=save.health;
     if(Number.isFinite(save.hunger)) hunger=save.hunger;
     if(Number.isFinite(save.thirst)) thirst=save.thirst;
@@ -323,7 +339,7 @@ function addOrUpdateRemote(p) {
   if(!rp){rp={mesh:makeRemotePlayer(p.color || 0x6fa6df),name:p.name||'Player',target:{x:p.x||0,z:p.z||0,rot:p.rot||0}};remotePlayers.set(p.id,rp);}
   rp.name=p.name||rp.name;rp.target={x:p.x||0,z:p.z||0,rot:p.rot||0};
 }
-function saveInventoryPayload(){return {...inventory,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,equippedWeapon:equippedWeapon||null};}
+function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,equippedWeapon:equippedWeapon||null};}
 function sendNetworkState() {
   if(socket && socket.connected && mode==='online') {
     socket.emit('move', {x:player.position.x, z:player.position.z, rot:player.rotation.y});
@@ -334,8 +350,9 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,berry:0,food:0,water:2,campfire:0};
-const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4}},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3}},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:5,stone:5}},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:5,stone:8},level:3}};
+const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire:0};
+let craftedBoat=false, fishingRod=false;
+const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4}},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3}},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4}},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3}};
 const ownedWeapons={};let equippedWeapon=null;
 let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
 const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,night=0;
@@ -346,11 +363,12 @@ function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL
 function updateHUD(){
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=Math.max(0,val)+'%';document.getElementById(name+'Num').textContent=Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',berry:'🫐 Berries',food:'🍖 Food',water:'💧 Water',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>Owned</strong></div>`).join('');
+ document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🐟 Food',water:'💧 Water',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>Owned</strong></div>`).join('');
  document.getElementById('weaponStatus').textContent=equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage`:'Equipped: fists · Craft a sword to improve damage';
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  document.getElementById('sailBtn').textContent='Sail';
+ document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${fishingRod?'built':'not built'}`;
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire.`;
 }
@@ -363,11 +381,13 @@ function gather(){
  if(dead)return;
  const r=nearestResource();
  if(!r){toast('Move closer to a tree, rock, or berry bush');return;}
- r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]+=r.amount;gainXP(r.type==='wood'?12: r.type==='stone'?14:8);toast(`Collected ${r.amount} ${r.type}`);updateHUD();}
+ r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]=(inventory[r.type]||0)+r.amount;gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${r.type==='iron'?'iron ore':r.type}`);updateHUD();}
  else toast('Gathering…');
 }
 function attack(){
  if(dead)return;
+ if(attackCooldown>0){toast('Wait a moment before attacking again');return;}
+ attackCooldown=.42;
  if(mode==='online' && socket && socket.connected){
    let remoteTarget=null, remoteDistance=3.4;
    for(const [id,rp] of remotePlayers){const d=player.position.distanceTo(rp.mesh.position);if(d<remoteDistance){remoteDistance=d;remoteTarget=id;}}
@@ -376,7 +396,8 @@ function attack(){
  let target=null,bd=3.4;
  for(const e of enemies){if(!e.alive)continue;const d=player.position.distanceTo(e.mesh.position);if(d<bd){bd=d;target=e;}}
  if(!target){gather();return;}
- target.hp-=(equippedWeapon?weaponDefs[equippedWeapon].damage/10:1);gainXP(4);toast(target.hp<=0?'Wildling defeated!':`You hit a wildling with ${equippedWeapon?weaponDefs[equippedWeapon].name:'your fists'}!`);
+ const damage=equippedWeapon?weaponDefs[equippedWeapon].damage/10:1;target.hp-=damage;
+ swordHolder.rotation.x=-.9;setTimeout(()=>{swordHolder.rotation.x=0;},120);gainXP(4);toast(target.hp<=0?'Wildling defeated!':`Hit for ${damage*10} damage with ${equippedWeapon?weaponDefs[equippedWeapon].name:'your fists'}!`);
  if(target.hp<=0){target.alive=false;world.remove(target.mesh);inventory.food+=1;gainXP(30);updateHUD();}
 }
 function refreshSwordVisual(){
@@ -423,8 +444,26 @@ function drinkWater(){
  if(inventory.water>0){inventory.water--;thirst=Math.min(100,thirst+38);toast('You drank bottled water');updateHUD();return;}
  toast('No water left! Find the blue spring pool on this island or travel to another island.');
 }
+function craftBoat(){
+ if(craftedBoat){toast('You already crafted a boat.');return;}
+ if(inventory.wood<12||inventory.stone<5){toast(`Boat needs 12 wood and 5 stone. You have ${inventory.wood} wood and ${inventory.stone} stone.`);return;}
+ inventory.wood-=12;inventory.stone-=5;craftedBoat=true;toast('Boat crafted! Go to a shoreline and tap Sail to visit the next island.');updateHUD();
+}
+function craftFishingRod(){
+ if(fishingRod){toast('You already have a fishing rod.');return;}
+ if(inventory.wood<3||inventory.iron<1){toast('Fishing rod needs 3 wood and 1 iron ore. Mine at Redstone Cay.');return;}
+ inventory.wood-=3;inventory.iron-=1;fishingRod=true;toast('Fishing rod crafted! Fish near the shoreline.');updateHUD();
+}
+function fish(){
+ if(dead)return;
+ if(!fishingRod){toast('Craft a fishing rod first: 3 wood + 1 iron ore.');return;}
+ const c=islandCenters[activeIsland],dist=Math.hypot(player.position.x-c.x,player.position.z-c.z);
+ if(dist<c.radius-13){toast('Move closer to the shoreline to fish.');return;}
+ const catchCount=1+(Math.random()<.22?1:0);inventory.food+=catchCount;gainXP(10*catchCount);toast(`You caught ${catchCount} fish! Use Eat / Rest to eat food.`);updateHUD();
+}
 function sailToNextIsland(){
  if(dead)return;
+ if(!craftedBoat){toast('You must craft a boat first: 12 wood + 5 stone.');return;}
  const c=islandCenters[activeIsland];
  const dist=Math.hypot(player.position.x-c.x,player.position.z-c.z);
  if(dist<c.radius-19){toast('Find the wooden raft at the shoreline before sailing.');return;}
@@ -494,7 +533,7 @@ renderer.domElement.addEventListener('click', e=>{
 });
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;});
 document.addEventListener('mousemove',e=>{if(locked){yaw-=e.movementX*.0022;pitch-=e.movementY*.0018;pitch=Math.max(-.75,Math.min(.35,pitch));}});
-document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyC')craft();if(e.code==='KeyE')interact();if(e.code==='Space'&&!e.repeat&&player.position.y<.03)player.userData.vy=5.2;});
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyC')craft();if(e.code==='KeyE')interact();if(e.code==='KeyF')fish();if(e.code==='KeyB')craftBoat();if(e.code==='KeyR')craftFishingRod();if(e.code==='KeyQ')attack();if(e.code==='Space'&&!e.repeat&&player.position.y<.03)player.userData.vy=5.2;});
 document.addEventListener('keyup',e=>keys[e.code]=false);
 document.querySelectorAll('[data-key]').forEach(b=>{
   const k=b.dataset.key;
@@ -505,7 +544,11 @@ document.querySelectorAll('[data-key]').forEach(b=>{
   b.addEventListener('pointercancel',up);
   b.addEventListener('lostpointercapture',()=>{keys[k]=false;});
 });
-document.getElementById('gatherBtn').onclick=attack;
+document.getElementById('gatherBtn').onclick=gather;
+document.getElementById('swordBtn').onclick=attack;
+document.getElementById('fishBtn').onclick=fish;
+document.getElementById('craftBoatBtn').onclick=craftBoat;
+document.getElementById('craftRodBtn').onclick=craftFishingRod;
 document.getElementById('interactBtn').onclick=interact;
 document.getElementById('craftBtn').onclick=craft;
 document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
