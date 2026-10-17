@@ -123,6 +123,9 @@
       <button id="ironArmourBtn">Iron armour · 7 coins (+50 max health)</button>
       <button id="crystalArmourBtn">Crystal armour · 12 coins (+80 max health)</button>
     </div>
+    <div id="medicineTradeOptions" style="display:none;gap:4px;flex-direction:column">
+      <button id="buyMedicineBtn">Buy medicine · 1 coin (restore full health)</button>
+    </div>
     <button id="closeTradeBtn" style="margin-top:5px">Close</button>
   </div>
   <div id="hint" class="panel"><strong>WASD</strong> move · <strong>Mouse</strong> look · <strong>Click</strong> gather/attack · <strong>E</strong> interact · <strong>C</strong> craft campfire · <strong>Space</strong> jump</div>
@@ -320,6 +323,7 @@ let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null
  }
  tradeHouse(c.x-16,c.z-12,'WOOD EXCHANGE',0x987046);
  tradeHouse(c.x+16,c.z-12,'ARMOURY',0x617b8d);
+ tradeHouse(c.x,c.z-27,'MEDICINE',0x6c9b72);
  const well=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.8,.65,10),rockDark);well.position.set(c.x,.33,c.z+12);world.add(well);
  function tradeVillager(x,z,color,job,name){
   const g=new THREE.Group(),shirt=mat(color),skin=mat(0xf0c6a0),pants=mat(0x485b67);
@@ -331,6 +335,7 @@ let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null
  }
  tradeVillager(c.x-16,c.z-5,0x9b6b43,'woodTrader','Bram the Wood Trader');
  tradeVillager(c.x+16,c.z-5,0x647f9c,'armourer','Ada the Armourer');
+ tradeVillager(c.x,c.z-20,0x6c9b72,'medic','Mira the Healer');
  const signpost=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;signpost.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(4.5,.85,.18),woodMat);board.position.set(0,1.55,0);signpost.add(board);signpost.position.set(c.x,0,c.z+24);world.add(signpost);
 }
 // Small flower patches and grass tufts soften the island edges and make the world feel less like flat circles.
@@ -723,11 +728,11 @@ function interact(){
  if(activeIsland===6 && mountainChest && !mountainChestOpened && Math.hypot(player.position.x-mountainChest.position.x,player.position.z-mountainChest.position.z)<4.5){mountainChestOpened=true;mountainChest.rotation.x=-.12;inventory.iron+=5;inventory.crystal+=2;inventory.coins+=5;inventory.food+=3;gainXP(100);toast('SUMMIT TREASURE! Found 5 iron, 2 rare crystals, 5 coins and 3 food!');updateHUD();return;}
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
  if(nearbyVillager){
-  if(nearbyVillager.job==='woodTrader'||nearbyVillager.job==='armourer'){
+  if(nearbyVillager.job==='woodTrader'||nearbyVillager.job==='armourer'||nearbyVillager.job==='medic'){
    tradeNPC=nearbyVillager;tradeMode=nearbyVillager.job;document.getElementById('tradePanel').style.display='block';
-   document.getElementById('tradeTitle').textContent=nearbyVillager.job==='woodTrader'?'🪵 Wood Exchange':'🛡️ Village Armoury';
-   document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`;
-   document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';return;
+   document.getElementById('tradeTitle').textContent=nearbyVillager.job==='woodTrader'?'🪵 Wood Exchange':nearbyVillager.job==='armourer'?'🛡️ Village Armoury':'🧪 Village Healer';
+   document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':nearbyVillager.job==='armourer'?`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`:`You have ${inventory.coins} coins. Buy medicine for 1 coin to restore your health to full.`;
+   document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';document.getElementById('medicineTradeOptions').style.display=nearbyVillager.job==='medic'?'flex':'none';return;
   }
   toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;
  }
@@ -827,6 +832,7 @@ document.getElementById('craftBoatBtn').onclick=craftBoat;
 document.getElementById('craftRodBtn').onclick=craftFishingRod;
 document.getElementById('interactBtn').onclick=interact;
 document.getElementById('closeTradeBtn').onclick=()=>{document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;};
+document.getElementById('buyMedicineBtn').onclick=()=>{if(tradeMode!=='medic'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Mira at the Medicine House to buy medicine.');return;}if(health>=maxHealth){toast('Your health is already full!');return;}if(inventory.coins<1){toast('Medicine costs 1 coin. You do not have enough coins.');return;}inventory.coins-=1;health=maxHealth;document.getElementById('tradeDescription').textContent=`Medicine bought! Your health is fully restored to ${maxHealth}. You have ${inventory.coins} coins left.`;toast('Medicine used! Health fully restored.');updateHUD();};
 document.getElementById('tradeWoodBtn').onclick=()=>{if(tradeMode!=='woodTrader'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Bram at the Wood Exchange to trade.');return;}if(inventory.wood<30){toast(`You need 30 wood. You have ${inventory.wood}.`);return;}inventory.wood-=30;inventory.coins+=1;document.getElementById('tradeDescription').textContent=`Trade complete! You now have ${inventory.coins} coins.`;toast('Traded 30 wood for 1 coin!');updateHUD();};
 function buyArmour(type){if(tradeMode!=='armourer'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Ada at the Armoury to buy armour.');return;}const def=armorDefs[type],current=armorType?armorDefs[armorType]:null;if(current&&current.tier>=def.tier){toast(`You already have ${current.name} or better.`);return;}if(inventory.coins<def.cost){toast(`${def.name} costs ${def.cost} coins. You have ${inventory.coins}.`);return;}inventory.coins-=def.cost;armorType=type;maxHealth=100+def.bonus;health=maxHealth;refreshArmorVisual();document.getElementById('tradeDescription').textContent=`Equipped ${def.name}! Maximum health is now ${maxHealth}.`;toast(`${def.name} equipped! Max health increased to ${maxHealth}.`);updateHUD();}
 document.getElementById('stoneArmourBtn').onclick=()=>buyArmour('stone');document.getElementById('ironArmourBtn').onclick=()=>buyArmour('iron');document.getElementById('crystalArmourBtn').onclick=()=>buyArmour('crystal');

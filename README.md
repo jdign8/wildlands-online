@@ -19,3 +19,4 @@ Install dependencies with `npm install`, then run `npm start`. The Render servic
 - Talk to Ada at the Armoury to buy upgrades: stone armour costs 3 coins (+25 max health), iron armour costs 7 coins (+50 max health), and crystal armour costs 12 coins (+80 max health). Better armour also reduces incoming damage, and each type has a matching player visual.
 - Coins and armour are included in the saved inventory/progress.
 - The cave at the base of Crownspire Mountain is now enterable: stand by the entrance and press **E** / **Interact**. Explore the lit crystal chamber, mine two crystal and two iron deposits, then walk to the doorway and press **E** to return outside.
+- Coincrest Village now has a Medicine House. Talk to Mira the Healer and buy medicine for 1 coin to restore health to your current maximum; medicine cannot be bought if health is already full.
