@@ -132,7 +132,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore eight islands, including a winding mountain trail with a summit chest and Coincrest Village, where you can trade wood for coins and buy stone, iron or crystal armour.</p>
+    <p>Explore eight islands, including a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village, where you can trade wood for coins and buy stone, iron or crystal armour.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -193,8 +193,8 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:78,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'}];
-const mountainPathLocal=[[0,63],[-12,49],[-21,34],[-20,20],[-10,8],[6,-2],[14,-15],[10,-28],[0,-35],[-8,-25],[-8,-10],[0,-5]];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'}];
+const mountainPathLocal=[[0,85],[-16,66],[-28,46],[-27,27],[-14,11],[8,-3],[19,-20],[14,-38],[0,-47],[-11,-34],[-11,-14],[0,-7]];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
   const shape=new THREE.Shape(); const points=96;
@@ -377,20 +377,26 @@ for(const c of islandCenters.filter(c=>c.biome==='snow')){
  // A small frozen arch acts as a distinctive landmark near the icy shore.
  const arch=new THREE.Mesh(new THREE.TorusGeometry(3.1,.48,8,18,Math.PI),iceBright);arch.position.set(c.x+1,2.3,c.z-34);arch.rotation.z=Math.PI;arch.castShadow=true;world.add(arch);decorations.push(arch);
 }
-// Crownspire Mountain: a steep rocky cone, one narrow switchback trail, and a summit treasure chest.
+// Crownspire Mountain: an oversized rocky peak, one narrow switchback trail, a cave at its foot, and a summit chest.
 {
  const c=islandCenters.find(i=>i.name==='Crownspire Mountain');
- const mountainMat=mat(0x59615f), ridgeMat=mat(0x737c79), pathMat=mat(0xaaa99b), snowCap=mat(0xe4eeee);
- const cone=new THREE.Mesh(new THREE.ConeGeometry(41,14,11,4),mountainMat);cone.position.set(c.x,7,c.z-5);cone.castShadow=true;cone.receiveShadow=true;world.add(cone);decorations.push(cone);
- for(let i=0;i<9;i++){const a=i*Math.PI*2/9,r=34+Math.random()*5,h=3+Math.random()*4;const peak=new THREE.Mesh(new THREE.ConeGeometry(4+Math.random()*2,h,5),ridgeMat);peak.position.set(c.x+Math.cos(a)*r,h/2,c.z-5+Math.sin(a)*r);peak.rotation.z=(Math.random()-.5)*.12;peak.castShadow=true;world.add(peak);decorations.push(peak);}
- // Stone stepping path follows a single switchback route. Its elevation follows the mountain slope.
+ const mountainMat=mat(0x454e4d), ridgeMat=mat(0x737c79), pathMat=mat(0xaaa99b), snowCap=mat(0xe4eeee), caveDark=new THREE.MeshStandardMaterial({color:0x080d10,roughness:1});
+ // Much larger mountain: broad rocky base and a high, snow-capped summit.
+ const cone=new THREE.Mesh(new THREE.ConeGeometry(59,28,13,5),mountainMat);cone.position.set(c.x,14,c.z-7);cone.castShadow=true;cone.receiveShadow=true;world.add(cone);decorations.push(cone);
+ for(let i=0;i<13;i++){const a=i*Math.PI*2/13,r=47+Math.random()*7,h=5+Math.random()*8;const peak=new THREE.Mesh(new THREE.ConeGeometry(5+Math.random()*3,h,5),ridgeMat);peak.position.set(c.x+Math.cos(a)*r,h/2,c.z-7+Math.sin(a)*r);peak.rotation.z=(Math.random()-.5)*.16;peak.castShadow=true;world.add(peak);decorations.push(peak);}
+ // A dark, visible cave mouth at the bottom of the mountain, framed by boulders.
+ const caveMouth=new THREE.Mesh(new THREE.CircleGeometry(4.1,24),caveDark);caveMouth.scale.y=1.25;caveMouth.position.set(c.x,3.5,c.z+79.5);caveMouth.castShadow=false;world.add(caveMouth);decorations.push(caveMouth);
+ const caveRim=mat(0x343b39);
+ for(const b of [{x:-4.1,y:2,z:0,s:1.15},{x:4.1,y:2,z:.2,s:1.2},{x:-2.7,y:6.3,z:.2,s:1},{x:0,y:7.2,z:.2,s:1.1},{x:2.8,y:6.2,z:.2,s:.95}]){const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(1.8*b.s,1),caveRim);rock.position.set(c.x+b.x,b.y,c.z+79.2+b.z);rock.scale.set(1.15,1,0.55);rock.castShadow=true;world.add(rock);decorations.push(rock);}
+ const caveGlow=mat(0x4bd9e7,.3);const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.65,0),caveGlow);crystal.position.set(c.x+1.1,2.3,c.z+78.8);crystal.rotation.z=.2;world.add(crystal);decorations.push(crystal);
+ // Stone stepping path follows the only switchback route. Elevation increases toward the summit.
  for(let seg=0;seg<mountainPathLocal.length-1;seg++){
-  const [ax,az]=mountainPathLocal[seg],[bx,bz]=mountainPathLocal[seg+1];const len=Math.hypot(bx-ax,bz-az),steps=Math.max(2,Math.ceil(len/2.3));
-  for(let j=0;j<=steps;j++){const t=j/steps,x=ax+(bx-ax)*t,z=az+(bz-az)*t,rad=Math.hypot(x,z+5),y=Math.max(.08,14*(1-Math.min(rad,40)/40));const stone=new THREE.Mesh(new THREE.CylinderGeometry(1.55,1.7,.22,7),pathMat);stone.position.set(c.x+x,y-.08,c.z+z);stone.rotation.y=(seg%2)*.18;stone.receiveShadow=true;world.add(stone);decorations.push(stone);}
+  const [ax,az]=mountainPathLocal[seg],[bx,bz]=mountainPathLocal[seg+1];const len=Math.hypot(bx-ax,bz-az),steps=Math.max(2,Math.ceil(len/2.4));
+  for(let j=0;j<=steps;j++){const t=j/steps,x=ax+(bx-ax)*t,z=az+(bz-az)*t,rad=Math.hypot(x,z+7),y=Math.max(.08,28*(1-Math.min(rad,80)/80));const stone=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.95,.26,7),pathMat);stone.position.set(c.x+x,y-.08,c.z+z);stone.rotation.y=(seg%2)*.18;stone.receiveShadow=true;world.add(stone);decorations.push(stone);}
  }
- // Snow on the highest ridges.
- for(let i=0;i<5;i++){const cap=new THREE.Mesh(new THREE.ConeGeometry(3.2,2.3,5),snowCap);cap.position.set(c.x+(i-2)*3,11.9,c.z-7+Math.abs(i-2)*1.5);world.add(cap);decorations.push(cap);}
- mountainChest=new THREE.Group();const chestBody=new THREE.Mesh(new THREE.BoxGeometry(1.5,.85,1.05),mat(0x8a542a));chestBody.position.y=.55;mountainChest.add(chestBody);const lid=new THREE.Mesh(new THREE.BoxGeometry(1.55,.28,1.1),mat(0xc18a3e));lid.position.set(0,1.1,0);mountainChest.add(lid);const clasp=new THREE.Mesh(new THREE.BoxGeometry(.18,.3,.08),goldMat);clasp.position.set(0,.78,-.57);mountainChest.add(clasp);mountainChest.position.set(c.x,14,c.z-5);world.add(mountainChest);
+ // Snow and jagged rock at the enlarged summit.
+ for(let i=0;i<7;i++){const cap=new THREE.Mesh(new THREE.ConeGeometry(4.2,3.1,5),snowCap);cap.position.set(c.x+(i-3)*3.5,25.2,c.z-9+Math.abs(i-3)*1.8);world.add(cap);decorations.push(cap);}
+ mountainChest=new THREE.Group();const chestBody=new THREE.Mesh(new THREE.BoxGeometry(1.7,.95,1.2),mat(0x8a542a));chestBody.position.y=.6;mountainChest.add(chestBody);const lid=new THREE.Mesh(new THREE.BoxGeometry(1.75,.3,1.25),mat(0xc18a3e));lid.position.set(0,1.23,0);mountainChest.add(lid);const clasp=new THREE.Mesh(new THREE.BoxGeometry(.2,.32,.08),goldMat);clasp.position.set(0,.83,-.64);mountainChest.add(clasp);mountainChest.position.set(c.x,28,c.z-7);world.add(mountainChest);
 }
 // Freshwater springs are marked by small bright-blue pools near each island's centre.
 const springs=[];
@@ -674,7 +680,7 @@ function sailToNextIsland(){
  const next=islandCenters[activeIsland];
  // Arrive near the shore so the player can disembark safely.
  player.position.set(next.x,0,next.z+next.radius-15);player.userData.vy=0;
- if(next.name==='Crownspire Mountain'){player.position.x=next.x;player.position.z=next.z+63;}
+ if(next.name==='Crownspire Mountain'){player.position.x=next.x;player.position.z=next.z+85;}
  boatPosition={x:player.position.x,z:player.position.z+2.5};
  if(boatVisual){boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}
  if(mode==='online'&&socket&&socket.connected)sendNetworkState();
@@ -823,7 +829,7 @@ function animate(now){
    // Project movement onto the one switchback trail; off-trail shortcuts are blocked.
    let bestDist=Infinity,bestX=0,bestZ=0;
    for(let i=0;i<mountainPathLocal.length-1;i++){const [ax,az]=mountainPathLocal[i],[bx,bz]=mountainPathLocal[i+1],vx=bx-ax,vz=bz-az,l2=vx*vx+vz*vz;const t=Math.max(0,Math.min(1,((player.position.x-island.x-ax)*vx+(player.position.z-island.z-az)*vz)/l2));const px=ax+vx*t,pz=az+vz*t,d=Math.hypot(player.position.x-island.x-px,player.position.z-island.z-pz);if(d<bestDist){bestDist=d;bestX=px;bestZ=pz;}}
-   player.position.x=island.x+bestX;player.position.z=island.z+bestZ;const summitRadius=Math.hypot(bestX,bestZ+5);player.position.y=Math.max(0,14*(1-Math.min(summitRadius,40)/40));player.userData.vy=0;
+   player.position.x=island.x+bestX;player.position.z=island.z+bestZ;const summitRadius=Math.hypot(bestX,bestZ+7);player.position.y=Math.max(0,28*(1-Math.min(summitRadius,80)/80));player.userData.vy=0;
   }else{const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}}
   if(f||s)player.rotation.y=yaw;
   if(tradeNPC&&player.position.distanceTo(tradeNPC.mesh.position)>7){document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;}
