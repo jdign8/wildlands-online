@@ -220,8 +220,9 @@ function addBush(x,z){
  g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'berry',amount:2,hp:1,alive:true});
 }
 function addOre(x,z,type='iron'){
- const g=new THREE.Group(); const oreMat=type==='crystal'?mat(0x59e6ef,.3):mat(0x7e8a91,.45);
- for(let i=0;i<4;i++){const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(.35+Math.random()*.18,0),oreMat);chunk.position.set((Math.random()-.5)*.7,.3+Math.random()*.35,(Math.random()-.5)*.55);chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);}
+ const g=new THREE.Group(); const oreMat=type==='crystal'?mat(0x59e6ef,.3):mat(0x9b6844,.42);
+ for(let i=0;i<5;i++){const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(.38+Math.random()*.2,0),oreMat);chunk.position.set((Math.random()-.5)*.8,.32+Math.random()*.38,(Math.random()-.5)*.62);chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);}
+ if(type==='iron'){const fleckMat=mat(0xc5b8a5,.32);for(let i=0;i<3;i++){const fleck=new THREE.Mesh(new THREE.DodecahedronGeometry(.12,0),fleckMat);fleck.position.set((Math.random()-.5)*.65,.55+Math.random()*.2,(Math.random()-.5)*.5);g.add(fleck);}}
  g.position.set(x,0,z);world.add(g);resources.push({mesh:g,type,amount:type==='crystal'?1:2,hp:2,alive:true});return g;
 }
 function addEnemy(x,z){
@@ -236,13 +237,15 @@ for(let i=0;i<105;i++){let a=Math.random()*Math.PI*2,r=10+Math.random()*76,x=Mat
 for(let i=0;i<72;i++){let a=Math.random()*Math.PI*2,r=7+Math.random()*82;addRock(Math.cos(a)*r,Math.sin(a)*r,.65+Math.random()*.8);}
 for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*72;addBush(Math.cos(a)*r,Math.sin(a)*r);}
 for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*58;addEnemy(Math.cos(a)*r,Math.sin(a)*r);}
-// Populate the two additional islands with their own resources and wildlings.
+// Starter-island iron: visible deposits so new players can craft a fishing rod without first sailing away.
+for(const [x,z] of [[-58,-12],[-43,48],[-12,-61],[26,57],[59,18],[42,-43],[-61,31],[9,68]]) addOre(x,z,'iron');
+// Populate the additional islands with their own resources and wildlings.
 for (const c of islandCenters.slice(1)) {
   const treeCount=c.biome==='snow'?10:c.biome==='meadow'?8:28;
   for(let i=0;i<treeCount;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*(c.radius-18);addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
   for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
   if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
-  if(c.biome==='mines'){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
+  if(c.biome==='mines'){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.name!=='Hearthstone Village'){for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
