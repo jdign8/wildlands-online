@@ -173,7 +173,7 @@ document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xd7f3ff,0x47523b,2.0));
 const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
-const grassMat=mat(0x4c8750), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
+const grassMat=mat(0x4c8750), sandMat=mat(0xd6c28e), snowMat=mat(0xeaf4f7), meadowMat=mat(0x91ad58), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
 const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'}];
 const islandGrounds=[];
