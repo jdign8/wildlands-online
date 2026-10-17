@@ -25,3 +25,11 @@ Install dependencies with `npm install`, then run `npm start`. The Render servic
 ## Kingsfall Castle Isle update
 - Added a ninth island, Kingsfall Castle Isle, with a huge stone castle, towers, banners, courtyard, and castle villagers.
 - Added a circular gladiator arena. Talk to Arena Master Tor, then enter the sand ring and press E / Interact to start a fight against three tougher wildlings. Defeating them awards 8 coins and 100 XP once per run.
+
+
+## Dragonfall Isle update
+- Coincrest Village now has a glowing Dragon Portal that requires 50 stone to activate.
+- Activating it teleports you to Dragonfall Isle, a scorched volcanic island that cannot be reached by boat.
+- A giant dragon boss with 420 HP, powerful close-range fire attacks, and a large model is the strongest monster.
+- The island is sealed until the dragon is defeated. Victory awards 50 coins, 25 crystals, 40 iron, 100 stone, 20 food, 20 water, 1000 XP, and full health.
+- After victory, use the portal on Dragonfall Isle to return to Coincrest Village.

@@ -196,7 +196,7 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'}];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'}];
 const mountainPathLocal=[[0,85],[-16,66],[-28,46],[-27,27],[-14,11],[8,-3],[19,-20],[14,-38],[0,-47],[-11,-34],[-11,-14],[0,-7]];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
@@ -212,7 +212,7 @@ function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
 for (let i=0;i<islandCenters.length;i++) {
   const c=islandCenters[i], r=c.radius;
   const beach=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r,1.0,i+1),sandMat); beach.rotation.x=-Math.PI/2; beach.position.set(c.x,.005,c.z); beach.receiveShadow=true; scene.add(beach);
-  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark: c.biome==='village'?mat(0x709b5a):grassMat;
+  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='village'?mat(0x709b5a):grassMat;
   const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
 const water = new THREE.Mesh(new THREE.CircleGeometry(520,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
@@ -258,16 +258,17 @@ for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*58;addEne
 for(const [x,z] of [[-58,-12],[-43,48],[-12,-61],[26,57],[59,18],[42,-43],[-61,31],[9,68]]) addOre(x,z,'iron');
 // Populate the additional islands with their own resources and wildlings.
 for (const c of islandCenters.slice(1)) {
-  const treeCount=c.biome==='snow'?10:c.biome==='meadow'?8:c.biome==='mountain'?4:c.biome==='village'?14:c.biome==='castle'?5:28;
+  const treeCount=c.biome==='dragon'?0:c.biome==='snow'?10:c.biome==='meadow'?8:c.biome==='mountain'?4:c.biome==='village'?14:c.biome==='castle'?5:28;
   for(let i=0;i<treeCount;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*(c.radius-18);addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
-  for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
+  for(let i=0;i<(c.biome==='dragon'?0:18);i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
   if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
   if(c.biome==='mines'){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
-  if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'){for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+  if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'){ for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
 const villageHouses=[], villagers=[];
 let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null, caveInterior=false, caveRoomOrigin=null;
+let dragonPortalActive=false, dragonTrialActive=false, dragonDefeated=false, dragonBoss=null, dragonReturnPortal=null;
 // Hearthstone Village: enterable cottages, harmless villagers and a loot chest.
 {
  const c=islandCenters.find(i=>i.name==='Hearthstone Village');
@@ -337,6 +338,41 @@ let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null
  tradeVillager(c.x+16,c.z-5,0x647f9c,'armourer','Ada the Armourer');
  tradeVillager(c.x,c.z-20,0x6c9b72,'medic','Mira the Healer');
  const signpost=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;signpost.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(4.5,.85,.18),woodMat);board.position.set(0,1.55,0);signpost.add(board);signpost.position.set(c.x,0,c.z+24);world.add(signpost);
+}
+
+// Coincrest's forbidden portal: 50 stone opens the way to Dragonfall Isle.
+function makePortal(x,z,glow=0x49e9f2){
+ const g=new THREE.Group();const ringMat=new THREE.MeshStandardMaterial({color:glow,emissive:glow,emissiveIntensity:1.15,metalness:.25,roughness:.22});
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(3.2,.38,12,40),ringMat);ring.position.y=3.35;ring.rotation.y=0;g.add(ring);
+ const postMat=mat(0x464c55);for(const side of [-1,1]){const post=new THREE.Mesh(new THREE.DodecahedronGeometry(.85,1),postMat);post.scale.set(.8,2.1,.75);post.position.set(side*3.1,1.9,0);g.add(post);}
+ const inner=new THREE.Mesh(new THREE.CircleGeometry(2.85,32),new THREE.MeshBasicMaterial({color:glow,transparent:true,opacity:.22,side:THREE.DoubleSide}));inner.position.y=3.35;g.add(inner);g.position.set(x,0,z);world.add(g);decorations.push(g);return g;
+}
+{
+ const village=islandCenters.find(i=>i.name==='Coincrest Village');
+ const portal=makePortal(village.x,village.z+36,0x49e9f2);
+ const plinth=new THREE.Mesh(new THREE.CylinderGeometry(4.4,4.8,.55,12),mat(0x626b72));plinth.position.set(village.x,.27,village.z+36);world.add(plinth);decorations.push(plinth);
+ const sign=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,2.4,6),trunkMat);post.position.y=1.2;sign.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(5.2,1,.2),mat(0x493d31));board.position.set(0,2.1,0);sign.add(board);sign.position.set(village.x+6,0,village.z+36);world.add(sign);decorations.push(sign);
+ const dragonIsland=islandCenters[9];
+ // A scorched volcanic island surrounds the dragon's lair.
+ const obsidian=mat(0x292d32),lavaMat=new THREE.MeshStandardMaterial({color:0xff4a17,emissive:0xe72d08,emissiveIntensity:1.5});
+ for(let i=0;i<12;i++){const a=i*Math.PI/6,r=27+(i%3)*6,h=8+(i%4)*3;const spike=new THREE.Mesh(new THREE.ConeGeometry(3+(i%2),h,5),obsidian);spike.position.set(dragonIsland.x+Math.cos(a)*r,h/2,dragonIsland.z+Math.sin(a)*r);spike.rotation.z=(Math.random()-.5)*.18;spike.castShadow=true;world.add(spike);decorations.push(spike);}
+ for(const [dx,dz,scale] of [[-18,5,1],[17,-10,1.25],[-8,-25,.8],[25,15,.75]]){const crack=new THREE.Mesh(new THREE.CylinderGeometry(.55*scale,.8*scale,1.2,7),lavaMat);crack.position.set(dragonIsland.x+dx,.35,dragonIsland.z+dz);crack.rotation.x=.2;world.add(crack);decorations.push(crack);}
+ // The only way onto this island is the activated portal in Coincrest Village.
+ dragonReturnPortal=makePortal(dragonIsland.x,dragonIsland.z+38,0xff6a32);
+ const lairRing=new THREE.Mesh(new THREE.TorusGeometry(8,.5,10,32),lavaMat);lairRing.rotation.x=Math.PI/2;lairRing.position.set(dragonIsland.x,.3,dragonIsland.z-7);world.add(lairRing);decorations.push(lairRing);
+ // Build the giant dragon from articulated-looking primitive meshes.
+ const dragon=new THREE.Group();const hide=new THREE.MeshStandardMaterial({color:0x7d2024,roughness:.62}),belly=mat(0xc58a53),horn=mat(0x282a30),wingMat=new THREE.MeshStandardMaterial({color:0x4a171e,side:THREE.DoubleSide,roughness:.7}),eye=new THREE.MeshBasicMaterial({color:0xffd52e});
+ const body=new THREE.Mesh(new THREE.SphereGeometry(3.5,18,14),hide);body.scale.set(1.05,.85,1.55);body.position.y=3.2;body.castShadow=true;dragon.add(body);
+ const chest=new THREE.Mesh(new THREE.SphereGeometry(2.1,14,10),belly);chest.scale.set(.9,.7,1);chest.position.set(0,2.8,-2.4);dragon.add(chest);
+ const neck=new THREE.Mesh(new THREE.CylinderGeometry(.9,1.45,3.5,12),hide);neck.position.set(0,4.1,-3.8);neck.rotation.x=-.65;dragon.add(neck);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(1.35,16,12),hide);head.scale.set(1,.85,1.25);head.position.set(0,5.25,-5.15);head.castShadow=true;dragon.add(head);
+ const jaw=new THREE.Mesh(new THREE.BoxGeometry(1.55,.45,1.65),belly);jaw.position.set(0,4.65,-5.9);dragon.add(jaw);
+ for(const side of [-1,1]){const hornMesh=new THREE.Mesh(new THREE.ConeGeometry(.32,1.65,7),horn);hornMesh.position.set(side*.85,6.45,-4.7);hornMesh.rotation.z=side*.42;dragon.add(hornMesh);const eyeMesh=new THREE.Mesh(new THREE.SphereGeometry(.17,8,6),eye);eyeMesh.position.set(side*.83,5.55,-6.03);dragon.add(eyeMesh);const leg=new THREE.Mesh(new THREE.CylinderGeometry(.38,.58,2.05,8),hide);leg.position.set(side*.95,1.15,-1.2);leg.rotation.z=side*.12;dragon.add(leg);const backLeg=new THREE.Mesh(new THREE.CylinderGeometry(.42,.62,2.2,8),hide);backLeg.position.set(side*1.25,1.1,2.5);dragon.add(backLeg);
+  const wingGeo=new THREE.BufferGeometry();const pts=new Float32Array([0,0,0,side*6.2,2.6,-.3,side*4.6,-.25,-3.6,side*2.1,1.2,-2.1]);wingGeo.setAttribute('position',new THREE.BufferAttribute(pts,3));wingGeo.setIndex([0,1,2,0,2,3]);wingGeo.computeVertexNormals();const wing=new THREE.Mesh(wingGeo,wingMat);wing.position.set(side*1.4,4.3,.2);wing.castShadow=true;dragon.add(wing);
+ }
+ const tail=new THREE.Mesh(new THREE.ConeGeometry(.7,6.5,9),hide);tail.position.set(0,2.8,6.1);tail.rotation.x=Math.PI/2;tail.rotation.z=Math.PI;dragon.add(tail);
+ dragon.position.set(dragonIsland.x,0,dragonIsland.z-7);dragon.scale.setScalar(1.45);world.add(dragon);decorations.push(dragon);
+ dragonBoss={mesh:dragon,hp:420,maxHp:420,alive:true,cooldown:0,nightSpawn:false,speed:1.8,damage:38,attackInterval:.72,isDragonBoss:true};enemies.push(dragonBoss);
 }
 
 // Kingsfall Castle Isle: a huge fortified castle, peaceful residents, and a gladiator arena.
@@ -638,6 +674,7 @@ function updateHUD(){
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
+ if(dragonTrialActive){document.getElementById('mission').textContent=`DRAGONFALL BOSS FIGHT — Giant Dragon HP: ${Math.max(0,Math.ceil(dragonBoss?.hp||0))}/${dragonBoss?.maxHp||420}. Defeat it to unlock the portal and claim the hoard.`;}
  document.getElementById('sailBtn').textContent=craftedBoat?'Sail to next island':'Sail (craft boat first)';
  document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':(craftedBoat?'Board boat':'Boat');
  document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${fishingRod?'built':'not built'}`;
@@ -665,13 +702,13 @@ function attack(){
    for(const [id,rp] of remotePlayers){const d=player.position.distanceTo(rp.mesh.position);if(d<remoteDistance){remoteDistance=d;remoteTarget=id;}}
    if(remoteTarget){socket.emit('pvpAttack',{targetId:remoteTarget});return;}
  }
- let target=null,bd=3.4;
- for(const e of enemies){if(!e.alive)continue;const d=player.position.distanceTo(e.mesh.position);if(d<bd){bd=d;target=e;}}
+ let target=null,bd=7.5;
+ for(const e of enemies){if(!e.alive)continue;const d=player.position.distanceTo(e.mesh.position);if(d<(e.isDragonBoss?7.5:3.4)&&d<bd){bd=d;target=e;}}
  if(!target){gather();return;}
  const usedWeapon=equippedWeapon;const damage=usedWeapon?weaponDefs[usedWeapon].damage/10:1;target.hp-=damage;
  if(usedWeapon){weaponDurability[usedWeapon]=Math.max(0,(weaponDurability[usedWeapon]||weaponDefs[usedWeapon].maxDurability)-1);if(weaponDurability[usedWeapon]===0){ownedWeapons[usedWeapon]=false;equippedWeapon=null;toast(`${weaponDefs[usedWeapon].name} broke! Craft another sword.`);refreshSwordVisual();}else{toast(`${weaponDefs[usedWeapon].name}: ${weaponDurability[usedWeapon]}/${weaponDefs[usedWeapon].maxDurability} durability`);}}
  swordHolder.rotation.x=-.9;setTimeout(()=>{swordHolder.rotation.x=0;},120);gainXP(4);if(!usedWeapon)toast(target.hp<=0?'Wildling defeated!':'Hit with your fists!');
- if(target.hp<=0){target.alive=false;world.remove(target.mesh);inventory.food+=1;gainXP(30);}
+ if(target.hp<=0){target.alive=false;world.remove(target.mesh);if(target.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! You defeated the strongest monster! Treasure: 50 coins, 25 crystals, 40 iron, 100 stone, 20 food and 20 water, plus 1000 XP. The island seal is broken!');}else{inventory.food+=1;gainXP(30);}}
  updateHUD();
 }
 function refreshSwordVisual(){
@@ -766,10 +803,11 @@ function boardOrLeaveBoat(){
 }
 function sailToNextIsland(){
  if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
+ if(dragonTrialActive){toast('The Dragonfall seal holds! Defeat the dragon before you can leave.');return;}
  if(dead)return;if(caveInterior){toast('Exit the cave before sailing.');return;}
  if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
  if(!aboardBoat){toast('Board your boat before sailing.');return;}
- activeIsland=(activeIsland+1)%islandCenters.length;
+ do{activeIsland=(activeIsland+1)%islandCenters.length;}while(activeIsland===9);
  const next=islandCenters[activeIsland];
  // Arrive near the shore so the player can disembark safely.
  player.position.set(next.x,0,next.z+next.radius-15);player.userData.vy=0;
@@ -788,6 +826,9 @@ function interact(){
   return;
  }
  if(activeIsland===6){const c=islandCenters[6];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+79.5))<8.5){caveInterior=true;aboardBoat=false;player.position.set(caveRoomOrigin.x,0,caveRoomOrigin.z+5);yaw=Math.PI;player.userData.vy=0;toast('You entered Crownspire Cave! Mine the glowing crystal and iron deposits. Walk to the doorway and press E to leave.');updateHUD();return;}}
+ if(dragonTrialActive){toast('The Dragonfall seal is locked! Defeat the giant dragon before you can leave.');return;}
+ if(activeIsland===7){const c=islandCenters[7];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+36))<7.5){if(!dragonPortalActive){if(inventory.stone<50){toast(`The Dragon Portal needs 50 stone to activate. You have ${inventory.stone}.`);return;}inventory.stone-=50;dragonPortalActive=true;dragonTrialActive=true;activeIsland=9;aboardBoat=false;player.position.set(islandCenters[9].x,0,islandCenters[9].z+27);yaw=Math.PI;player.userData.vy=0;toast('PORTAL ACTIVATED! 50 stone consumed. You are trapped on Dragonfall Isle until you defeat the strongest monster: the giant dragon!');updateHUD();return;}if(!dragonDefeated){toast('The portal leads to Dragonfall Isle, but the dragon must be defeated before you can return.');return;}activeIsland=7;player.position.set(c.x,0,c.z+29);yaw=0;toast('You returned safely to Coincrest Village.');updateHUD();return;}}
+ if(activeIsland===9 && Math.hypot(player.position.x-islandCenters[9].x,player.position.z-(islandCenters[9].z+38))<7.5){if(dragonTrialActive){toast('The portal is sealed until the dragon is defeated!');return;}if(dragonDefeated){activeIsland=7;player.position.set(islandCenters[7].x,0,islandCenters[7].z+29);yaw=0;toast('You returned to Coincrest Village with the dragon treasure!');updateHUD();return;}}
  if(activeHouse){
   const h=activeHouse;
   if(h.hasChest && !h.opened && h.chest && Math.hypot(player.position.x-(h.x+.95),player.position.z-(h.z-1.25))<3){
@@ -944,6 +985,11 @@ function animate(now){
    if(dist>arenaLimit){player.position.x=arena.x+dx/dist*arenaLimit;player.position.z=arena.z+34+dz/dist*arenaLimit;}
    player.position.y=0;player.userData.vy=0;
   }
+  if(dragonTrialActive){
+   const island=islandCenters[9],dx=player.position.x-island.x,dz=player.position.z-island.z,dist=Math.hypot(dx,dz),limit= island.radius-5;
+   if(dist>limit){player.position.x=island.x+dx/dist*limit;player.position.z=island.z+dz/dist*limit;}
+   player.position.y=0;player.userData.vy=0;
+  }
   if(f||s)player.rotation.y=yaw;
   // Crossing the castle gate teleports the player into the arena and starts the locked trial.
   if(activeIsland===8 && !castleArenaActive && !castleArenaRewarded){
@@ -968,7 +1014,7 @@ function animate(now){
   }
   wasNight=isNight;night=isNight?1:0;
   const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isNight?'🌙 Night · 50 extra monsters spawned':'☀️ Day';
-  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<1.45){e.cooldown-=dt;if(e.cooldown<=0){const mitigation=armorType?armorDefs[armorType].reduction:0;health=Math.max(0,health-e.damage*(1-mitigation));e.cooldown=e.attackInterval;toast(e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
+  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<(e.isDragonBoss?5.8:1.45)){e.cooldown-=dt;if(e.cooldown<=0){const mitigation=armorType?armorDefs[armorType].reduction:0;health=Math.max(0,health-e.damage*(1-mitigation));e.cooldown=e.attackInterval;toast(e.isDragonBoss?'THE DRAGON BREATHES FIRE! Massive damage!':e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
   if(castleArenaActive && castleArenaWildlings.length && castleArenaWildlings.every(e=>!e.alive)){
    castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('CASTLE CHAMPION! You defeated all 3 tough wildlings and earned 8 coins + 100 XP! The castle is now open.');updateHUD();
   }
