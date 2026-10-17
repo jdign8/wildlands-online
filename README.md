@@ -1,17 +1,13 @@
-# Wildlands Online v0.8
+# Wildlands Online
 
-## Update highlights
-- Fixes touch sword action with a dedicated **Sword / Hit** button and cooldown/feedback.
-- Five islands with forest, mine, meadow and snow habitats.
-- Mine iron ore on Redstone Cay and crystal on Frostpeak Island.
-- Craft stronger swords using ore materials; swords lose durability on each hit and eventually break.
-- Crystal deposits are now very rare: one in the mine biome and two in the snowy biome.
-- Craft a boat (12 wood + 5 stone) before using Sail.
-- Craft a fishing rod (3 wood + 1 iron ore) and fish near shore for food.
-- iPad action controls stay separated from the backpack.
+Browser-based 3D survival prototype. Open `index.html` through the Express app in `server.js` for the full Socket.IO-enabled experience.
 
-## Render settings
-- Build command: `npm install`
-- Start command: `node server.js`
+## Recent survival update
+- Crafting a campfire now also places a bed beside it.
+- The day/night cycle runs continuously (about three minutes per full cycle).
+- At nightfall, 50 additional tougher monsters spawn on the player's current island.
+- Stand within a few steps of the bed and press **E** or **Interact / Eat** at night to sleep until morning. Sleeping restores some health but costs a little hunger and thirst.
+- Regular wildlings and night monsters have more health and hit harder than before.
 
-Upload the four files to the existing GitHub repository. Commit changes; Render should redeploy automatically. This is a prototype and needs browser/live testing.
+## Run locally
+Install dependencies with `npm install`, then run `npm start`. The Render service should use the same Node.js start command configured in `package.json`.

@@ -95,7 +95,7 @@
 </head>
 <body>
 <div id="hud">
-  <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival adventure · Islands, crafting & habitats</p></div>
+  <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival adventure · Islands, crafting & habitats</p><p id="timeText" style="color:#f4d58a;margin-top:4px">☀️ Day</p></div>
   <div id="stats" class="panel">
     <div class="stat"><div class="stat-head"><span>Health</span><span id="healthNum">100</span></div><div class="bar"><div id="healthFill" class="fill"></div></div></div>
     <div class="stat"><div class="stat-head"><span>Hunger</span><span id="hungerNum">100</span></div><div class="bar"><div id="hungerFill" class="fill"></div></div></div>
@@ -202,6 +202,7 @@ for (let i=0;i<islandCenters.length;i++) {
 const water = new THREE.Mesh(new THREE.CircleGeometry(520,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
 const world = new THREE.Group(); scene.add(world);
 const resources = [], enemies = [], decorations=[];
+const beds=[];
 function addTree(x,z,scale=1){
  const g=new THREE.Group();
  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.19*scale,.32*scale,2.05*scale,9),trunkMat); trunk.position.y=1.02*scale; trunk.castShadow=true; g.add(trunk);
@@ -225,14 +226,14 @@ function addOre(x,z,type='iron'){
  if(type==='iron'){const fleckMat=mat(0xc5b8a5,.32);for(let i=0;i<3;i++){const fleck=new THREE.Mesh(new THREE.DodecahedronGeometry(.12,0),fleckMat);fleck.position.set((Math.random()-.5)*.65,.55+Math.random()*.2,(Math.random()-.5)*.5);g.add(fleck);}}
  g.position.set(x,0,z);world.add(g);resources.push({mesh:g,type,amount:type==='crystal'?1:2,hp:2,alive:true});return g;
 }
-function addEnemy(x,z){
+function addEnemy(x,z,hp=18,nightSpawn=false){
  const g=new THREE.Group(); const hide=mat(0x5e7350), skin=mat(0xb98668), dark=mat(0x2c332a);
  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.56,5,9),hide);torso.position.y=.93;torso.castShadow=true;g.add(torso);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.245,16,12),skin);head.position.y=1.53;head.castShadow=true;g.add(head);
  const hair=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8,0,Math.PI*2,0,Math.PI*.55),dark);hair.position.set(0,1.62,.015);g.add(hair);
  const eyeMat=new THREE.MeshBasicMaterial({color:0x17191b});
  for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),eyeMat);eye.position.set(side*.085,1.55,-.218);g.add(eye);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.42,3,6),hide);arm.position.set(side*.39,.95,0);arm.rotation.z=side*.16;g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.36,3,6),dark);leg.position.set(side*.16,.32,0);g.add(leg);}
- g.position.set(x,0,z); world.add(g); enemies.push({mesh:g,hp:3,alive:true,cooldown:0});}
+ g.position.set(x,0,z); world.add(g); enemies.push({mesh:g,hp:nightSpawn?Math.max(hp,32):Math.max(hp,18),alive:true,cooldown:0,nightSpawn,speed:nightSpawn?1.55:1.28,damage:nightSpawn?24:16,attackInterval:nightSpawn?0.7:0.9});}
 for(let i=0;i<105;i++){let a=Math.random()*Math.PI*2,r=10+Math.random()*76,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.hypot(x,z)>7)addTree(x,z,.75+Math.random()*.6);}
 for(let i=0;i<72;i++){let a=Math.random()*Math.PI*2,r=7+Math.random()*82;addRock(Math.cos(a)*r,Math.sin(a)*r,.65+Math.random()*.8);}
 for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*72;addBush(Math.cos(a)*r,Math.sin(a)*r);}
@@ -410,7 +411,7 @@ let fishingCasts=0;
 const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4},maxDurability:15},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3},maxDurability:30},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4},maxDurability:50},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3,maxDurability:70}};
 const ownedWeapons={};const weaponDurability={};let equippedWeapon=null;
 let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
-const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,night=0;
+const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,night=0,wasNight=false,nightWaveCount=0;
 const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
 const toastEl=document.getElementById('toast'); let toastTimer=0;
 function toast(msg){toastEl.textContent=msg;toastEl.style.opacity=1;toastTimer=2.2;}
@@ -443,7 +444,7 @@ function updateHUD(){
  document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':(craftedBoat?'Board boat':'Boat');
  document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${fishingRod?'built':'not built'}`;
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
- document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire.`;
+ document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire and bed. At night, stand beside the bed and press E or Interact / Eat to sleep.`;
 }
 function nearestResource(){
  let best=null,bd=4.5;
@@ -505,7 +506,17 @@ function craft(){
  for(let i=0;i<3;i++){const log=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,1.05,7),trunkMat);log.rotation.z=Math.PI/2;log.rotation.y=i*Math.PI/3;log.position.y=.28;g.add(log);}
  const flame=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,7),new THREE.MeshBasicMaterial({color:0xff9a38}));flame.position.y=.72;g.add(flame);
  const light=new THREE.PointLight(0xff9a48,1.7,9);light.position.y=1;g.add(light);
- g.position.set(player.position.x+Math.sin(yaw)*1.8,0,player.position.z-Math.cos(yaw)*1.8);scene.add(g);campfires.push({g,flame,light});gainXP(35);toast('Campfire crafted! Your first camp is ready.');updateHUD();
+ g.position.set(player.position.x+Math.sin(yaw)*1.8,0,player.position.z-Math.cos(yaw)*1.8);scene.add(g);campfires.push({g,flame,light});
+ // A simple bed is built beside the campfire so the player has a safe place to sleep.
+ const bed=new THREE.Group();
+ const bedFrameMat=mat(0x79502f), mattressMat=mat(0xc8c8b8), blanketMat=mat(0x4b7f8a), pillowMat=mat(0xe8e4d8);
+ const frame=new THREE.Mesh(new THREE.BoxGeometry(1.2,.22,2.05),bedFrameMat);frame.position.y=.24;bed.add(frame);
+ const mattress=new THREE.Mesh(new THREE.BoxGeometry(1.12,.18,1.92),mattressMat);mattress.position.set(0,.39,0);bed.add(mattress);
+ const blanket=new THREE.Mesh(new THREE.BoxGeometry(1.1,.12,1.25),blanketMat);blanket.position.set(0,.5,.28);bed.add(blanket);
+ const pillow=new THREE.Mesh(new THREE.BoxGeometry(.72,.12,.35),pillowMat);pillow.position.set(0,.51,-.68);bed.add(pillow);
+ for(const x of [-.48,.48])for(const z of [-.82,.82]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.12,.28,.12),bedFrameMat);leg.position.set(x,.12,z);bed.add(leg);}
+ bed.position.set(g.position.x+1.8,0,g.position.z+.4);bed.rotation.y=yaw;scene.add(bed);beds.push({mesh:bed,x:bed.position.x,z:bed.position.z});
+ gainXP(35);toast('Campfire and bed built! At night, stand by the bed and press E or Interact / Eat to sleep.');updateHUD();
 }
 function drinkWater(){
  if(dead)return;
@@ -580,6 +591,14 @@ function interact(){
  if(nearbyHouse){activeHouse=nearbyHouse;nearbyHouse.shell.visible=false;nearbyHouse.interior.visible=true;player.position.set(nearbyHouse.x,0,nearbyHouse.z);aboardBoat=false;toast(nearbyHouse.hasChest?'You entered the cottage. Walk to the chest and press E to open it. Press E again to leave.':'You entered the cottage. Look around, then press E to leave.');return;}
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
  if(nearbyVillager){toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;}
+ const nearbyBed=beds.find(b=>Math.hypot(player.position.x-b.x,player.position.z-b.z)<3.5);
+ if(nearbyBed){
+  const cycleValue=(Math.sin(elapsed*.035)+1)/2;
+  if(cycleValue>=.18){toast('You can only sleep at night.');return;}
+  let attempts=0;while((Math.sin(elapsed*.035)+1)/2<.35&&attempts<400){elapsed+=.5;attempts++;}
+  wasNight=false;health=Math.min(100,health+20);hunger=Math.max(0,hunger-3);thirst=Math.max(0,thirst-3);
+  toast('You slept until morning. The island is calmer for now.');updateHUD();return;
+ }
  if(inventory.food>0){inventory.food--;hunger=Math.min(100,hunger+28);health=Math.min(100,health+6);toast('You ate cooked food');updateHUD();return;}
  if(inventory.berry>0){inventory.berry--;hunger=Math.min(100,hunger+12);toast('You ate berries');updateHUD();return;}
  if(inventory.campfire>0){health=Math.min(100,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
@@ -678,12 +697,21 @@ function animate(now){
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
   hunger=Math.max(0,hunger-dt*.17);thirst=Math.max(0,thirst-dt*.27);
   if(hunger===0||thirst===0)health=Math.max(0,health-dt*1.6);
-  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<13&&d>1.3){e.mesh.position.x+=dx/d*dt*.8;e.mesh.position.z+=dz/d*dt*.8;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<1.35){e.cooldown-=dt;if(e.cooldown<=0){health=Math.max(0,health-7);e.cooldown=1.4;toast('A wildling hit you!');}}}
+  const cycleValue=(Math.sin(elapsed*.035)+1)/2;
+  const isNight=cycleValue<.18;
+  if(isNight&&!wasNight){
+   nightWaveCount++;const c=islandCenters[activeIsland];
+   for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*Math.max(8,c.radius-22);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,8,true);}
+   toast('NIGHTFALL! 50 tougher night monsters have spawned on this island!');
+  }
+  wasNight=isNight;night=isNight?1:0;
+  const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isNight?'🌙 Night · 50 extra monsters spawned':'☀️ Day';
+  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<1.45){e.cooldown-=dt;if(e.cooldown<=0){health=Math.max(0,health-e.damage);e.cooldown=e.attackInterval;toast(e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
   if(health<=0){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';}
   if(Math.floor(elapsed)%2===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt))updateHUD();
  }
- // Gentle day/night tint
- const cycle=(Math.sin(elapsed*.035)+1)/2;sun.intensity=.55+cycle*1.8;scene.background.setHSL(.52,.35,.42+cycle*.2);scene.fog.color.copy(scene.background);
+ // Day/night tint: a full cycle lasts about three minutes.
+ const cycle=(Math.sin(elapsed*.035)+1)/2;sun.intensity=.12+cycle*2.25;scene.background.setHSL(.60,.38,.12+cycle*.42);scene.fog.color.copy(scene.background);
  for(const c of campfires){c.flame.scale.y=.85+Math.sin(elapsed*9)*.12;c.light.intensity=1.4+Math.sin(elapsed*11)*.3;}
  for (const rp of remotePlayers.values()) {
    rp.mesh.position.x += (rp.target.x-rp.mesh.position.x)*Math.min(1,dt*10);
