@@ -264,7 +264,7 @@ for (const c of islandCenters.slice(1)) {
   if(c.name!=='Hearthstone Village'&&c.biome!=='village'){for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
 const villageHouses=[], villagers=[];
-let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null;
+let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null, caveInterior=false, caveRoomOrigin=null;
 // Hearthstone Village: enterable cottages, harmless villagers and a loot chest.
 {
  const c=islandCenters.find(i=>i.name==='Hearthstone Village');
@@ -398,6 +398,21 @@ for(const c of islandCenters.filter(c=>c.biome==='snow')){
  // Snow and jagged rock at the enlarged summit.
  for(let i=0;i<7;i++){const cap=new THREE.Mesh(new THREE.ConeGeometry(4.2,3.1,5),snowCap);cap.position.set(c.x+(i-3)*4.2, MOUNTAIN_HEIGHT-4.8-Math.abs(i-3)*1.1,c.z-9+Math.abs(i-3)*2.4);world.add(cap);decorations.push(cap);}
  mountainChest=new THREE.Group();const chestBody=new THREE.Mesh(new THREE.BoxGeometry(1.7,.95,1.2),mat(0x8a542a));chestBody.position.y=.6;mountainChest.add(chestBody);const lid=new THREE.Mesh(new THREE.BoxGeometry(1.75,.3,1.25),mat(0xc18a3e));lid.position.set(0,1.23,0);mountainChest.add(lid);const clasp=new THREE.Mesh(new THREE.BoxGeometry(.2,.32,.08),goldMat);clasp.position.set(0,.83,-.64);mountainChest.add(clasp);mountainChest.position.set(c.x,MOUNTAIN_HEIGHT,c.z-7);world.add(mountainChest);
+ // Accessible cave interior: a separate lit chamber entered by pressing E at the cave mouth.
+ caveRoomOrigin={x:c.x+600,z:c.z+600};
+ const caveRoom=new THREE.Group();scene.add(caveRoom);
+ const caveRock=new THREE.MeshStandardMaterial({color:0x252d31,roughness:1}), caveFloorMat=new THREE.MeshStandardMaterial({color:0x454d4c,roughness:1}), caveGlowMat=new THREE.MeshStandardMaterial({color:0x55e5f5,emissive:0x168ba0,emissiveIntensity:1.1,roughness:.25});
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(20,.5,20),caveFloorMat);floor.position.set(caveRoomOrigin.x,-.28,caveRoomOrigin.z);floor.receiveShadow=true;caveRoom.add(floor);
+ const ceiling=new THREE.Mesh(new THREE.BoxGeometry(20,.5,20),caveRock);ceiling.position.set(caveRoomOrigin.x,6,caveRoomOrigin.z);caveRoom.add(ceiling);
+ for(const side of [-1,1]){const wall=new THREE.Mesh(new THREE.BoxGeometry(.6,6.2,20),caveRock);wall.position.set(caveRoomOrigin.x+side*9.7,2.8,caveRoomOrigin.z);wall.receiveShadow=true;caveRoom.add(wall);const back=new THREE.Mesh(new THREE.BoxGeometry(20,6.2,.6),caveRock);back.position.set(caveRoomOrigin.x,2.8,caveRoomOrigin.z-9.7);back.receiveShadow=true;caveRoom.add(back);}
+ // The front wall has a central doorway so the player can walk back out.
+ for(const side of [-1,1]){const front=new THREE.Mesh(new THREE.BoxGeometry(6.4,6.2,.6),caveRock);front.position.set(caveRoomOrigin.x+side*6.8,2.8,caveRoomOrigin.z+9.7);caveRoom.add(front);}
+ const lintel=new THREE.Mesh(new THREE.BoxGeometry(7.2,1.3,.7),caveRock);lintel.position.set(caveRoomOrigin.x,5.15,caveRoomOrigin.z+9.7);caveRoom.add(lintel);
+ const glowA=new THREE.PointLight(0x54d9f0,2.4,26);glowA.position.set(caveRoomOrigin.x-5,4,caveRoomOrigin.z-3);caveRoom.add(glowA);
+ const glowB=new THREE.PointLight(0x69b9ff,1.8,22);glowB.position.set(caveRoomOrigin.x+5,3.5,caveRoomOrigin.z+3);caveRoom.add(glowB);
+ for(let i=0;i<9;i++){const shard=new THREE.Mesh(new THREE.ConeGeometry(.35+Math.random()*.35,1.2+Math.random()*1.8,5),caveGlowMat);shard.position.set(caveRoomOrigin.x-7+Math.random()*14,.45+Math.random()*.35,caveRoomOrigin.z-7+Math.random()*13);shard.rotation.z=(Math.random()-.5)*.35;caveRoom.add(shard);}
+ // Mineable ore inside the cave makes exploration worthwhile.
+ addOre(caveRoomOrigin.x-5,caveRoomOrigin.z-3,'crystal');addOre(caveRoomOrigin.x+5,caveRoomOrigin.z-4,'crystal');addOre(caveRoomOrigin.x-5,caveRoomOrigin.z+3,'iron');addOre(caveRoomOrigin.x+5,caveRoomOrigin.z+2,'iron');
 }
 // Freshwater springs are marked by small bright-blue pools near each island's centre.
 const springs=[];
@@ -674,7 +689,7 @@ function boardOrLeaveBoat(){
  updateHUD();
 }
 function sailToNextIsland(){
- if(dead)return;
+ if(dead)return;if(caveInterior){toast('Exit the cave before sailing.');return;}
  if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
  if(!aboardBoat){toast('Board your boat before sailing.');return;}
  activeIsland=(activeIsland+1)%islandCenters.length;
@@ -689,6 +704,12 @@ function sailToNextIsland(){
 }
 function interact(){
  if(dead)return;
+ if(caveInterior){
+  if(player.position.z>caveRoomOrigin.z+5.5){caveInterior=false;player.position.set(islandCenters[6].x,0,islandCenters[6].z+85);yaw=0;toast('You climbed out of Crownspire Cave.');updateHUD();}
+  else toast('Follow the glowing crystals to the doorway at the front, then press E to exit.');
+  return;
+ }
+ if(activeIsland===6){const c=islandCenters[6];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+79.5))<8.5){caveInterior=true;aboardBoat=false;player.position.set(caveRoomOrigin.x,0,caveRoomOrigin.z+5);yaw=Math.PI;player.userData.vy=0;toast('You entered Crownspire Cave! Mine the glowing crystal and iron deposits. Walk to the doorway and press E to leave.');updateHUD();return;}}
  if(activeHouse){
   const h=activeHouse;
   if(h.hasChest && !h.opened && h.chest && Math.hypot(player.position.x-(h.x+.95),player.position.z-(h.z-1.25))<3){
@@ -825,16 +846,20 @@ function animate(now){
   const speed=aboardBoat?2.8:(keys.ShiftLeft?7:4.7);
   player.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed*dt;
   player.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed*dt;
-  const island=islandCenters[activeIsland];const ox=player.position.x-island.x,oz=player.position.z-island.z,radius=Math.hypot(ox,oz),limit=island.radius-4;if(radius>limit){player.position.x=island.x+ox/radius*limit;player.position.z=island.z+oz/radius*limit;}
-  if(activeIsland===6){
-   // Project movement onto the one switchback trail; off-trail shortcuts are blocked.
-   let bestDist=Infinity,bestX=0,bestZ=0;
-   for(let i=0;i<mountainPathLocal.length-1;i++){const [ax,az]=mountainPathLocal[i],[bx,bz]=mountainPathLocal[i+1],vx=bx-ax,vz=bz-az,l2=vx*vx+vz*vz;const t=Math.max(0,Math.min(1,((player.position.x-island.x-ax)*vx+(player.position.z-island.z-az)*vz)/l2));const px=ax+vx*t,pz=az+vz*t,d=Math.hypot(player.position.x-island.x-px,player.position.z-island.z-pz);if(d<bestDist){bestDist=d;bestX=px;bestZ=pz;}}
-   player.position.x=island.x+bestX;player.position.z=island.z+bestZ;const summitRadius=Math.hypot(bestX,bestZ+7);player.position.y=Math.max(0,100*(1-Math.min(summitRadius,80)/80));player.userData.vy=0;
-  }else{const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}}
+  const island=islandCenters[activeIsland];
+  if(caveInterior){player.position.x=Math.max(caveRoomOrigin.x-8.5,Math.min(caveRoomOrigin.x+8.5,player.position.x));player.position.z=Math.max(caveRoomOrigin.z-8.5,Math.min(caveRoomOrigin.z+8.5,player.position.z));player.position.y=0;player.userData.vy=0;}
+  else {
+   const ox=player.position.x-island.x,oz=player.position.z-island.z,radius=Math.hypot(ox,oz),limit=island.radius-4;if(radius>limit){player.position.x=island.x+ox/radius*limit;player.position.z=island.z+oz/radius*limit;}
+   if(activeIsland===6){
+    // Project movement onto the one switchback trail; off-trail shortcuts are blocked.
+    let bestDist=Infinity,bestX=0,bestZ=0;
+    for(let i=0;i<mountainPathLocal.length-1;i++){const [ax,az]=mountainPathLocal[i],[bx,bz]=mountainPathLocal[i+1],vx=bx-ax,vz=bz-az,l2=vx*vx+vz*vz;const t=Math.max(0,Math.min(1,((player.position.x-island.x-ax)*vx+(player.position.z-island.z-az)*vz)/l2));const px=ax+vx*t,pz=az+vz*t,d=Math.hypot(player.position.x-island.x-px,player.position.z-island.z-pz);if(d<bestDist){bestDist=d;bestX=px;bestZ=pz;}}
+    player.position.x=island.x+bestX;player.position.z=island.z+bestZ;const summitRadius=Math.hypot(bestX,bestZ+7);player.position.y=Math.max(0,100*(1-Math.min(summitRadius,80)/80));player.userData.vy=0;
+   }else{const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}}
+  }
   if(f||s)player.rotation.y=yaw;
   if(tradeNPC&&player.position.distanceTo(tradeNPC.mesh.position)>7){document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;}
-  if(craftedBoat){ensureBoatVisual();if(boatVisual){if(aboardBoat){boatPosition={x:player.position.x,z:player.position.z+0.38};boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}else{boatVisual.position.set(boatPosition.x,0,boatPosition.z);}}}
+  if(craftedBoat&&!caveInterior){ensureBoatVisual();if(boatVisual){if(aboardBoat){boatPosition={x:player.position.x,z:player.position.z+0.38};boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}else{boatVisual.position.set(boatPosition.x,0,boatPosition.z);}}}
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
   hunger=Math.max(0,hunger-dt*.17);thirst=Math.max(0,thirst-dt*.27);
   if(hunger===0||thirst===0)health=Math.max(0,health-dt*1.6);
