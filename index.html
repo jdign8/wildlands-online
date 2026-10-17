@@ -795,7 +795,7 @@ function interact(){
    document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':nearbyVillager.job==='armourer'?`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`:`You have ${inventory.coins} coins. Buy medicine for 1 coin to restore your health to full.`;
    document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';document.getElementById('medicineTradeOptions').style.display=nearbyVillager.job==='medic'?'flex':'none';return;
   }
-  if(nearbyVillager.job==='arenaMaster'){toast('Arena Master Tor: Step into the sand ring and press E / Interact to challenge 3 wildlings. Victory earns 8 coins and 100 XP!');return;} toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;
+  if(nearbyVillager.job==='arenaMaster'){toast(castleArenaRewarded?'Arena Master Tor: You are the castle champion!':'Arena Master Tor: Walk through the castle gate to face 3 tough wildlings. Defeat them to earn 8 coins and 100 XP!');return;} toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;
  }
  const nearbyBed=beds.find(b=>Math.hypot(player.position.x-b.x,player.position.z-b.z)<3.5);
  if(nearbyBed){
@@ -925,6 +925,16 @@ function animate(now){
    }else{const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}}
   }
   if(f||s)player.rotation.y=yaw;
+  // Entering the castle courtyard automatically starts the mandatory gladiator trial.
+  if(activeIsland===8 && !castleArenaActive && !castleArenaRewarded){
+   const castle=islandCenters[8], localX=player.position.x-castle.x, localZ=player.position.z-castle.z;
+   if(Math.abs(localX)<14 && localZ>2 && localZ<21){
+    castleArenaActive=true;castleArenaWildlings=[];aboardBoat=false;
+    for(const [dx,dz] of [[-5,9],[5,9],[0,16]]){addEnemy(castle.x+dx,castle.z+dz,65,false);castleArenaWildlings.push(enemies[enemies.length-1]);}
+    for(const e of castleArenaWildlings){e.hp=65;e.speed=1.62;e.damage=15;e.attackInterval=.85;}
+    toast('CASTLE GATE SEALED! Defeat all 3 tough wildlings to enter Kingsfall Castle!');
+   }
+  }
   if(tradeNPC&&player.position.distanceTo(tradeNPC.mesh.position)>7){document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;}
   if(craftedBoat&&!caveInterior){ensureBoatVisual();if(boatVisual){if(aboardBoat){boatPosition={x:player.position.x,z:player.position.z+0.38};boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}else{boatVisual.position.set(boatPosition.x,0,boatPosition.z);}}}
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
@@ -945,7 +955,7 @@ function animate(now){
   const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isNight?'🌙 Night · 50 extra monsters spawned':'☀️ Day';
   for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<1.45){e.cooldown-=dt;if(e.cooldown<=0){const mitigation=armorType?armorDefs[armorType].reduction:0;health=Math.max(0,health-e.damage*(1-mitigation));e.cooldown=e.attackInterval;toast(e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
   if(castleArenaActive && castleArenaWildlings.length && castleArenaWildlings.every(e=>!e.alive)){
-   castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('GLADIATOR VICTORY! You defeated all 3 wildlings and earned 8 coins + 100 XP!');updateHUD();
+   castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('CASTLE CHAMPION! You defeated all 3 tough wildlings and earned 8 coins + 100 XP! The castle is now open.');updateHUD();
   }
   if(health<=0){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';}
   if(Math.floor(elapsed)%2===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt))updateHUD();
