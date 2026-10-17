@@ -20,3 +20,8 @@ Install dependencies with `npm install`, then run `npm start`. The Render servic
 - Coins and armour are included in the saved inventory/progress.
 - The cave at the base of Crownspire Mountain is now enterable: stand by the entrance and press **E** / **Interact**. Explore the lit crystal chamber, mine two crystal and two iron deposits, then walk to the doorway and press **E** to return outside.
 - Coincrest Village now has a Medicine House. Talk to Mira the Healer and buy medicine for 1 coin to restore health to your current maximum; medicine cannot be bought if health is already full.
+
+
+## Kingsfall Castle Isle update
+- Added a ninth island, Kingsfall Castle Isle, with a huge stone castle, towers, banners, courtyard, and castle villagers.
+- Added a circular gladiator arena. Talk to Arena Master Tor, then enter the sand ring and press E / Interact to start a fight against three tougher wildlings. Defeating them awards 8 coins and 100 XP once per run.
