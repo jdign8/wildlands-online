@@ -24,7 +24,9 @@
   #quest { position:absolute; right:14px; top:14px; width:250px }
   #quest h2, #inventory h2 { font-size:13px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.1em }
   #quest p { margin:5px 0; color:#c4d0d8; font-size:12px; line-height:1.45 }
-  #inventory { position:absolute; right:14px; bottom:14px; width:250px; z-index:3 }
+  #inventory { position:absolute; right:14px; bottom:14px; width:250px; z-index:7; pointer-events:auto; }
+  /* The HUD wrapper ignores pointer input so the game view remains draggable; explicitly re-enable input for backpack controls. */
+  #inventory button, #inventory select, #inventory input { pointer-events:auto; touch-action:manipulation; position:relative; z-index:8; }
   #items { display:grid; grid-template-columns:1fr 1fr; gap:5px }
   #weaponBox { margin-top:8px; border-top:1px solid #ffffff1c; padding-top:8px; display:grid; gap:6px }
   #weaponSelect { width:100%; padding:7px; border-radius:8px; color:#fff; background:#1c3437; border:1px solid #ffffff30; font:inherit; font-size:12px }
@@ -56,7 +58,7 @@
     #quest { top:auto; bottom:225px; right:10px; width:min(190px, 44vw); padding:9px }
     #quest p { font-size:11px }
     #stats { top:100px; left:10px; width:min(175px, 44vw); padding:9px }
-    #inventory { right:10px; top:76px; bottom:auto; width:min(190px, 44vw); max-height:calc(100vh - 92px); overflow:auto; padding:8px; z-index:6 }
+    #inventory { right:10px; top:76px; bottom:auto; width:min(190px, 44vw); max-height:calc(100vh - 92px); overflow:auto; padding:8px; z-index:7; pointer-events:auto }
     /* Keep the backpack above the touch buttons so they never cover each other. */
     #mobile { left:0; right:0; bottom:max(10px, env(safe-area-inset-bottom)); }
     #brand { left:10px; top:max(10px, env(safe-area-inset-top)) }
@@ -81,7 +83,7 @@
   @media (orientation:landscape) and (max-height:500px) {
     #stats { top:78px; width:150px; }
     #quest { bottom:150px; width:175px; }
-    #inventory { top:76px; bottom:auto; width:175px; max-height:calc(100vh - 92px); overflow:auto; z-index:6; }
+    #inventory { top:76px; bottom:auto; width:175px; max-height:calc(100vh - 92px); overflow:auto; z-index:7; pointer-events:auto; }
     #mobile .cluster { grid-template-columns:repeat(3, 42px); }
     #mobile button { min-height:38px; }
     #mobile .actions { grid-template-columns:repeat(2, 66px); }
