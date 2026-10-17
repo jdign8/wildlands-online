@@ -393,6 +393,21 @@ let castleArenaActive=false, castleArenaWildlings=[], castleArenaRewarded=false;
  castleVillager(c.x,c.z+22,0xb58c4b,'arenaMaster','Arena Master Tor');
 }
 
+// The castle entrance transports the player into a sealed arena for a mandatory fight.
+function startCastleTrial(){
+ if(castleArenaActive||castleArenaRewarded)return;
+ const castle=islandCenters[8], arenaX=castle.x, arenaZ=castle.z+34;
+ castleArenaActive=true;castleArenaWildlings=[];aboardBoat=false;
+ player.position.set(arenaX,0,arenaZ);player.userData.vy=0;yaw=0;
+ for(const [dx,dz] of [[-5,-2],[5,-2],[0,6]]){
+  addEnemy(arenaX+dx,arenaZ+dz,65,false);
+  const e=enemies[enemies.length-1];e.hp=65;e.speed=1.62;e.damage=15;e.attackInterval=.85;
+  castleArenaWildlings.push(e);
+ }
+ toast('THE GATES SLAM SHUT! You have been teleported into the arena. Defeat all 3 tough wildlings to escape!');
+ updateHUD();
+}
+
 // Small flower patches and grass tufts soften the island edges and make the world feel less like flat circles.
 for(const c of islandCenters.filter(c=>c.biome!=='snow')){
  for(let i=0;i<95;i++){
@@ -734,6 +749,7 @@ function fish(){
  inventory.food+=1;gainXP(10);toast('10 casts completed — you caught 1 fish! Use Eat / Rest to eat food.');updateHUD();
 }
 function boardOrLeaveBoat(){
+ if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
  if(!craftedBoat||!boatVisual){toast('Craft a boat first: 5 wood + 2 stone.');return;}
  if(aboardBoat){
   const c=islandCenters[activeIsland],dx=player.position.x-c.x,dz=player.position.z-c.z,d=Math.hypot(dx,dz)||1;
@@ -749,6 +765,7 @@ function boardOrLeaveBoat(){
  updateHUD();
 }
 function sailToNextIsland(){
+ if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
  if(dead)return;if(caveInterior){toast('Exit the cave before sailing.');return;}
  if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
  if(!aboardBoat){toast('Board your boat before sailing.');return;}
@@ -764,6 +781,7 @@ function sailToNextIsland(){
 }
 function interact(){
  if(dead)return;
+ if(castleArenaActive){toast('The arena is sealed! Defeat all 3 wildlings before you can leave.');return;}
  if(caveInterior){
   if(player.position.z>caveRoomOrigin.z+5.5){caveInterior=false;player.position.set(islandCenters[6].x,0,islandCenters[6].z+85);yaw=0;toast('You climbed out of Crownspire Cave.');updateHUD();}
   else toast('Follow the glowing crystals to the doorway at the front, then press E to exit.');
@@ -782,10 +800,7 @@ function interact(){
  if(nearbyHouse){activeHouse=nearbyHouse;nearbyHouse.shell.visible=false;nearbyHouse.interior.visible=true;player.position.set(nearbyHouse.x,0,nearbyHouse.z);aboardBoat=false;toast(nearbyHouse.hasChest?'You entered the cottage. Walk to the chest and press E to open it. Press E again to leave.':'You entered the cottage. Look around, then press E to leave.');return;}
  if(activeIsland===6 && mountainChest && !mountainChestOpened && Math.hypot(player.position.x-mountainChest.position.x,player.position.z-mountainChest.position.z)<4.5){mountainChestOpened=true;mountainChest.rotation.x=-.12;inventory.iron+=5;inventory.crystal+=2;inventory.coins+=5;inventory.food+=3;gainXP(100);toast('SUMMIT TREASURE! Found 5 iron, 2 rare crystals, 5 coins and 3 food!');updateHUD();return;}
  if(activeIsland===8 && !castleArenaActive && !castleArenaRewarded && Math.hypot(player.position.x-islandCenters[8].x,player.position.z-(islandCenters[8].z+34))<18){
-  castleArenaActive=true;castleArenaWildlings=[];aboardBoat=false;
-  for(const [dx,dz] of [[-5,-3],[5,-3],[0,6]]){addEnemy(islandCenters[8].x+dx,islandCenters[8].z+34+dz,42,false);castleArenaWildlings.push(enemies[enemies.length-1]);}
-  for(const e of castleArenaWildlings){e.hp=42;e.speed=1.42;e.damage=13;e.attackInterval=.95;}
-  toast('THE GLADIATOR TRIAL BEGINS! Defeat all 3 wildlings in the arena!');return;
+  startCastleTrial();return;
  }
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
  if(nearbyVillager){
@@ -924,16 +939,16 @@ function animate(now){
     player.position.x=island.x+bestX;player.position.z=island.z+bestZ;const summitRadius=Math.hypot(bestX,bestZ+7);player.position.y=Math.max(0,100*(1-Math.min(summitRadius,80)/80));player.userData.vy=0;
    }else{const vy=player.userData.vy||0;if(player.position.y>0||vy>0){player.position.y+=vy*dt;player.userData.vy=vy-13*dt;if(player.position.y<=0){player.position.y=0;player.userData.vy=0;}}}
   }
+  if(castleArenaActive){
+   const arena=islandCenters[8],dx=player.position.x-arena.x,dz=player.position.z-(arena.z+34),dist=Math.hypot(dx,dz),arenaLimit=12.2;
+   if(dist>arenaLimit){player.position.x=arena.x+dx/dist*arenaLimit;player.position.z=arena.z+34+dz/dist*arenaLimit;}
+   player.position.y=0;player.userData.vy=0;
+  }
   if(f||s)player.rotation.y=yaw;
-  // Entering the castle courtyard automatically starts the mandatory gladiator trial.
+  // Crossing the castle gate teleports the player into the arena and starts the locked trial.
   if(activeIsland===8 && !castleArenaActive && !castleArenaRewarded){
    const castle=islandCenters[8], localX=player.position.x-castle.x, localZ=player.position.z-castle.z;
-   if(Math.abs(localX)<14 && localZ>2 && localZ<21){
-    castleArenaActive=true;castleArenaWildlings=[];aboardBoat=false;
-    for(const [dx,dz] of [[-5,9],[5,9],[0,16]]){addEnemy(castle.x+dx,castle.z+dz,65,false);castleArenaWildlings.push(enemies[enemies.length-1]);}
-    for(const e of castleArenaWildlings){e.hp=65;e.speed=1.62;e.damage=15;e.attackInterval=.85;}
-    toast('CASTLE GATE SEALED! Defeat all 3 tough wildlings to enter Kingsfall Castle!');
-   }
+   if(Math.abs(localX)<14 && localZ>2 && localZ<21)startCastleTrial();
   }
   if(tradeNPC&&player.position.distanceTo(tradeNPC.mesh.position)>7){document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;}
   if(craftedBoat&&!caveInterior){ensureBoatVisual();if(boatVisual){if(aboardBoat){boatPosition={x:player.position.x,z:player.position.z+0.38};boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}else{boatVisual.position.set(boatPosition.x,0,boatPosition.z);}}}
