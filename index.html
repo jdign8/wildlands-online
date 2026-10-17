@@ -135,7 +135,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore eight islands, including a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village, where you can trade wood for coins and buy stone, iron or crystal armour.</p>
+    <p>Explore eleven islands, including a night-erupting volcano, a dragon boss island, a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village, where you can trade wood for coins and buy stone, iron or crystal armour.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -196,7 +196,7 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'}];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'}];
 const mountainPathLocal=[[0,85],[-16,66],[-28,46],[-27,27],[-14,11],[8,-3],[19,-20],[14,-38],[0,-47],[-11,-34],[-11,-14],[0,-7]];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
@@ -212,10 +212,10 @@ function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
 for (let i=0;i<islandCenters.length;i++) {
   const c=islandCenters[i], r=c.radius;
   const beach=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r,1.0,i+1),sandMat); beach.rotation.x=-Math.PI/2; beach.position.set(c.x,.005,c.z); beach.receiveShadow=true; scene.add(beach);
-  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='village'?mat(0x709b5a):grassMat;
+  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='volcano'?mat(0x39312f):c.biome==='village'?mat(0x709b5a):grassMat;
   const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
-const water = new THREE.Mesh(new THREE.CircleGeometry(520,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
+const water = new THREE.Mesh(new THREE.CircleGeometry(620,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
 const world = new THREE.Group(); scene.add(world);
 const resources = [], enemies = [], decorations=[];
 const beds=[];
@@ -265,6 +265,22 @@ for (const c of islandCenters.slice(1)) {
   if(c.biome==='mines'){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'){ for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+}
+// Emberpeak Volcano Isle: a towering volcano that erupts during every night cycle.
+let volcanoIsland=null, volcanoVent=null, volcanoLavaSpout=null, volcanoGlow=null, volcanoEruptionRocks=[], volcanoDamageCooldown=0;
+{
+ const c=islandCenters.find(i=>i.biome==='volcano'); volcanoIsland=c;
+ const basalt=mat(0x343436), darkBasalt=mat(0x202326), lavaMat=new THREE.MeshStandardMaterial({color:0xff4a13,emissive:0xff2a00,emissiveIntensity:2.2,roughness:.32});
+ const cone=new THREE.Mesh(new THREE.ConeGeometry(43,42,14,3),basalt);cone.position.set(c.x,18,c.z-3);cone.castShadow=true;cone.receiveShadow=true;world.add(cone);decorations.push(cone);
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(12,3.2,9,20),darkBasalt);rim.rotation.x=Math.PI/2;rim.position.set(c.x,35.5,c.z-3);rim.scale.set(1.15,.82,1);world.add(rim);decorations.push(rim);
+ const crater=new THREE.Mesh(new THREE.CylinderGeometry(10.5,7.5,2.3,16),darkBasalt);crater.position.set(c.x,35,c.z-3);world.add(crater);decorations.push(crater);
+ const lavaPool=new THREE.Mesh(new THREE.CircleGeometry(8.3,20),lavaMat);lavaPool.rotation.x=-Math.PI/2;lavaPool.position.set(c.x,36.2,c.z-3);world.add(lavaPool);decorations.push(lavaPool);
+ volcanoLavaSpout=new THREE.Mesh(new THREE.ConeGeometry(5.5,25,10),lavaMat);volcanoLavaSpout.position.set(c.x,47,c.z-3);volcanoLavaSpout.visible=false;world.add(volcanoLavaSpout);decorations.push(volcanoLavaSpout);
+ volcanoGlow=new THREE.PointLight(0xff3b0a,0,115);volcanoGlow.position.set(c.x,39,c.z-3);scene.add(volcanoGlow);
+ for(let i=0;i<9;i++){const a=i*Math.PI*2/9,r=15+(i%3)*3;const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(1.5+(i%3)*.45,0),darkBasalt);rock.position.set(c.x+Math.cos(a)*r,1.2+(i%2),c.z-3+Math.sin(a)*r);rock.castShadow=true;world.add(rock);decorations.push(rock);volcanoEruptionRocks.push(rock);}
+ for(const [dx,dz,r] of [[-20,14,2.8],[19,12,2.2],[-17,-19,2.5],[24,-16,2]]){const crack=new THREE.Mesh(new THREE.TorusGeometry(r,.42,7,16),lavaMat);crack.rotation.x=Math.PI/2;crack.position.set(c.x+dx,.2,c.z+dz);world.add(crack);decorations.push(crack);}
+ // A few charred trunks and scorched boulders mark the island's dangerous slopes.
+ for(let i=0;i<8;i++){const a=i*Math.PI/4,r=51+(i%2)*9;const stump=new THREE.Mesh(new THREE.CylinderGeometry(.35,.65,2.6,6),darkBasalt);stump.position.set(c.x+Math.cos(a)*r,1.3,c.z+Math.sin(a)*r);stump.rotation.z=(i%2?.16:-.12);world.add(stump);decorations.push(stump);}
 }
 const villageHouses=[], villagers=[];
 let mountainChest=null, mountainChestOpened=false, tradeMode=null, tradeNPC=null, caveInterior=false, caveRoomOrigin=null;
@@ -1004,16 +1020,27 @@ function animate(now){
   const cycleValue=(Math.sin(elapsed*.035)+1)/2;
   const isNight=cycleValue<.18;
   if(isNight&&!wasNight){
-   nightWaveCount++;const c=islandCenters[activeIsland];
-   for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*Math.max(8,c.radius-22);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,8,true);}
-   toast('NIGHTFALL! 50 tougher night monsters have spawned on this island!');
+   nightWaveCount++;
+   if(activeIsland!==9){const c=islandCenters[activeIsland];
+    for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*Math.max(8,c.radius-22);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,8,true);}
+    toast('NIGHTFALL! 50 tougher night monsters have spawned on this island!');
+   }else{toast('DRAGONFALL IS SEALED — no wildlings or night monsters appear here. Only the dragon awaits.');}
   }
   if(!isNight&&wasNight){
    for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(e.nightSpawn){world.remove(e.mesh);enemies.splice(i,1);}}
    toast('DAYBREAK! The 50 extra night monsters have disappeared.');
   }
   wasNight=isNight;night=isNight?1:0;
-  const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isNight?'🌙 Night · 50 extra monsters spawned':'☀️ Day';
+  const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isNight?(activeIsland===9?'🌙 Night · Dragonfall has no wildlings':'🌋 Night · Volcano erupting'):'☀️ Day';
+  // The volcano erupts at night even when the player is exploring another island.
+  if(volcanoLavaSpout&&volcanoIsland){
+   volcanoLavaSpout.visible=isNight;
+   if(isNight){const pulse=.78+.22*Math.sin(elapsed*8);volcanoLavaSpout.scale.set(pulse, .72+.28*Math.abs(Math.sin(elapsed*5)), pulse);volcanoLavaSpout.position.y=45+Math.abs(Math.sin(elapsed*4))*7;volcanoGlow.intensity=4.5+2*Math.sin(elapsed*6);for(let i=0;i<volcanoEruptionRocks.length;i++){const rock=volcanoEruptionRocks[i],phase=elapsed*2.7+i*1.9;rock.position.y=1.2+(Math.max(0,Math.sin(phase))**2)*Math.abs(Math.sin(phase*1.7))*9;rock.rotation.x+=dt*.8;rock.rotation.z+=dt*.6;}}
+   else{volcanoGlow.intensity=0;for(const rock of volcanoEruptionRocks)rock.position.y=Math.max(1,rock.position.y-dt*8);}
+   if(activeIsland===10&&isNight){volcanoDamageCooldown-=dt;const nearCrater=Math.hypot(player.position.x-volcanoIsland.x,player.position.z-(volcanoIsland.z-3));if(nearCrater<18&&volcanoDamageCooldown<=0){health=Math.max(0,health-12);volcanoDamageCooldown=2.5;toast('VOLCANIC ERUPTION! Lava bursts near the crater — move away!');}}
+  }
+  // Dragonfall is a boss-only island: clear any non-boss enemies and never let them chase into it.
+  if(activeIsland===9){for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(!e.isDragonBoss){world.remove(e.mesh);enemies.splice(i,1);}}}
   for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<(e.isDragonBoss?5.8:1.45)){e.cooldown-=dt;if(e.cooldown<=0){const mitigation=armorType?armorDefs[armorType].reduction:0;health=Math.max(0,health-e.damage*(1-mitigation));e.cooldown=e.attackInterval;toast(e.isDragonBoss?'THE DRAGON BREATHES FIRE! Massive damage!':e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
   if(castleArenaActive && castleArenaWildlings.length && castleArenaWildlings.every(e=>!e.alive)){
    castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('CASTLE CHAMPION! You defeated all 3 tough wildlings and earned 8 coins + 100 XP! The castle is now open.');updateHUD();
