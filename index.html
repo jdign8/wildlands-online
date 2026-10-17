@@ -242,8 +242,8 @@ for (const c of islandCenters.slice(1)) {
   for(let i=0;i<treeCount;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*(c.radius-18);addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
   for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
   if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
-  if(c.biome==='mines'){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
-  if(c.biome==='snow'){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
+  if(c.biome==='mines'){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
+  if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.name!=='Hearthstone Village'){for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
 const villageHouses=[], villagers=[];
@@ -367,7 +367,7 @@ function connectMultiplayer() {
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
-    if(save.inventory){Object.assign(inventory,save.inventory);craftedBoat=!!save.inventory.craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
+    if(save.inventory){Object.assign(inventory,save.inventory);craftedBoat=!!save.inventory.craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
     if(Number.isFinite(save.health)) health=save.health;
     if(Number.isFinite(save.hunger)) hunger=save.hunger;
     if(Number.isFinite(save.thirst)) thirst=save.thirst;
@@ -389,7 +389,7 @@ function addOrUpdateRemote(p) {
   if(!rp){rp={mesh:makeRemotePlayer(p.color || 0x6fa6df),name:p.name||'Player',target:{x:p.x||0,z:p.z||0,rot:p.rot||0}};remotePlayers.set(p.id,rp);}
   rp.name=p.name||rp.name;rp.target={x:p.x||0,z:p.z||0,rot:p.rot||0};
 }
-function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,equippedWeapon:equippedWeapon||null};}
+function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,weaponDurability:{...weaponDurability},equippedWeapon:equippedWeapon||null};}
 function sendNetworkState() {
   if(socket && socket.connected && mode==='online') {
     socket.emit('move', {x:player.position.x, z:player.position.z, rot:player.rotation.y});
@@ -404,8 +404,8 @@ const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,water:2,campfire
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
 let fishingCasts=0;
 
-const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4}},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3}},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4}},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3}};
-const ownedWeapons={};let equippedWeapon=null;
+const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4},maxDurability:15},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3},maxDurability:30},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4},maxDurability:50},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3,maxDurability:70}};
+const ownedWeapons={};const weaponDurability={};let equippedWeapon=null;
 let health=100,hunger=100,thirst=100,xp=0,level=1,dead=false;
 const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,night=0;
 const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
@@ -432,8 +432,8 @@ function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=Math.max(0,val)+'%';document.getElementById(name+'Num').textContent=Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🐟 Food',water:'💧 Water',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>Owned</strong></div>`).join('');
- document.getElementById('weaponStatus').textContent=equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage`:'Equipped: fists · Craft a sword to improve damage';
+ document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🐟 Food',water:'💧 Water',campfire:'🔥 Campfires'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
+ document.getElementById('weaponStatus').textContent=equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage';
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  document.getElementById('sailBtn').textContent=craftedBoat?'Sail to next island':'Sail (craft boat first)';
@@ -466,9 +466,11 @@ function attack(){
  let target=null,bd=3.4;
  for(const e of enemies){if(!e.alive)continue;const d=player.position.distanceTo(e.mesh.position);if(d<bd){bd=d;target=e;}}
  if(!target){gather();return;}
- const damage=equippedWeapon?weaponDefs[equippedWeapon].damage/10:1;target.hp-=damage;
- swordHolder.rotation.x=-.9;setTimeout(()=>{swordHolder.rotation.x=0;},120);gainXP(4);toast(target.hp<=0?'Wildling defeated!':`Hit for ${damage*10} damage with ${equippedWeapon?weaponDefs[equippedWeapon].name:'your fists'}!`);
- if(target.hp<=0){target.alive=false;world.remove(target.mesh);inventory.food+=1;gainXP(30);updateHUD();}
+ const usedWeapon=equippedWeapon;const damage=usedWeapon?weaponDefs[usedWeapon].damage/10:1;target.hp-=damage;
+ if(usedWeapon){weaponDurability[usedWeapon]=Math.max(0,(weaponDurability[usedWeapon]||weaponDefs[usedWeapon].maxDurability)-1);if(weaponDurability[usedWeapon]===0){ownedWeapons[usedWeapon]=false;equippedWeapon=null;toast(`${weaponDefs[usedWeapon].name} broke! Craft another sword.`);refreshSwordVisual();}else{toast(`${weaponDefs[usedWeapon].name}: ${weaponDurability[usedWeapon]}/${weaponDefs[usedWeapon].maxDurability} durability`);}}
+ swordHolder.rotation.x=-.9;setTimeout(()=>{swordHolder.rotation.x=0;},120);gainXP(4);if(!usedWeapon)toast(target.hp<=0?'Wildling defeated!':'Hit with your fists!');
+ if(target.hp<=0){target.alive=false;world.remove(target.mesh);inventory.food+=1;gainXP(30);}
+ updateHUD();
 }
 function refreshSwordVisual(){
  while(swordHolder.children.length)swordHolder.remove(swordHolder.children[0]);
@@ -485,12 +487,12 @@ function craftSword(){
  const missing=Object.entries(def.cost).filter(([k,v])=>inventory[k]<v);
  if(missing.length){toast(`Need ${missing.map(([k,v])=>`${Math.max(0,v-inventory[k])} more ${k}`).join(' and ')}`);return;}
  for(const [k,v] of Object.entries(def.cost))inventory[k]-=v;
- ownedWeapons[key]=true;equippedWeapon=key;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped · ${def.damage} damage`);updateHUD();
+ ownedWeapons[key]=true;weaponDurability[key]=def.maxDurability;equippedWeapon=key;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped · ${def.damage} damage · ${def.maxDurability} durability`);updateHUD();
 }
 function equipSword(){
  const key=document.getElementById('weaponSelect').value;
  if(!ownedWeapons[key]){toast(`Craft a ${weaponDefs[key].name} first`);return;}
- equippedWeapon=key;refreshSwordVisual();toast(`${weaponDefs[key].name} equipped`);updateHUD();
+ if(!(weaponDurability[key]>0)){toast(`${weaponDefs[key].name} is broken — craft it again.`);return;}equippedWeapon=key;refreshSwordVisual();toast(`${weaponDefs[key].name} equipped · ${weaponDurability[key]}/${weaponDefs[key].maxDurability} durability`);updateHUD();
 }
 function craft(){
  if(inventory.campfire>0){toast('You already built your first campfire');return;}
