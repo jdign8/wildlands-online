@@ -28,6 +28,20 @@
   /* The HUD wrapper ignores pointer input so the game view remains draggable; explicitly re-enable input for backpack controls. */
   #inventory button, #inventory select, #inventory input { pointer-events:auto; touch-action:manipulation; position:relative; z-index:8; }
   #items { display:grid; grid-template-columns:1fr 1fr; gap:5px }
+  #craftBookBtn { width:100%; margin:7px 0; font-weight:800; background:#315845; }
+  #craftBook { display:none; position:fixed; inset:0; z-index:30; background:#071016dd; padding: max(12px,env(safe-area-inset-top)) 10px max(12px,env(safe-area-inset-bottom)); pointer-events:auto; }
+  #craftBookCard { width:min(720px,100%); height:100%; max-height:100%; margin:auto; display:flex; flex-direction:column; background:#101f25; border:1px solid #ffffff35; border-radius:16px; padding:14px; box-shadow:0 20px 80px #000a; }
+  #craftBookTop { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  #craftBookTop h2 { margin:0; font-size:18px; }
+  #recipeTabs { display:flex; gap:6px; overflow-x:auto; padding:10px 0; flex-shrink:0; }
+  #recipeTabs button { white-space:nowrap; padding:8px 10px; font-size:12px; }
+  #recipeList { overflow:auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:8px; padding:2px 2px 12px; -webkit-overflow-scrolling:touch; }
+  .recipe { text-align:left; display:flex; flex-direction:column; gap:5px; background:#1b3037; padding:11px; min-height:112px; }
+  .recipe strong { font-size:14px; }
+  .recipe .ingredients { color:#bfd0d6; font-size:12px; line-height:1.45; }
+  .recipe .recipeNote { color:#8ed8ac; font-size:11px; }
+  .recipe:disabled { opacity:.48; }
+  #craftBookHelp { font-size:11px; color:#a9bdc4; margin:4px 0 8px; }
   #weaponBox { margin-top:8px; border-top:1px solid #ffffff1c; padding-top:8px; display:grid; gap:6px }
   #weaponSelect { width:100%; padding:7px; border-radius:8px; color:#fff; background:#1c3437; border:1px solid #ffffff30; font:inherit; font-size:12px }
   #weaponButtons { display:grid; grid-template-columns:1fr 1fr; gap:5px }
@@ -105,14 +119,17 @@
   </div>
   <div id="quest" class="panel"><h2>Current mission</h2><p id="mission">Gather 5 wood and 3 stone to prepare your first camp.</p><p id="levelText">Level 1 · Survivor</p><p id="worldText">World: Private solo</p></div>
   <div id="inventory" class="panel"><h2>Backpack</h2>
-    <div id="weaponBox"><strong style="font-size:11px;letter-spacing:.08em;text-transform:uppercase">⚔️ Weapons bench</strong>
-      <select id="weaponSelect" aria-label="Choose sword to craft"><option value="wood">Wooden Sword · 10 damage</option><option value="stone">Stone Sword · 20 damage</option><option value="iron">Iron Sword · 35 damage</option><option value="crystal">Crystal Sword · 50 damage</option></select>
-      <div id="weaponButtons"><button id="craftSwordBtn">Craft sword</button><button id="equipSwordBtn">Equip sword</button></div>
-      <div id="weaponStatus">Equipped: fists · Craft a sword to improve damage.</div>
-      <div id="weaponButtons"><button id="craftBoatBtn">Craft boat</button><button id="craftRodBtn">Craft fishing rod</button></div>
-      <div id="travelStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Boat: not built · Rod: not built</div>
-    </div>
+    <button id="craftBookBtn">📖 Crafting Book · All recipes</button>
+    <div id="weaponStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Equipped: fists · Craft equipment in the Crafting Book.</div>
+    <div id="travelStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Boat: not built · Fishing rod: not built</div>
     <div id="items"></div>
+  </div>
+  <div id="craftBook" role="dialog" aria-modal="true" aria-label="Crafting Book">
+    <div id="craftBookCard">
+      <div id="craftBookTop"><h2>📖 Wildlands Crafting Book</h2><button id="closeCraftBook" aria-label="Close crafting book">✕ Close</button></div>
+      <p id="craftBookHelp">Tap any recipe to craft it. Ingredients are only spent when you have enough. Scroll for more recipes.</p>
+      <div id="recipeTabs"></div><div id="recipeList"></div>
+    </div>
   </div>
   <div id="tradePanel" class="panel" style="display:none;position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(320px,calc(100vw - 20px));z-index:12;pointer-events:auto">
     <strong id="tradeTitle">Village Trading</strong>
@@ -242,10 +259,10 @@ function addBush(x,z){
  g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'berry',amount:2,hp:1,alive:true});
 }
 function addOre(x,z,type='iron'){
- const g=new THREE.Group(); const oreMat=type==='crystal'?mat(0x59e6ef,.3):mat(0x9b6844,.42);
+ const g=new THREE.Group(); const oreColors={crystal:0x59e6ef,copper:0xc87945,silver:0xcbd5df,gold:0xe7bd43,obsidian:0x292a42,sulphur:0xe3d24d,frost:0x8deaff}; const oreMat=mat(oreColors[type]||0x9b6844,.32);
  for(let i=0;i<5;i++){const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(.38+Math.random()*.2,0),oreMat);chunk.position.set((Math.random()-.5)*.8,.32+Math.random()*.38,(Math.random()-.5)*.62);chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);}
  if(type==='iron'){const fleckMat=mat(0xc5b8a5,.32);for(let i=0;i<3;i++){const fleck=new THREE.Mesh(new THREE.DodecahedronGeometry(.12,0),fleckMat);fleck.position.set((Math.random()-.5)*.65,.55+Math.random()*.2,(Math.random()-.5)*.5);g.add(fleck);}}
- g.position.set(x,0,z);world.add(g);resources.push({mesh:g,type,amount:type==='crystal'?1:2,hp:2,alive:true});return g;
+ g.position.set(x,0,z);world.add(g);resources.push({mesh:g,type,amount:(type==='crystal'||type==='gold'||type==='obsidian'||type==='frost')?1:2,hp:2,alive:true});return g;
 }
 function addEnemy(x,z,hp=18,nightSpawn=false){
  const g=new THREE.Group(); const hide=mat(0x5e7350), skin=mat(0xb98668), dark=mat(0x2c332a);
@@ -261,6 +278,14 @@ for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*72;addBush
 for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*58;addEnemy(Math.cos(a)*r,Math.sin(a)*r);}
 // Starter-island iron: visible deposits so new players can craft a fishing rod without first sailing away.
 for(const [x,z] of [[-58,-12],[-43,48],[-12,-61],[26,57],[59,18],[42,-43],[-61,31],[9,68]]) addOre(x,z,'iron');
+// New craft materials are placed on themed islands; rare ores stay scarce.
+for(const [x,z] of [[-35,12],[33,-28],[48,42]]) addOre(x,z,'copper');
+for(const c of islandCenters){
+ if(c.biome==='mines'){for(let i=0;i<9;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'copper');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}addOre(c.x+9,c.z-19,'gold');addOre(c.x-18,c.z+26,'obsidian');}
+ if(c.biome==='snow'){for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'frost');}addOre(c.x+18,c.z-24,'silver');}
+ if(c.biome==='volcano'){for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'obsidian');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}}
+}
+
 // Populate the additional islands with their own resources and wildlings.
 for (const c of islandCenters.slice(1)) {
   const treeCount=c.biome==='dragon'?0:c.biome==='snow'?10:c.biome==='meadow'?8:c.biome==='mountain'?4:c.biome==='village'?14:c.biome==='castle'?5:28;
@@ -694,7 +719,7 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,iron:0,crystal:0,berry:0,food:0,salmon:0,cod:0,whiting:0,water:2,campfire:0,coins:0};
+const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,fibre:0,hide:0,berry:0,food:0,salmon:0,cod:0,whiting:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0};
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
 let fishingCasts=0;
 
@@ -728,7 +753,7 @@ function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins'})[k]}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
+ document.getElementById('items').innerHTML=Object.entries(inventory).filter(([k,v])=>v>0||['wood','stone','iron','crystal','berry','food','water','coins'].includes(k)).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',hide:'🦌 Animal hide',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins',rope:'🪢 Rope',cloth:'🧵 Cloth',leatherArmour:'🛡️ Leather armour',waterskin:'💧 Waterskins',largeBackpack:'🎒 Large backpacks',reinforcedChest:'📦 Reinforced chests',watchtower:'🗼 Watchtowers',advancedFurnace:'🔥 Advanced furnaces',repairKit:'🧰 Repair kits',crystalLantern:'🏮 Crystal lanterns',reinforcedBoat:'⛵ Reinforced boats',advancedRod:'🎣 Advanced rods',copperPickaxe:'⛏️ Copper pickaxes',silverArmour:'🛡️ Silver armour',obsidianAxe:'🪓 Obsidian axes',frostClothing:'🧥 Frost clothing',teleporter:'🌀 Teleporters'})[k]||k}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
@@ -748,7 +773,7 @@ function gather(){
  if(dead)return;
  const r=nearestResource();
  if(!r){toast('Move closer to a tree, rock, or berry bush');return;}
- r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]=(inventory[r.type]||0)+r.amount;gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${r.type==='iron'?'iron ore':r.type}`);updateHUD();}
+ r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]=(inventory[r.type]||0)+r.amount;if(r.type==='berry')inventory.fibre+=1;gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${{iron:'iron ore',copper:'copper ore',silver:'silver ore',gold:'gold ore',obsidian:'obsidian',sulphur:'sulphur',frost:'frost shards',crystal:'crystal',berry:'berries',wood:'wood',stone:'stone'}[r.type]||r.type}`);updateHUD();}
  else toast('Gathering…');
 }
 function attack(){
@@ -766,7 +791,7 @@ function attack(){
  const usedWeapon=equippedWeapon;const damage=usedWeapon?weaponDefs[usedWeapon].damage/10:1;target.hp-=damage;
  if(usedWeapon){weaponDurability[usedWeapon]=Math.max(0,(weaponDurability[usedWeapon]||weaponDefs[usedWeapon].maxDurability)-1);if(weaponDurability[usedWeapon]===0){ownedWeapons[usedWeapon]=false;equippedWeapon=null;toast(`${weaponDefs[usedWeapon].name} broke! Craft another sword.`);refreshSwordVisual();}else{toast(`${weaponDefs[usedWeapon].name}: ${weaponDurability[usedWeapon]}/${weaponDefs[usedWeapon].maxDurability} durability`);}}
  swordHolder.rotation.x=-.9;setTimeout(()=>{swordHolder.rotation.x=0;},120);gainXP(4);if(!usedWeapon)toast(target.hp<=0?'Wildling defeated!':'Hit with your fists!');
- if(target.hp<=0){target.alive=false;world.remove(target.mesh);if(target.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! You defeated the strongest monster! Treasure: 50 coins, 25 crystals, 40 iron, 100 stone, 20 food and 20 water, plus 1000 XP. The island seal is broken!');}else{inventory.food+=1;gainXP(30);}}
+ if(target.hp<=0){target.alive=false;world.remove(target.mesh);if(target.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! You defeated the strongest monster! Treasure: 50 coins, 25 crystals, 40 iron, 100 stone, 20 food and 20 water, plus 1000 XP. The island seal is broken!');}else{inventory.food+=1;inventory.hide+=1;gainXP(30);}}
  updateHUD();
 }
 function refreshSwordVisual(){
@@ -777,6 +802,63 @@ function refreshSwordVisual(){
  const guard=new THREE.Mesh(new THREE.BoxGeometry(.28,.055,.09),trunkMat);guard.position.set(0,.06,-.12);swordHolder.add(guard);
  const grip=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.22,8),woodMat);grip.position.set(0,-.07,-.12);swordHolder.add(grip);
  const pommel=new THREE.Mesh(new THREE.SphereGeometry(.065,8,6),goldMat);pommel.position.set(0,-.2,-.12);swordHolder.add(pommel);
+}
+const craftingRecipes=[
+ {id:'campfire',name:'Campfire & Bed',icon:'🔥',cat:'Survival',cost:{wood:5,stone:3},desc:'Build your first campfire and a bed.',special:'campfire'},
+ {id:'wood',name:'Wooden Sword',icon:'🗡️',cat:'Weapons',cost:{wood:4},desc:'10 damage · 15 durability',special:'weapon',weapon:'wood'},
+ {id:'stone',name:'Stone Sword',icon:'⚔️',cat:'Weapons',cost:{wood:4,stone:3},desc:'20 damage · 30 durability',special:'weapon',weapon:'stone'},
+ {id:'iron',name:'Iron Sword',icon:'⚔️',cat:'Weapons',cost:{wood:3,iron:4},desc:'35 damage · 50 durability',special:'weapon',weapon:'iron'},
+ {id:'crystal',name:'Crystal Sword',icon:'💎',cat:'Weapons',cost:{wood:3,crystal:3},desc:'50 damage · Level 3 · 70 durability',special:'weapon',weapon:'crystal'},
+ {id:'boat',name:'Wooden Boat',icon:'🛶',cat:'Travel',cost:{wood:5,stone:2},desc:'Required to sail between islands.',special:'boat'},
+ {id:'rod',name:'Fishing Rod',icon:'🎣',cat:'Survival',cost:{wood:3,iron:1},desc:'Fish at the Pinewatch fishing dock.',special:'rod'},
+ {id:'rope',name:'Rope',icon:'🪢',cat:'Materials',cost:{fibre:3},desc:'A basic material for tools and boats.',out:'rope'},
+ {id:'cloth',name:'Cloth',icon:'🧵',cat:'Materials',cost:{fibre:4},desc:'Used for clothing and survival gear.',out:'cloth'},
+ {id:'leatherArmour',name:'Leather Armour',icon:'🦺',cat:'Armour',cost:{hide:5,fibre:3},desc:'Light protection made from animal hides.',out:'leatherArmour'},
+ {id:'waterskin',name:'Waterskin',icon:'💧',cat:'Survival',cost:{hide:2,fibre:2},desc:'A portable water container.',out:'waterskin'},
+ {id:'largeBackpack',name:'Large Backpack',icon:'🎒',cat:'Building',cost:{hide:4,fibre:4,wood:2},desc:'A crafted storage upgrade.',out:'largeBackpack'},
+ {id:'reinforcedChest',name:'Reinforced Chest',icon:'📦',cat:'Building',cost:{hardwood:0,wood:8,copper:4},desc:'A sturdier chest for your base.',out:'reinforcedChest'},
+ {id:'watchtower',name:'Wooden Watchtower',icon:'🗼',cat:'Building',cost:{wood:14,stone:6,rope:2},desc:'A defensive lookout structure.',out:'watchtower'},
+ {id:'advancedFurnace',name:'Advanced Furnace',icon:'🔥',cat:'Building',cost:{stone:12,copper:4,sulphur:2},desc:'A station for advanced crafting.',out:'advancedFurnace'},
+ {id:'repairKit',name:'Repair Kit',icon:'🧰',cat:'Tools',cost:{copper:2,fibre:2,wood:1},desc:'A portable equipment repair kit.',out:'repairKit'},
+ {id:'copperPickaxe',name:'Copper Pickaxe',icon:'⛏️',cat:'Tools',cost:{copper:4,wood:3,stone:2},desc:'An improved mining tool.',out:'copperPickaxe'},
+ {id:'silverArmour',name:'Silver Armour',icon:'🛡️',cat:'Armour',cost:{silver:8,hide:3},desc:'Advanced armour for dangerous islands.',out:'silverArmour'},
+ {id:'obsidianAxe',name:'Obsidian Axe',icon:'🪓',cat:'Tools',cost:{obsidian:3,wood:3,rope:1},desc:'A powerful axe made with volcanic glass.',out:'obsidianAxe'},
+ {id:'frostClothing',name:'Frost Clothing',icon:'🧥',cat:'Armour',cost:{frost:3,hide:4,cloth:2},desc:'Clothing designed for frozen islands.',out:'frostClothing'},
+ {id:'crystalLantern',name:'Crystal Lantern',icon:'🏮',cat:'Building',cost:{crystal:2,copper:4},desc:'A bright lantern for caves and camps.',out:'crystalLantern'},
+ {id:'reinforcedBoat',name:'Reinforced Boat',icon:'⛵',cat:'Travel',cost:{wood:12,fibre:6,copper:4},desc:'An advanced boat upgrade (requires a boat first).',special:'reinforcedBoat'},
+ {id:'advancedRod',name:'Advanced Fishing Rod',icon:'🎣',cat:'Tools',cost:{wood:3,fibre:3,silver:1},desc:'A better fishing rod for experienced fishers.',special:'advancedRod'},
+ {id:'teleporter',name:'Crystal Teleporter',icon:'🌀',cat:'Travel',cost:{crystal:5,silver:4,gold:2},desc:'A rare teleportation device blueprint item.',out:'teleporter'},
+ {id:'copperIngots',name:'Copper Ingots ×2',icon:'🟠',cat:'Materials',cost:{copper:3},desc:'Refined copper for advanced recipes.',out:'copperIngots'},
+ {id:'silverIngots',name:'Silver Ingots ×2',icon:'⚪',cat:'Materials',cost:{silver:3},desc:'Refined silver for advanced recipes.',out:'silverIngots'},
+ {id:'goldenSword',name:'Golden Sword',icon:'🌟',cat:'Weapons',cost:{gold:3,wood:2},desc:'A rare ceremonial weapon.',out:'goldenSword'},
+ {id:'obsidianBlade',name:'Obsidian Blade',icon:'🌋',cat:'Weapons',cost:{obsidian:3,wood:2},desc:'A rare volcanic-glass weapon.',out:'obsidianBlade'},
+ {id:'frostBlade',name:'Frost Blade',icon:'❄️',cat:'Weapons',cost:{frost:3,silver:2,wood:2},desc:'A rare blade from the frozen islands.',out:'frostBlade'},
+ {id:'shelter',name:'Wooden Shelter',icon:'🏠',cat:'Building',cost:{wood:12,stone:4,fibre:3},desc:'Basic shelter materials for your base.',out:'shelter'}
+];
+let activeRecipeCategory='All';
+function recipeCostText(cost){return Object.entries(cost).filter(([k,v])=>v>0).map(([k,v])=>`${v} ${k==='fibre'?'plant fibre':k==='hide'?'animal hide':k==='iron'?'iron ore':k==='copper'?'copper ore':k==='silver'?'silver ore':k==='gold'?'gold ore':k==='frost'?'frost shards':k}`).join(' · ');}
+function renderCraftBook(){
+ const cats=['All','Weapons','Armour','Tools','Survival','Building','Travel','Materials'];
+ document.getElementById('recipeTabs').innerHTML=cats.map(c=>`<button data-cat="${c}" class="${activeRecipeCategory===c?'selected':''}">${c}</button>`).join('');
+ document.querySelectorAll('#recipeTabs button').forEach(b=>b.onclick=()=>{activeRecipeCategory=b.dataset.cat;renderCraftBook();});
+ const list=craftingRecipes.filter(r=>activeRecipeCategory==='All'||r.cat===activeRecipeCategory);
+ document.getElementById('recipeList').innerHTML=list.map(r=>{const missing=Object.entries(r.cost).some(([k,v])=>v>0&&(inventory[k]||0)<v);const locked=(r.special==='weapon'&&weaponDefs[r.weapon]?.level&&level<weaponDefs[r.weapon].level)||(r.special==='reinforcedBoat'&&!craftedBoat)||(r.special==='advancedRod'&&!fishingRod)||(r.special==='campfire'&&inventory.campfire>0)||(r.special==='boat'&&craftedBoat)||(r.special==='rod'&&fishingRod);return `<button class="recipe" data-recipe="${r.id}" ${locked?'disabled':''}><strong>${r.icon} ${r.name}</strong><span class="ingredients">${recipeCostText(r.cost)}</span><span class="recipeNote">${r.desc}${missing?' · Missing ingredients':locked?' · Requires prerequisite':''}</span></button>`;}).join('');
+ document.querySelectorAll('.recipe').forEach(b=>b.onclick=()=>craftRecipe(b.dataset.recipe));
+}
+function openCraftBook(){renderCraftBook();document.getElementById('craftBook').style.display='block';}
+function closeCraftBook(){document.getElementById('craftBook').style.display='none';}
+function craftRecipe(id){
+ const r=craftingRecipes.find(x=>x.id===id);if(!r)return;
+ if(r.special==='campfire'){craft();renderCraftBook();return;}
+ if(r.special==='weapon'){const def=weaponDefs[r.weapon];if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}`);return;}const missing=Object.entries(r.cost).filter(([k,v])=>(inventory[k]||0)<v);if(missing.length){toast('Not enough materials: '+missing.map(([k,v])=>`${v-(inventory[k]||0)} ${k}`).join(', '));return;}for(const [k,v] of Object.entries(r.cost))inventory[k]-=v;ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped!`);updateHUD();renderCraftBook();return;}
+ if(r.special==='boat'){craftBoat();renderCraftBook();return;} if(r.special==='rod'){craftFishingRod();renderCraftBook();return;}
+ if(r.special==='reinforcedBoat'){if(!craftedBoat){toast('Craft a wooden boat first.');return;}if(inventory.reinforcedBoat>0){toast('You already crafted a reinforced boat upgrade.');return;}}
+ if(r.special==='advancedRod'&&!fishingRod){toast('Craft a fishing rod first.');return;}
+ const missing=Object.entries(r.cost).filter(([k,v])=>(inventory[k]||0)<v);if(missing.length){toast('Not enough materials: '+missing.map(([k,v)=>`${v-(inventory[k]||0)} ${k}`).join(', '));return;}
+ for(const [k,v] of Object.entries(r.cost))inventory[k]-=v;
+ const output=r.out||r.id;inventory[output]=(inventory[output]||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
+ if(output==='reinforcedBoat'){craftedBoat=true;toast('Reinforced boat upgrade crafted!');}else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}else toast(`${r.name} crafted!`);
+ gainXP(8);updateHUD();renderCraftBook();
 }
 function craftSword(){
  const key=document.getElementById('weaponSelect').value,def=weaponDefs[key];
@@ -1012,8 +1094,9 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseAllM
 document.getElementById('gatherBtn').onclick=gather;
 document.getElementById('swordBtn').onclick=attack;
 document.getElementById('fishBtn').onclick=fish;
-document.getElementById('craftBoatBtn').onclick=craftBoat;
-document.getElementById('craftRodBtn').onclick=craftFishingRod;
+document.getElementById('craftBookBtn').onclick=openCraftBook;
+document.getElementById('closeCraftBook').onclick=closeCraftBook;
+document.getElementById('craftBook').addEventListener('click',e=>{if(e.target.id==='craftBook')closeCraftBook();});
 document.getElementById('interactBtn').onclick=interact;
 document.getElementById('closeTradeBtn').onclick=()=>{document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;};
 document.getElementById('buyMedicineBtn').onclick=()=>{if(tradeMode!=='medic'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Mira at the Medicine House to buy medicine.');return;}if(health>=maxHealth){toast('Your health is already full!');return;}if(inventory.coins<1){toast('Medicine costs 1 coin. You do not have enough coins.');return;}inventory.coins-=1;health=maxHealth;document.getElementById('tradeDescription').textContent=`Medicine bought! Your health is fully restored to ${maxHealth}. You have ${inventory.coins} coins left.`;toast('Medicine used! Health fully restored.');updateHUD();};
@@ -1035,8 +1118,7 @@ document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.
 document.getElementById('drinkBtn').onclick=drinkWater;
 document.getElementById('sailBtn').onclick=sailToNextIsland;
 document.getElementById('boardBoatBtn').onclick=boardOrLeaveBoat;
-document.getElementById('craftSwordBtn').onclick=craftSword;
-document.getElementById('equipSwordBtn').onclick=equipSword;
+
 let prev=performance.now();
 function animate(now){
  requestAnimationFrame(animate);const dt=Math.min((now-prev)/1000,.05);prev=now;elapsed+=dt;attackCooldown-=dt;
