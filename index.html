@@ -159,7 +159,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore eleven islands, including a night-erupting volcano, a dragon boss island, a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village, where you can trade wood for coins and buy stone, iron or crystal armour.</p>
+    <p>Explore twelve islands, including a night-erupting volcano, a dragon boss island, a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village and Oldstead Isle, where a repairer can rebuild a rundown house for 40 wood and 20 stone.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -176,7 +176,7 @@
       <p class="small">Share the world name and password with friends for private worlds.</p>
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
-    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands.</p>
+    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone.</p>
     <button id="play">ENTER THE ISLAND</button>
     <p class="small" style="margin:12px 0 0">Online play requires this Node.js server to be running. Public rooms are listed; private rooms require the password. This is an evolving prototype; some multiplayer features are still experimental.</p>
   </div>
@@ -220,7 +220,7 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'}];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'},{x:-220,z:440,name:'Oldstead Isle',radius:76,biome:'forest'}];
 const mountainPathLocal=[[0,85],[-16,66],[-28,46],[-27,27],[-14,11],[8,-3],[19,-20],[14,-38],[0,-47],[-11,-34],[-11,-14],[0,-7]];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
@@ -312,7 +312,44 @@ for (const c of islandCenters.slice(1)) {
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'){ for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
+// Keep the central ruin and shoreline repairer clear of random resource/enemy spawns.
+{const c=islandCenters.find(i=>i.name==='Oldstead Isle');for(const r of resources){const dx=r.mesh.position.x-c.x,dz=r.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){r.alive=false;world.remove(r.mesh);}}for(const e of enemies){const dx=e.mesh.position.x-c.x,dz=e.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){e.alive=false;world.remove(e.mesh);}}}
 const villageHouses=[], villagers=[];
+let oldsteadHouse=null, oldsteadHouseRepaired=false;
+// Oldstead Isle: a ruined cottage in the middle and a repairer waiting near the shoreline.
+{
+ const c=islandCenters.find(i=>i.name==='Oldstead Isle');
+ const ruined=new THREE.Group(), repaired=new THREE.Group();
+ const stone=mat(0x77766c), oldWood=mat(0x59402d), fadedWall=mat(0x8b806b), freshWall=mat(0xc6ad7f), roof=mat(0x51443a), freshRoof=mat(0x8c5540);
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(10,.35,8),stone);floor.position.set(c.x,.18,c.z);world.add(floor);
+ // Broken, uneven walls and a collapsed roof make the starting state visibly rundown.
+ for(const [w,h,d,x,y,z,rot] of [
+  [8,.35,.35,c.x,1.1,c.z-3.7,0],[.35,2.2,.35,c.x-4,1.1,c.z,0],
+  [.35,1.4,.35,c.x+4,.7,c.z+1.5,0],[3,.3,.35,c.x+2,2.0,c.z+3.7,0],
+  [2.8,.25,.35,c.x-1,2.4,c.z+3.7,0]
+ ]){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),oldWood);m.position.set(x,y,z);m.rotation.z=rot;m.castShadow=true;ruined.add(m);}
+ const fallenRoof=new THREE.Mesh(new THREE.BoxGeometry(5,.25,3),roof);fallenRoof.position.set(c.x+1,.7,c.z+.3);fallenRoof.rotation.set(.15,0,.28);ruined.add(fallenRoof);
+ const doorFrame=new THREE.Mesh(new THREE.BoxGeometry(.25,2.2,.3),stone);doorFrame.position.set(c.x-1.2,1.1,c.z+3.7);ruined.add(doorFrame);
+ const freshBase=new THREE.Mesh(new THREE.BoxGeometry(9.8,.25,7.8),woodMat);freshBase.position.set(c.x,.18,c.z);repaired.add(freshBase);
+ const walls=new THREE.Mesh(new THREE.BoxGeometry(8,2.8,6.5),freshWall);walls.position.set(c.x,1.55,c.z);repaired.add(walls);
+ const door=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.1,.12),oldWood);door.position.set(c.x,1.12,c.z+3.3);repaired.add(door);
+ const roofMesh=new THREE.Mesh(new THREE.ConeGeometry(6.2,2.6,4),freshRoof);roofMesh.position.set(c.x,4.05,c.z);roofMesh.rotation.y=Math.PI/4;repaired.add(roofMesh);
+ for(const x of [-3.2,3.2]){const window=new THREE.Mesh(new THREE.BoxGeometry(.8,.75,.12),mat(0x83c6d5));window.position.set(c.x+x,1.9,c.z+3.31);repaired.add(window);}
+ world.add(ruined);world.add(repaired);repaired.visible=false;
+ oldsteadHouse={x:c.x,z:c.z,ruined,repaired};
+ // A small sign by the house advertises the repair price.
+ const sign=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,2,7),trunkMat);post.position.y=1;sign.add(post);
+ const board=new THREE.Mesh(new THREE.BoxGeometry(3.8,.8,.18),woodMat);board.position.set(0,1.65,0);sign.add(board);
+ sign.position.set(c.x+7,0,c.z+1);world.add(sign);decorations.push(sign);
+ // Repairer is at the edge, near where the player lands after sailing to this island.
+ const g=new THREE.Group(),shirt=mat(0x8e7650),skin=mat(0xf0c6a0),pants=mat(0x454c50);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.55,4,8),shirt);torso.position.y=.95;g.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),skin);head.position.y=1.52;g.add(head);
+ const cap=new THREE.Mesh(new THREE.CylinderGeometry(.29,.32,.15,8),oldWood);cap.position.y=1.76;g.add(cap);
+ for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.08,.34,3,6),skin);arm.position.set(side*.35,.98,0);g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.32,3,6),pants);leg.position.set(side*.13,.34,0);g.add(leg);}
+ g.position.set(c.x,0,c.z+c.radius-12);world.add(g);villagers.push({mesh:g,job:'houseRepairer',name:'Oldstead Repairer'});
+ decorations.push(ruined,repaired);
+}
 // Pinewatch Isle's signature fishing dock. Fishing is only allowed from this dock.
 {
  const c=islandCenters.find(i=>i.name==='Pinewatch Isle');
@@ -852,7 +889,6 @@ const craftingRecipes=[
  {id:'goldenSword',name:'Golden Sword',icon:'🌟',cat:'Weapons',cost:{gold:3,wood:2},desc:'A rare ceremonial weapon.',out:'goldenSword'},
  {id:'obsidianBlade',name:'Obsidian Blade',icon:'🌋',cat:'Weapons',cost:{obsidian:3,wood:2},desc:'A rare volcanic-glass weapon.',out:'obsidianBlade'},
  {id:'frostBlade',name:'Frost Blade',icon:'❄️',cat:'Weapons',cost:{frost:3,silver:2,wood:2},desc:'A rare blade from the frozen islands.',out:'frostBlade'},
- {id:'shelter',name:'Wooden Shelter',icon:'🏠',cat:'Building',cost:{wood:12,stone:4,fibre:3},desc:'Requires 12 wood, 4 stone and 3 plant fibre.',out:'shelter'}
 ];
 let activeRecipeCategory='All';
 let lastCraftActionAt=0;
@@ -909,72 +945,56 @@ function closeCraftBook(){document.getElementById('craftBook').style.display='no
 function craftRecipe(id){
  const now=Date.now();if(now-lastCraftActionAt<450)return;lastCraftActionAt=now;
  const r=craftingRecipes.find(x=>x.id===id);if(!r)return;
- normalizeMaterialInventory();
- // Keep a full snapshot so any failed attempt can be rolled back without losing even one item.
- const inventoryBefore={...inventory};
- const xpBefore=xp,levelBefore=level,weaponDurabilityBefore={...weaponDurability};
- const successCheck=()=>{
-   if(r.special==='campfire')return (Number(inventory.campfire)||0)>(Number(inventoryBefore.campfire)||0);
-   if(r.special==='boat')return !craftedBoatBefore && craftedBoat;
-   if(r.special==='rod')return !fishingRodBefore && fishingRod;
-   if(r.special==='weapon')return !!ownedWeapons[r.weapon] && ((Number(weaponDurability[r.weapon])||0)>(Number(weaponDurabilityBefore[r.weapon])||0) || xp!==xpBefore || level!==levelBefore);
-   const output=r.out||r.id;
-   return (Number(inventory[output])||0)>(Number(inventoryBefore[output])||0);
- };
- const craftedBoatBefore=craftedBoat, fishingRodBefore=fishingRod, ownedWeaponsBefore={...ownedWeapons};
+ const before={...inventory}, xpBefore=xp, levelBefore=level;
  const rollback=(message)=>{
-   for(const k of Object.keys(inventory)) if(!Object.prototype.hasOwnProperty.call(inventoryBefore,k)) delete inventory[k];
-   Object.assign(inventory,inventoryBefore);
-   xp=xpBefore;level=levelBefore;
-   updateHUD();renderCraftBook();
-   toast(message||'Craft failed. Your materials have been restored.');
+   for(const k of Object.keys(inventory))if(!Object.prototype.hasOwnProperty.call(before,k))delete inventory[k];
+   Object.assign(inventory,before);xp=xpBefore;level=levelBefore;
+   updateHUD();renderCraftBook();toast(message||'Craft failed. No materials were lost.');
  };
- // Check prerequisites before ingredients so unavailable upgrades never consume resources.
- if(r.special==='campfire'&&inventory.campfire>0){toast('You already built your first campfire. No materials were used.');return;}
- if(r.special==='weapon'){
-   const def=weaponDefs[r.weapon];
-   if(!def){toast('This weapon recipe is unavailable. No materials were used.');return;}
-   if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}. No materials were used.`);return;}
+ try{
+   normalizeMaterialInventory();
+   if(r.special==='campfire'&&inventory.campfire>0){toast('You already built your first campfire. No materials were used.');return;}
+   if(r.special==='weapon'){
+     const def=weaponDefs[r.weapon];
+     if(!def){toast('This weapon recipe is unavailable. No materials were used.');return;}
+     if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}. No materials were used.`);return;}
+   }
+   if(r.special==='boat'&&craftedBoat){toast('You already crafted a boat. No materials were used.');return;}
+   if(r.special==='rod'&&fishingRod){toast('You already have a fishing rod. No materials were used.');return;}
+   if(r.special==='reinforcedBoat'&&!craftedBoat){toast('Craft a wooden boat first. No materials were used.');return;}
+   if(r.special==='reinforcedBoat'&&inventory.reinforcedBoat>0){toast('You already crafted this upgrade. No materials were used.');return;}
+   if(r.special==='advancedRod'&&!fishingRod){toast('Craft a fishing rod first. No materials were used.');return;}
+   const missing=getMissingIngredients(r.cost||{});
+   if(missing.length){
+     const aliases={fibre:['fibre','plantFibre'],hide:['hide','animalHide']};
+     const label=k=>({'iron':'iron ore','copper':'copper ore','silver':'silver ore','gold':'gold ore','frost':'frost shards','fibre':'plant fibre','plantFibre':'plant fibre','hide':'animal hide','animalHide':'animal hide','copperIngots':'copper ingots','silverIngots':'silver ingots'}[k]||k);
+     toast('Not enough materials: '+missing.map(([k,v])=>`${Math.max(0,Number(v)-(aliases[k]?aliases[k].reduce((n,a)=>n+(Number(inventory[a])||0),0):(Number(inventory[k])||0)))} ${label(k)}`).join(', ')+'. Nothing was used.');
+     renderCraftBook();return;
+   }
+   // Special builds already have a guarded, atomic material-spend path.
+   if(r.special==='campfire'){craft();renderCraftBook();return;}
+   if(r.special==='boat'){craftBoat();renderCraftBook();return;}
+   if(r.special==='rod'){craftFishingRod();renderCraftBook();return;}
+   const output=r.out||r.id;
+   if(r.special!=='weapon'&&(!output||!Object.prototype.hasOwnProperty.call(inventory,output))){
+     toast('This recipe output is unavailable. No materials were used.');return;
+   }
+   const spent=spendIngredientsAtomically(r.cost||{});
+   if(!spent.ok){toast('Not enough materials. Nothing was used.');renderCraftBook();return;}
+   if(r.special==='weapon'){
+     const def=weaponDefs[r.weapon];
+     ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);
+     updateHUD();renderCraftBook();toast(`${def.name} crafted and equipped!`);return;
+   }
+   inventory[output]=(Number(inventory[output])||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
+   if(output==='reinforcedBoat')toast('Reinforced boat upgrade crafted!');
+   else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}
+   else toast(`${r.name} crafted!`);
+   gainXP(8);updateHUD();renderCraftBook();
+ }catch(err){
+   rollback('Craft failed unexpectedly. Your materials have been restored.');
+   console.error('Craft rollback:',err);
  }
- if(r.special==='boat'&&craftedBoat){toast('You already crafted a boat. No materials were used.');return;}
- if(r.special==='rod'&&fishingRod){toast('You already have a fishing rod. No materials were used.');return;}
- if(r.special==='reinforcedBoat'){
-   if(!craftedBoat){toast('Craft a wooden boat first. No materials were used.');return;}
-   if(inventory.reinforcedBoat>0){toast('You already crafted a reinforced boat upgrade. No materials were used.');return;}
- }
- if(r.special==='advancedRod'&&!fishingRod){toast('Craft a fishing rod first. No materials were used.');return;}
- // Preflight is read-only. Aliased old-save keys are counted together.
- const missing=getMissingIngredients(r.cost||{});
- if(missing.length){
-   const aliases={fibre:['fibre','plantFibre'],hide:['hide','animalHide']};
-   const label=k=>({'wood':'wood','stone':'stone','iron':'iron ore','crystal':'crystal','copper':'copper ore','silver':'silver ore','gold':'gold ore','obsidian':'obsidian','sulphur':'sulphur','frost':'frost shards','fibre':'plant fibre','plantFibre':'plant fibre','hide':'animal hide','animalHide':'animal hide','rope':'rope','cloth':'cloth','copperIngots':'copper ingots','silverIngots':'silver ingots'}[k]||k);
-   toast('Not enough materials: '+missing.map(([k,v])=>`${Math.max(0,Number(v)-(aliases[k]?aliases[k].reduce((n,a)=>n+(Number(inventory[a])||0),0):(Number(inventory[k])||0)))} ${label(k)}`).join(', ')+'. Nothing was used.');
-   renderCraftBook();return;
- }
- // These builders perform their own atomic ingredient spend. If they fail, restore the snapshot.
- if(r.special==='campfire'){craft();if(!successCheck())rollback('Campfire craft failed. Your materials have been restored.');renderCraftBook();return;}
- if(r.special==='boat'){craftBoat();if(!successCheck())rollback('Boat craft failed. Your materials have been restored.');renderCraftBook();return;}
- if(r.special==='rod'){craftFishingRod();if(!successCheck())rollback('Fishing rod craft failed. Your materials have been restored.');renderCraftBook();return;}
- // Calculate deductions against a temporary inventory first. Commit only after every ingredient passes.
- const spent=spendIngredientsAtomically(r.cost||{});
- if(!spent.ok){rollback('Not enough materials. Nothing was used.');return;}
- if(r.special==='weapon'){
-   const def=weaponDefs[r.weapon];
-   ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();
-   gainXP(12);toast(`${def.name} crafted and equipped!`);updateHUD();renderCraftBook();
-   if(!successCheck())rollback('Craft failed. Your materials have been restored.');
-   return;
- }
- const output=r.out||r.id;
- if(!output || !Object.prototype.hasOwnProperty.call(inventory,output)){
-   rollback('This recipe output is unavailable. Your materials have been restored.');return;
- }
- inventory[output]=(Number(inventory[output])||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
- if(output==='reinforcedBoat'){toast('Reinforced boat upgrade crafted!');}
- else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}
- else toast(`${r.name} crafted!`);
- gainXP(8);updateHUD();renderCraftBook();
- if(!successCheck())rollback('Craft failed. Your materials have been restored.');
 }
 function craftSword(){
  const key=document.getElementById('weaponSelect').value,def=weaponDefs[key];
@@ -1106,6 +1126,14 @@ function interact(){
   startCastleTrial();return;
  }
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
+ if(nearbyVillager && nearbyVillager.job==='houseRepairer'){
+  if(oldsteadHouseRepaired){toast('Oldstead Repairer: The house is already repaired. Enjoy your new home!');return;}
+  if(inventory.wood<40||inventory.stone<20){toast(`Oldstead Repairer: I can repair the ruined house for 40 wood and 20 stone. You have ${inventory.wood} wood and ${inventory.stone} stone. Nothing was taken.`);return;}
+  const paid=spendIngredientsAtomically({wood:40,stone:20});
+  if(!paid.ok){toast('You need 40 wood and 20 stone. Nothing was taken.');return;}
+  oldsteadHouseRepaired=true;oldsteadHouse.ruined.visible=false;oldsteadHouse.repaired.visible=true;
+  gainXP(50);toast('The repairer rebuilt the rundown house for 40 wood and 20 stone! It is yours now.');updateHUD();return;
+ }
  if(nearbyVillager){
   if(['woodTrader','armourer','medic','fishTrader'].includes(nearbyVillager.job)){
    tradeNPC=nearbyVillager;tradeMode=nearbyVillager.job;document.getElementById('tradePanel').style.display='block';

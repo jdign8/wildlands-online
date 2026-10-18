@@ -40,3 +40,6 @@ Install dependencies with `npm install`, then run `npm start`. The Render servic
 - The volcano erupts during the night cycle, with a rising lava plume, glowing crater, and erupting rocks visible even from other islands.
 - If you stand too close to the crater on Emberpeak at night, volcanic bursts deal damage; move away from the crater to stay safe.
 - Dragonfall Isle is a boss-only challenge. No night monsters or wildlings spawn there; only the giant dragon remains. Any non-boss enemies are cleared while you are on Dragonfall.
+
+
+Latest update: removed the Wooden Shelter recipe, added Oldstead Isle with a rundown central house and a shoreline repairer (repair price: 40 wood + 20 stone), and hardened crafting so failed recipe checks roll back inventory/XP.
