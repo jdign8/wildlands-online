@@ -735,7 +735,7 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,fibre:0,hide:0,berry:0,food:0,salmon:0,cod:0,whiting:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0};
+const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,fibre:0,hide:0,berry:0,food:0,salmon:0,cod:0,whiting:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0,copperIngots:0,silverIngots:0,goldenSword:0,obsidianBlade:0,frostBlade:0,shelter:0,bed:0,animalHide:0,plantFibre:0};
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
 let fishingCasts=0;
 
@@ -769,7 +769,7 @@ function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).filter(([k,v])=>v>0||['wood','stone','iron','crystal','berry','food','water','coins'].includes(k)).map(([k,v])=>{const label=({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',hide:'🦌 Animal hide',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins',rope:'🪢 Rope',cloth:'🧵 Cloth',leatherArmour:'🛡️ Leather armour',waterskin:'💧 Waterskins',largeBackpack:'🎒 Large backpacks',reinforcedChest:'📦 Reinforced chests',watchtower:'🗼 Watchtowers',advancedFurnace:'🔥 Advanced furnaces',repairKit:'🧰 Repair kits',crystalLantern:'🏮 Crystal lanterns',reinforcedBoat:'⛵ Reinforced boats',advancedRod:'🎣 Advanced rods',copperPickaxe:'⛏️ Copper pickaxes',silverArmour:'🛡️ Silver armour',obsidianAxe:'🪓 Obsidian axes',frostClothing:'🧥 Frost clothing',teleporter:'🌀 Teleporters'})[k]||k;const foodItem=['food','salmon','cod','whiting','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
+ document.getElementById('items').innerHTML=Object.entries(inventory).map(([k,v])=>{const label=({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',hide:'🦌 Animal hide',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins',rope:'🪢 Rope',cloth:'🧵 Cloth',leatherArmour:'🛡️ Leather armour',waterskin:'💧 Waterskins',largeBackpack:'🎒 Large backpacks',reinforcedChest:'📦 Reinforced chests',watchtower:'🗼 Watchtowers',advancedFurnace:'🔥 Advanced furnaces',repairKit:'🧰 Repair kits',crystalLantern:'🏮 Crystal lanterns',reinforcedBoat:'⛵ Reinforced boats',advancedRod:'🎣 Advanced rods',copperPickaxe:'⛏️ Copper pickaxes',silverArmour:'🛡️ Silver armour',obsidianAxe:'🪓 Obsidian axes',frostClothing:'🧥 Frost clothing',teleporter:'🌀 Teleporters',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',goldenSword:'🌟 Golden sword',obsidianBlade:'⬛ Obsidian blade',frostBlade:'❄️ Frost blade',shelter:'🏕️ Shelters',bed:'🛏️ Beds',animalHide:'🦌 Animal hide (extra)',plantFibre:'🌿 Plant fibre (extra)'})[k]||k;const foodItem=['food','salmon','cod','whiting','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
@@ -781,8 +781,8 @@ function updateHUD(){
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire and bed. At night, stand beside the bed and press E or Interact / Eat to sleep.`;
 }
 function nearestResource(){
- let best=null,bd=4.5;
- for(const r of resources){if(!r.alive)continue;const d=player.position.distanceTo(r.mesh.position);if(d<bd){bd=d;best=r;}}
+ let best=null,bd=8;
+ for(const r of resources){if(!r.alive)continue;const dx=player.position.x-r.mesh.position.x,dz=player.position.z-r.mesh.position.z,d=Math.hypot(dx,dz);if(d<bd){bd=d;best=r;}}
  return best;
 }
 function gather(){
@@ -790,7 +790,7 @@ function gather(){
  const r=nearestResource();
  if(!r){toast('Move close to a resource and tap Gather / Hit. Sulphur is yellow rock; wildlings drop animal hide when defeated.');return;}
  r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]=(inventory[r.type]||0)+r.amount;if(r.type==='berry'){inventory.fibre+=1;gainXP(8);toast(`Collected ${r.amount} berries and 1 plant fibre`);}else if(r.type==='fibre'){gainXP(8);toast(`Collected ${r.amount} plant fibre`);}else{gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${{iron:'iron ore',copper:'copper ore',silver:'silver ore',gold:'gold ore',obsidian:'obsidian',sulphur:'sulphur',frost:'frost shards',crystal:'crystal',wood:'wood',stone:'stone'}[r.type]||r.type}`);}updateHUD();}
- else toast('Gathering…');
+ else {toast(`Gathering ${r.type}… ${r.hp} hit${r.hp===1?'':'s'} left`);updateHUD();}
 }
 function attack(){
  if(dead)return;
@@ -1113,7 +1113,9 @@ document.querySelectorAll('#mobile [data-key]').forEach(b=>{
 });
 window.addEventListener('blur',releaseAllMovement);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseAllMovement();});
-document.getElementById('gatherBtn').onclick=gather;
+const gatherBtn=document.getElementById('gatherBtn');
+gatherBtn.addEventListener('click',e=>{e.preventDefault();gather();});
+gatherBtn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();gather();}});
 document.getElementById('swordBtn').onclick=attack;
 document.getElementById('fishBtn').onclick=fish;
 document.getElementById('craftBookBtn').onclick=openCraftBook;
