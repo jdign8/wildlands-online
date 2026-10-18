@@ -271,10 +271,27 @@ function addFibrePlant(x,z){
  g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'fibre',amount:2,hp:1,alive:true}); return g;
 }
 function addOre(x,z,type='iron'){
- const g=new THREE.Group(); const oreColors={crystal:0x59e6ef,copper:0xc87945,silver:0xcbd5df,gold:0xe7bd43,obsidian:0x292a42,sulphur:0xe3d24d,frost:0x8deaff}; const oreMat=mat(oreColors[type]||0x9b6844,.32);
- for(let i=0;i<5;i++){const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(.38+Math.random()*.2,0),oreMat);chunk.position.set((Math.random()-.5)*.8,.32+Math.random()*.38,(Math.random()-.5)*.62);chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);}
+ const g=new THREE.Group();
+ const oreColors={crystal:0x59e6ef,copper:0xc87945,silver:0xcbd5df,gold:0xffc928,obsidian:0x292a42,sulphur:0xf3e56b,frost:0x8deaff};
+ // Gold is bright, reflective metallic nuggets; sulphur is a pale, matte cluster of sharp crystals.
+ const oreMat=type==='gold'?new THREE.MeshStandardMaterial({color:oreColors.gold,roughness:.24,metalness:.82}):mat(oreColors[type]||0x9b6844,type==='sulphur'?.88:.32);
+ if(type==='sulphur'){
+  const baseMat=mat(0xcabf42,.96);
+  const base=new THREE.Mesh(new THREE.DodecahedronGeometry(.42,0),baseMat);base.position.y=.27;base.scale.set(1.25,.65,1.05);base.castShadow=true;g.add(base);
+  for(let i=0;i<6;i++){const h=.34+Math.random()*.42,crystal=new THREE.Mesh(new THREE.ConeGeometry(.18+Math.random()*.08,h,5),i%2?oreMat:baseMat);crystal.position.set((Math.random()-.5)*.62,.25+h*.45,(Math.random()-.5)*.48);crystal.rotation.z=(Math.random()-.5)*.34;crystal.rotation.x=(Math.random()-.5)*.28;crystal.castShadow=true;g.add(crystal);}
+ }else{
+  const count=type==='gold'?7:5;
+  for(let i=0;i<count;i++){
+   const size=type==='gold'?.22+Math.random()*.18:.38+Math.random()*.2;
+   const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),oreMat);
+   chunk.position.set((Math.random()-.5)*(type==='gold'?1.0:.8),.28+Math.random()*.4,(Math.random()-.5)*(type==='gold'?.78:.62));
+   chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);
+  }
+ }
  if(type==='iron'){const fleckMat=mat(0xc5b8a5,.32);for(let i=0;i<3;i++){const fleck=new THREE.Mesh(new THREE.DodecahedronGeometry(.12,0),fleckMat);fleck.position.set((Math.random()-.5)*.65,.55+Math.random()*.2,(Math.random()-.5)*.5);g.add(fleck);}}
- g.position.set(x,0,z);world.add(g);resources.push({mesh:g,type,amount:(type==='crystal'||type==='gold'||type==='obsidian'||type==='frost')?1:2,hp:2,alive:true});return g;
+ g.position.set(x,0,z);world.add(g);
+ const islandIndex=islandCenters.reduce((best,c,i)=>Math.hypot(c.x-x,c.z-z)<Math.hypot(islandCenters[best].x-x,islandCenters[best].z-z)?i:best,0);
+ resources.push({mesh:g,type,amount:(type==='gold'?2:(type==='crystal'||type==='obsidian'||type==='frost')?1:2),hp:2,alive:true,islandIndex});return g;
 }
 function addEnemy(x,z,hp=18,nightSpawn=false){
  const g=new THREE.Group(); const hide=mat(0x5e7350), skin=mat(0xb98668), dark=mat(0x2c332a);
@@ -283,7 +300,9 @@ function addEnemy(x,z,hp=18,nightSpawn=false){
  const hair=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8,0,Math.PI*2,0,Math.PI*.55),dark);hair.position.set(0,1.62,.015);g.add(hair);
  const eyeMat=new THREE.MeshBasicMaterial({color:0x17191b});
  for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),eyeMat);eye.position.set(side*.085,1.55,-.218);g.add(eye);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.42,3,6),hide);arm.position.set(side*.39,.95,0);arm.rotation.z=side*.16;g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.36,3,6),dark);leg.position.set(side*.16,.32,0);g.add(leg);}
- g.position.set(x,0,z); world.add(g); enemies.push({mesh:g,hp:nightSpawn?Math.max(hp,32):Math.max(hp,18),alive:true,cooldown:0,nightSpawn,speed:nightSpawn?1.55:1.28,damage:nightSpawn?24:16,attackInterval:nightSpawn?0.7:0.9});}
+ g.position.set(x,0,z); world.add(g);
+ const islandIndex=islandCenters.reduce((best,c,i)=>Math.hypot(c.x-x,c.z-z)<Math.hypot(islandCenters[best].x-x,islandCenters[best].z-z)?i:best,0);
+ enemies.push({mesh:g,hp:nightSpawn?Math.max(hp,32):Math.max(hp,18),alive:true,cooldown:0,nightSpawn,speed:nightSpawn?1.55:1.28,damage:nightSpawn?24:16,attackInterval:nightSpawn?0.7:0.9,islandIndex});}
 for(let i=0;i<105;i++){let a=Math.random()*Math.PI*2,r=10+Math.random()*76,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.hypot(x,z)>7)addTree(x,z,.75+Math.random()*.6);}
 for(let i=0;i<72;i++){let a=Math.random()*Math.PI*2,r=7+Math.random()*82;addRock(Math.cos(a)*r,Math.sin(a)*r,.65+Math.random()*.8);}
 for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*72;addBush(Math.cos(a)*r,Math.sin(a)*r);}
@@ -296,7 +315,7 @@ for(const [x,z] of [[-58,-12],[-43,48],[-12,-61],[26,57],[59,18],[42,-43],[-61,3
 for(const [x,z] of [[-35,12],[33,-28],[48,42]]) addOre(x,z,'copper');
 for(const [x,z] of [[14,31],[-26,-37],[51,-16],[-49,-43]]) addOre(x,z,'sulphur');
 for(const c of islandCenters){
- if(c.biome==='mines'){for(let i=0;i<9;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'copper');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*36;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}addOre(c.x+9,c.z-19,'gold');addOre(c.x-18,c.z+26,'obsidian');}
+ if(c.biome==='mines'){for(let i=0;i<9;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'copper');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*36;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}for(let i=0;i<7;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*43;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'gold');}addOre(c.x-18,c.z+26,'obsidian');}
  if(c.biome==='snow'){for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'frost');}addOre(c.x+18,c.z-24,'silver');}
  if(c.biome==='volcano'){for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'obsidian');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}}
 }
@@ -508,7 +527,7 @@ function makePortal(x,z,glow=0x49e9f2){
  }
  const tail=new THREE.Mesh(new THREE.ConeGeometry(.7,6.5,9),hide);tail.position.set(0,2.8,6.1);tail.rotation.x=Math.PI/2;tail.rotation.z=Math.PI;dragon.add(tail);
  dragon.position.set(dragonIsland.x,0,dragonIsland.z-7);dragon.scale.setScalar(1.45);world.add(dragon);decorations.push(dragon);
- dragonBoss={mesh:dragon,hp:420,maxHp:420,alive:true,cooldown:0,nightSpawn:false,speed:1.8,damage:38,attackInterval:.72,isDragonBoss:true};enemies.push(dragonBoss);
+ dragonBoss={mesh:dragon,hp:420,maxHp:420,alive:true,cooldown:0,nightSpawn:false,speed:1.8,damage:38,attackInterval:.72,isDragonBoss:true,islandIndex:9};enemies.push(dragonBoss);
 }
 
 // Kingsfall Castle Isle: a huge fortified castle, peaceful residents, and a gladiator arena.
@@ -828,7 +847,7 @@ function nearestResource(){
 function gather(){
  if(dead)return;
  const r=nearestResource();
- if(!r){toast('Move close to a resource and tap Gather / Hit. Sulphur is yellow rock; wildlings drop animal hide when defeated.');return;}
+ if(!r){toast('Move close to a resource and tap Gather / Hit. Mine pale-blue crystal clusters on Frostpeak Island for frost shards; sulphur is pale yellow and spiky, gold is shiny metallic. Wildlings drop animal hide.');return;}
  r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]=(inventory[r.type]||0)+r.amount;if(r.type==='berry'){inventory.fibre+=1;gainXP(8);toast(`Collected ${r.amount} berries and 1 plant fibre`);}else if(r.type==='fibre'){gainXP(8);toast(`Collected ${r.amount} plant fibre`);}else{gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${{iron:'iron ore',copper:'copper ore',silver:'silver ore',gold:'gold ore',obsidian:'obsidian',sulphur:'sulphur',frost:'frost shards',crystal:'crystal',wood:'wood',stone:'stone'}[r.type]||r.type}`);}updateHUD();}
  else {toast(`Gathering ${r.type}… ${r.hp} hit${r.hp===1?'':'s'} left`);updateHUD();}
 }
@@ -1339,7 +1358,16 @@ function animate(now){
   }
   // Dragonfall is a boss-only island: clear any non-boss enemies and never let them chase into it.
   if(activeIsland===9){for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(!e.isDragonBoss){world.remove(e.mesh);enemies.splice(i,1);}}}
-  for(const e of enemies){if(!e.alive)continue;const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}if(d<(e.isDragonBoss?5.8:1.45)){e.cooldown-=dt;if(e.cooldown<=0){const mitigation=armorType?armorDefs[armorType].reduction:0;health=Math.max(0,health-e.damage*(1-mitigation));e.cooldown=e.attackInterval;toast(e.isDragonBoss?'THE DRAGON BREATHES FIRE! Massive damage!':e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}}
+  for(const e of enemies){
+   if(!e.alive)continue;
+   // Enemies only pursue the player on their own island. Mountain wildlings remain at ground level and cannot hit a climber high above them.
+   if(Number.isInteger(e.islandIndex)&&e.islandIndex!==activeIsland)continue;
+   const verticalGap=Math.abs(player.position.y-(e.mesh.position.y||0));
+   if(verticalGap>2.6)continue;
+   const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,d=Math.hypot(dx,dz);
+   if(d<(e.nightSpawn?22:18)&&d>1.3){e.mesh.position.x+=dx/d*dt*e.speed;e.mesh.position.z+=dz/d*dt*e.speed;e.mesh.rotation.y=Math.atan2(dx,dz);}
+   if(d<(e.isDragonBoss?5.8:1.45)&&verticalGap<=2.2){e.cooldown-=dt;if(e.cooldown<=0){const mitigation=armorType?armorDefs[armorType].reduction:0;health=Math.max(0,health-e.damage*(1-mitigation));e.cooldown=e.attackInterval;toast(e.isDragonBoss?'THE DRAGON BREATHES FIRE! Massive damage!':e.nightSpawn?'A night monster hit you hard!':'A wildling hit you!');}}
+  }
   if(castleArenaActive && castleArenaWildlings.length && castleArenaWildlings.every(e=>!e.alive)){
    castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('CASTLE CHAMPION! You defeated all 3 tough wildlings and earned 8 coins + 100 XP! The castle is now open.');updateHUD();
   }
