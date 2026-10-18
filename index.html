@@ -28,6 +28,8 @@
   /* The HUD wrapper ignores pointer input so the game view remains draggable; explicitly re-enable input for backpack controls. */
   #inventory button, #inventory select, #inventory input { pointer-events:auto; touch-action:manipulation; position:relative; z-index:8; }
   #items { display:grid; grid-template-columns:1fr 1fr; gap:5px }
+  .foodInfoItem { cursor:pointer; touch-action:manipulation; }
+  .foodInfoItem:focus { outline:2px solid #83d8a2; outline-offset:1px; }
   #craftBookBtn { width:100%; margin:7px 0; font-weight:800; background:#315845; }
   #craftBook { display:none; position:fixed; inset:0; z-index:30; background:#071016dd; padding: max(12px,env(safe-area-inset-top)) 10px max(12px,env(safe-area-inset-bottom)); pointer-events:auto; }
   #craftBookCard { width:min(720px,100%); height:100%; max-height:100%; margin:auto; display:flex; flex-direction:column; background:#101f25; border:1px solid #ffffff35; border-radius:16px; padding:14px; box-shadow:0 20px 80px #000a; }
@@ -258,6 +260,16 @@ function addBush(x,z){
  const g=new THREE.Group(); for(let i=0;i<4;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.32,7,6),mat(i%2?0x467e3d:0x5c9149)); b.position.set(Math.sin(i*2)*.25,.3+Math.random()*.15,Math.cos(i*2)*.22); b.scale.set(1,.8,1);g.add(b);}
  g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'berry',amount:2,hp:1,alive:true});
 }
+function addFibrePlant(x,z){
+ const g=new THREE.Group();
+ const stemMat=mat(0x477b38), tipMat=mat(0x8bb65a);
+ for(let i=0;i<5;i++){
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.055,.62+Math.random()*.25,5),stemMat);
+  stem.position.set((Math.random()-.5)*.32,.34, (Math.random()-.5)*.28); stem.rotation.z=(Math.random()-.5)*.55; stem.castShadow=true; g.add(stem);
+  const leaf=new THREE.Mesh(new THREE.ConeGeometry(.11,.32,5),tipMat); leaf.position.set(stem.position.x+.09,.55,stem.position.z); leaf.rotation.z=-.65; g.add(leaf);
+ }
+ g.position.set(x,0,z); world.add(g); resources.push({mesh:g,type:'fibre',amount:2,hp:1,alive:true}); return g;
+}
 function addOre(x,z,type='iron'){
  const g=new THREE.Group(); const oreColors={crystal:0x59e6ef,copper:0xc87945,silver:0xcbd5df,gold:0xe7bd43,obsidian:0x292a42,sulphur:0xe3d24d,frost:0x8deaff}; const oreMat=mat(oreColors[type]||0x9b6844,.32);
  for(let i=0;i<5;i++){const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(.38+Math.random()*.2,0),oreMat);chunk.position.set((Math.random()-.5)*.8,.32+Math.random()*.38,(Math.random()-.5)*.62);chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);}
@@ -275,13 +287,16 @@ function addEnemy(x,z,hp=18,nightSpawn=false){
 for(let i=0;i<105;i++){let a=Math.random()*Math.PI*2,r=10+Math.random()*76,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.hypot(x,z)>7)addTree(x,z,.75+Math.random()*.6);}
 for(let i=0;i<72;i++){let a=Math.random()*Math.PI*2,r=7+Math.random()*82;addRock(Math.cos(a)*r,Math.sin(a)*r,.65+Math.random()*.8);}
 for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,r=8+Math.random()*72;addBush(Math.cos(a)*r,Math.sin(a)*r);}
+for(let i=0;i<24;i++){let a=Math.random()*Math.PI*2,r=9+Math.random()*70;addFibrePlant(Math.cos(a)*r,Math.sin(a)*r);}
 for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,r=22+Math.random()*58;addEnemy(Math.cos(a)*r,Math.sin(a)*r);}
 // Starter-island iron: visible deposits so new players can craft a fishing rod without first sailing away.
 for(const [x,z] of [[-58,-12],[-43,48],[-12,-61],[26,57],[59,18],[42,-43],[-61,31],[9,68]]) addOre(x,z,'iron');
 // New craft materials are placed on themed islands; rare ores stay scarce.
+// Sulphur is also available on the starter island so players can test recipes before sailing.
 for(const [x,z] of [[-35,12],[33,-28],[48,42]]) addOre(x,z,'copper');
+for(const [x,z] of [[14,31],[-26,-37],[51,-16],[-49,-43]]) addOre(x,z,'sulphur');
 for(const c of islandCenters){
- if(c.biome==='mines'){for(let i=0;i<9;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'copper');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}addOre(c.x+9,c.z-19,'gold');addOre(c.x-18,c.z+26,'obsidian');}
+ if(c.biome==='mines'){for(let i=0;i<9;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'copper');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*36;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}addOre(c.x+9,c.z-19,'gold');addOre(c.x-18,c.z+26,'obsidian');}
  if(c.biome==='snow'){for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'frost');}addOre(c.x+18,c.z-24,'silver');}
  if(c.biome==='volcano'){for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'obsidian');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*38;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}}
 }
@@ -292,6 +307,7 @@ for (const c of islandCenters.slice(1)) {
   for(let i=0;i<treeCount;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*(c.radius-18);addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
   for(let i=0;i<(c.biome==='dragon'?0:18);i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
   if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+  if(c.biome!=='dragon'){for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addFibrePlant(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
   if(c.biome==='mines'){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'){ for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
@@ -753,7 +769,7 @@ function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- document.getElementById('items').innerHTML=Object.entries(inventory).filter(([k,v])=>v>0||['wood','stone','iron','crystal','berry','food','water','coins'].includes(k)).map(([k,v])=>`<div class="item"><span>${({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',hide:'🦌 Animal hide',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins',rope:'🪢 Rope',cloth:'🧵 Cloth',leatherArmour:'🛡️ Leather armour',waterskin:'💧 Waterskins',largeBackpack:'🎒 Large backpacks',reinforcedChest:'📦 Reinforced chests',watchtower:'🗼 Watchtowers',advancedFurnace:'🔥 Advanced furnaces',repairKit:'🧰 Repair kits',crystalLantern:'🏮 Crystal lanterns',reinforcedBoat:'⛵ Reinforced boats',advancedRod:'🎣 Advanced rods',copperPickaxe:'⛏️ Copper pickaxes',silverArmour:'🛡️ Silver armour',obsidianAxe:'🪓 Obsidian axes',frostClothing:'🧥 Frost clothing',teleporter:'🌀 Teleporters'})[k]||k}</span><strong>${v}</strong></div>`).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
+ document.getElementById('items').innerHTML=Object.entries(inventory).filter(([k,v])=>v>0||['wood','stone','iron','crystal','berry','food','water','coins'].includes(k)).map(([k,v])=>{const label=({wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',hide:'🦌 Animal hide',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',campfire:'🔥 Campfires',coins:'🪙 Coins',rope:'🪢 Rope',cloth:'🧵 Cloth',leatherArmour:'🛡️ Leather armour',waterskin:'💧 Waterskins',largeBackpack:'🎒 Large backpacks',reinforcedChest:'📦 Reinforced chests',watchtower:'🗼 Watchtowers',advancedFurnace:'🔥 Advanced furnaces',repairKit:'🧰 Repair kits',crystalLantern:'🏮 Crystal lanterns',reinforcedBoat:'⛵ Reinforced boats',advancedRod:'🎣 Advanced rods',copperPickaxe:'⛏️ Copper pickaxes',silverArmour:'🛡️ Silver armour',obsidianAxe:'🪓 Obsidian axes',frostClothing:'🧥 Frost clothing',teleporter:'🌀 Teleporters'})[k]||k;const foodItem=['food','salmon','cod','whiting','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('')+Object.entries(ownedWeapons).filter(([k,v])=>v).map(([k])=>`<div class="item"><span>⚔️ ${weaponDefs[k].name}</span><strong>${weaponDurability[k]||0}/${weaponDefs[k].maxDurability}</strong></div>`).join('');
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
@@ -772,8 +788,8 @@ function nearestResource(){
 function gather(){
  if(dead)return;
  const r=nearestResource();
- if(!r){toast('Move closer to a tree, rock, or berry bush');return;}
- r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]=(inventory[r.type]||0)+r.amount;if(r.type==='berry')inventory.fibre+=1;gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${{iron:'iron ore',copper:'copper ore',silver:'silver ore',gold:'gold ore',obsidian:'obsidian',sulphur:'sulphur',frost:'frost shards',crystal:'crystal',berry:'berries',wood:'wood',stone:'stone'}[r.type]||r.type}`);updateHUD();}
+ if(!r){toast('Move close to a resource and tap Gather / Hit. Sulphur is yellow rock; wildlings drop animal hide when defeated.');return;}
+ r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);inventory[r.type]=(inventory[r.type]||0)+r.amount;if(r.type==='berry'){inventory.fibre+=1;gainXP(8);toast(`Collected ${r.amount} berries and 1 plant fibre`);}else if(r.type==='fibre'){gainXP(8);toast(`Collected ${r.amount} plant fibre`);}else{gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${{iron:'iron ore',copper:'copper ore',silver:'silver ore',gold:'gold ore',obsidian:'obsidian',sulphur:'sulphur',frost:'frost shards',crystal:'crystal',wood:'wood',stone:'stone'}[r.type]||r.type}`);}updateHUD();}
  else toast('Gathering…');
 }
 function attack(){
@@ -791,7 +807,7 @@ function attack(){
  const usedWeapon=equippedWeapon;const damage=usedWeapon?weaponDefs[usedWeapon].damage/10:1;target.hp-=damage;
  if(usedWeapon){weaponDurability[usedWeapon]=Math.max(0,(weaponDurability[usedWeapon]||weaponDefs[usedWeapon].maxDurability)-1);if(weaponDurability[usedWeapon]===0){ownedWeapons[usedWeapon]=false;equippedWeapon=null;toast(`${weaponDefs[usedWeapon].name} broke! Craft another sword.`);refreshSwordVisual();}else{toast(`${weaponDefs[usedWeapon].name}: ${weaponDurability[usedWeapon]}/${weaponDefs[usedWeapon].maxDurability} durability`);}}
  swordHolder.rotation.x=-.9;setTimeout(()=>{swordHolder.rotation.x=0;},120);gainXP(4);if(!usedWeapon)toast(target.hp<=0?'Wildling defeated!':'Hit with your fists!');
- if(target.hp<=0){target.alive=false;world.remove(target.mesh);if(target.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! You defeated the strongest monster! Treasure: 50 coins, 25 crystals, 40 iron, 100 stone, 20 food and 20 water, plus 1000 XP. The island seal is broken!');}else{inventory.food+=1;inventory.hide+=1;gainXP(30);}}
+ if(target.hp<=0){target.alive=false;world.remove(target.mesh);if(target.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! You defeated the strongest monster! Treasure: 50 coins, 25 crystals, 40 iron, 100 stone, 20 food and 20 water, plus 1000 XP. The island seal is broken!');}else{inventory.food+=1;inventory.hide+=1;gainXP(30);toast('Wildling defeated! Collected 1 animal hide and 1 food.');}}
  updateHUD();
 }
 function refreshSwordVisual(){
@@ -1015,6 +1031,12 @@ function interact(){
  if(inventory.campfire>0){health=Math.min(maxHealth,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
  toast('Find berries or defeat a wildling for food. Press C to craft a campfire.');
 }
+function showFoodFishInfo(){
+ const fishTotal=inventory.salmon+inventory.cod+inventory.whiting;
+ toast(`Food & fish — Salmon: ${inventory.salmon} (+45 hunger, +8 health); Cod: ${inventory.cod} (+35 hunger, +6 health); Whiting: ${inventory.whiting} (+20 hunger, +3 health). Other food: ${inventory.food}; berries: ${inventory.berry}. Use Interact / Eat to consume food.`);
+}
+document.getElementById('items').addEventListener('click',e=>{if(e.target.closest('[data-food-info]'))showFoodFishInfo();});
+document.getElementById('items').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-food-info]')){e.preventDefault();showFoodFishInfo();}});
 function setPointer(){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();}
 document.getElementById('play').onclick=()=>{
   if(mode==='online' && !connectMultiplayer()) return;
