@@ -850,11 +850,11 @@ function closeCraftBook(){document.getElementById('craftBook').style.display='no
 function craftRecipe(id){
  const r=craftingRecipes.find(x=>x.id===id);if(!r)return;
  if(r.special==='campfire'){craft();renderCraftBook();return;}
- if(r.special==='weapon'){const def=weaponDefs[r.weapon];if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}`);return;}const missing=Object.entries(r.cost).filter(([k,v])=>(inventory[k]||0)<v);if(missing.length){toast('Not enough materials: '+missing.map(([k,v])=>`${v-(inventory[k]||0)} ${k}`).join(', '));return;}for(const [k,v] of Object.entries(r.cost))inventory[k]-=v;ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped!`);updateHUD();renderCraftBook();return;}
+ if(r.special==='weapon'){const def=weaponDefs[r.weapon];if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}`);return;}const missing=Object.entries(r.cost).filter(([k,v])=>(inventory[k]||0)<v);if(missing.length){toast('Not enough materials: '+missing.map(([k,v])=>String(v-(inventory[k]||0))+' '+k).join(', '));return;}for(const [k,v] of Object.entries(r.cost))inventory[k]-=v;ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped!`);updateHUD();renderCraftBook();return;}
  if(r.special==='boat'){craftBoat();renderCraftBook();return;} if(r.special==='rod'){craftFishingRod();renderCraftBook();return;}
  if(r.special==='reinforcedBoat'){if(!craftedBoat){toast('Craft a wooden boat first.');return;}if(inventory.reinforcedBoat>0){toast('You already crafted a reinforced boat upgrade.');return;}}
  if(r.special==='advancedRod'&&!fishingRod){toast('Craft a fishing rod first.');return;}
- const missing=Object.entries(r.cost).filter(([k,v])=>(inventory[k]||0)<v);if(missing.length){toast('Not enough materials: '+missing.map(([k,v)=>`${v-(inventory[k]||0)} ${k}`).join(', '));return;}
+ const missing=Object.entries(r.cost).filter(([k,v])=>(inventory[k]||0)<v);if(missing.length){toast('Not enough materials: '+missing.map(([k,v])=>String(v-(inventory[k]||0))+' '+k).join(', '));return;}
  for(const [k,v] of Object.entries(r.cost))inventory[k]-=v;
  const output=r.out||r.id;inventory[output]=(inventory[output]||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
  if(output==='reinforcedBoat'){craftedBoat=true;toast('Reinforced boat upgrade crafted!');}else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}else toast(`${r.name} crafted!`);
