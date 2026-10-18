@@ -910,21 +910,40 @@ function craftRecipe(id){
  const now=Date.now();if(now-lastCraftActionAt<450)return;lastCraftActionAt=now;
  const r=craftingRecipes.find(x=>x.id===id);if(!r)return;
  normalizeMaterialInventory();
- // Check prerequisites before ingredients so an unavailable upgrade never consumes resources.
- if(r.special==='campfire'&&inventory.campfire>0){toast('You already built your first campfire.');return;}
+ // Keep a full snapshot so any failed attempt can be rolled back without losing even one item.
+ const inventoryBefore={...inventory};
+ const xpBefore=xp,levelBefore=level,weaponDurabilityBefore={...weaponDurability};
+ const successCheck=()=>{
+   if(r.special==='campfire')return (Number(inventory.campfire)||0)>(Number(inventoryBefore.campfire)||0);
+   if(r.special==='boat')return !craftedBoatBefore && craftedBoat;
+   if(r.special==='rod')return !fishingRodBefore && fishingRod;
+   if(r.special==='weapon')return !!ownedWeapons[r.weapon] && ((Number(weaponDurability[r.weapon])||0)>(Number(weaponDurabilityBefore[r.weapon])||0) || xp!==xpBefore || level!==levelBefore);
+   const output=r.out||r.id;
+   return (Number(inventory[output])||0)>(Number(inventoryBefore[output])||0);
+ };
+ const craftedBoatBefore=craftedBoat, fishingRodBefore=fishingRod, ownedWeaponsBefore={...ownedWeapons};
+ const rollback=(message)=>{
+   for(const k of Object.keys(inventory)) if(!Object.prototype.hasOwnProperty.call(inventoryBefore,k)) delete inventory[k];
+   Object.assign(inventory,inventoryBefore);
+   xp=xpBefore;level=levelBefore;
+   updateHUD();renderCraftBook();
+   toast(message||'Craft failed. Your materials have been restored.');
+ };
+ // Check prerequisites before ingredients so unavailable upgrades never consume resources.
+ if(r.special==='campfire'&&inventory.campfire>0){toast('You already built your first campfire. No materials were used.');return;}
  if(r.special==='weapon'){
    const def=weaponDefs[r.weapon];
-   if(!def){toast('This weapon recipe is unavailable.');return;}
-   if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}.`);return;}
+   if(!def){toast('This weapon recipe is unavailable. No materials were used.');return;}
+   if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}. No materials were used.`);return;}
  }
- if(r.special==='boat'&&craftedBoat){toast('You already crafted a boat.');return;}
- if(r.special==='rod'&&fishingRod){toast('You already have a fishing rod.');return;}
+ if(r.special==='boat'&&craftedBoat){toast('You already crafted a boat. No materials were used.');return;}
+ if(r.special==='rod'&&fishingRod){toast('You already have a fishing rod. No materials were used.');return;}
  if(r.special==='reinforcedBoat'){
    if(!craftedBoat){toast('Craft a wooden boat first. No materials were used.');return;}
-   if(inventory.reinforcedBoat>0){toast('You already crafted a reinforced boat upgrade.');return;}
+   if(inventory.reinforcedBoat>0){toast('You already crafted a reinforced boat upgrade. No materials were used.');return;}
  }
  if(r.special==='advancedRod'&&!fishingRod){toast('Craft a fishing rod first. No materials were used.');return;}
- // One alias-aware preflight. Failure exits before any inventory field is changed.
+ // Preflight is read-only. Aliased old-save keys are counted together.
  const missing=getMissingIngredients(r.cost||{});
  if(missing.length){
    const aliases={fibre:['fibre','plantFibre'],hide:['hide','animalHide']};
@@ -932,23 +951,30 @@ function craftRecipe(id){
    toast('Not enough materials: '+missing.map(([k,v])=>`${Math.max(0,Number(v)-(aliases[k]?aliases[k].reduce((n,a)=>n+(Number(inventory[a])||0),0):(Number(inventory[k])||0)))} ${label(k)}`).join(', ')+'. Nothing was used.');
    renderCraftBook();return;
  }
- // Recipes with world effects use their own atomic spend function; do not pre-spend here.
- if(r.special==='campfire'){craft();renderCraftBook();return;}
- if(r.special==='boat'){craftBoat();renderCraftBook();return;}
- if(r.special==='rod'){craftFishingRod();renderCraftBook();return;}
- // All other recipes spend once, atomically, after prerequisites and materials have passed.
- const spend=spendIngredientsAtomically(r.cost||{});
- if(!spend.ok){toast('Not enough materials. Nothing was used.');renderCraftBook();return;}
+ // These builders perform their own atomic ingredient spend. If they fail, restore the snapshot.
+ if(r.special==='campfire'){craft();if(!successCheck())rollback('Campfire craft failed. Your materials have been restored.');renderCraftBook();return;}
+ if(r.special==='boat'){craftBoat();if(!successCheck())rollback('Boat craft failed. Your materials have been restored.');renderCraftBook();return;}
+ if(r.special==='rod'){craftFishingRod();if(!successCheck())rollback('Fishing rod craft failed. Your materials have been restored.');renderCraftBook();return;}
+ // Calculate deductions against a temporary inventory first. Commit only after every ingredient passes.
+ const spent=spendIngredientsAtomically(r.cost||{});
+ if(!spent.ok){rollback('Not enough materials. Nothing was used.');return;}
  if(r.special==='weapon'){
    const def=weaponDefs[r.weapon];
-   ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped!`);updateHUD();renderCraftBook();return;
+   ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();
+   gainXP(12);toast(`${def.name} crafted and equipped!`);updateHUD();renderCraftBook();
+   if(!successCheck())rollback('Craft failed. Your materials have been restored.');
+   return;
  }
  const output=r.out||r.id;
+ if(!output || !Object.prototype.hasOwnProperty.call(inventory,output)){
+   rollback('This recipe output is unavailable. Your materials have been restored.');return;
+ }
  inventory[output]=(Number(inventory[output])||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
  if(output==='reinforcedBoat'){toast('Reinforced boat upgrade crafted!');}
  else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}
  else toast(`${r.name} crafted!`);
  gainXP(8);updateHUD();renderCraftBook();
+ if(!successCheck())rollback('Craft failed. Your materials have been restored.');
 }
 function craftSword(){
  const key=document.getElementById('weaponSelect').value,def=weaponDefs[key];
