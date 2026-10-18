@@ -771,8 +771,8 @@ function updateHUD(){
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
  const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','fibre','hide','berry','food','salmon','cod','whiting','water','coins'];
- const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',hide:'🦌 Animal hide',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',coins:'🪙 Coins'};
- document.getElementById('items').innerHTML=backpackMaterials.map(k=>{const v=inventory[k]||0,label=materialLabels[k],foodItem=['food','salmon','cod','whiting','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('');
+ const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',plantFibre:'🌿 Plant fibre',hide:'🦌 Animal hide',animalHide:'🦌 Animal hide',berry:'🫐 Berries',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',coins:'🪙 Coins'};
+ document.getElementById('items').innerHTML=backpackMaterials.map(k=>{const v=k==='fibre'?((Number(inventory.fibre)||0)+(Number(inventory.plantFibre)||0)):k==='hide'?((Number(inventory.hide)||0)+(Number(inventory.animalHide)||0)):(Number(inventory[k])||0),label=materialLabels[k],foodItem=['food','salmon','cod','whiting','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('');
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
@@ -852,44 +852,50 @@ const craftingRecipes=[
  {id:'goldenSword',name:'Golden Sword',icon:'🌟',cat:'Weapons',cost:{gold:3,wood:2},desc:'A rare ceremonial weapon.',out:'goldenSword'},
  {id:'obsidianBlade',name:'Obsidian Blade',icon:'🌋',cat:'Weapons',cost:{obsidian:3,wood:2},desc:'A rare volcanic-glass weapon.',out:'obsidianBlade'},
  {id:'frostBlade',name:'Frost Blade',icon:'❄️',cat:'Weapons',cost:{frost:3,silver:2,wood:2},desc:'A rare blade from the frozen islands.',out:'frostBlade'},
- {id:'shelter',name:'Wooden Shelter',icon:'🏠',cat:'Building',cost:{wood:12,stone:4,fibre:3},desc:'Basic shelter materials for your base.',out:'shelter'}
+ {id:'shelter',name:'Wooden Shelter',icon:'🏠',cat:'Building',cost:{wood:12,stone:4,fibre:3},desc:'Requires 12 wood, 4 stone and 3 plant fibre.',out:'shelter'}
 ];
 let activeRecipeCategory='All';
 let lastCraftActionAt=0;
 // Keep old save-file aliases compatible with the current material keys.
 function normalizeMaterialInventory(){
-  const aliases=[['fibre','plantFibre'],['hide','animalHide']];
-  for(const [primary,alias] of aliases){
-    const a=Math.max(0,Number(inventory[primary])||0), b=Math.max(0,Number(inventory[alias])||0);
-    // Migrate legacy alias counts once, then clear the alias so it cannot
-    // accidentally restore spent materials on the next normalization.
-    inventory[primary]=Math.max(a,b);
-    inventory[alias]=0;
-  }
+  // Sanitise counts only. Do not merge/reset aliases here: doing so during a failed craft
+  // made the backpack appear to lose materials. Crafting reads legacy and current keys safely.
   for(const k of Object.keys(inventory)){
     if(typeof inventory[k]!=='boolean' && Number.isFinite(Number(inventory[k]))) inventory[k]=Math.max(0,Number(inventory[k]));
   }
 }
 function getMissingIngredients(cost){
-  normalizeMaterialInventory();
-  return Object.entries(cost).filter(([k,v])=>Number(v)>0 && (Number(inventory[k])||0)<Number(v));
+  // Read current counts without changing the inventory. Checking a recipe must never spend or migrate items.
+  const aliases={fibre:['fibre','plantFibre'],hide:['hide','animalHide']};
+  return Object.entries(cost).filter(([k,v])=>Number(v)>0 && (aliases[k] ? aliases[k].reduce((n,a)=>n+Math.max(0,Number(inventory[a])||0),0) : Math.max(0,Number(inventory[k])||0)) < Number(v));
 }
 function spendIngredientsAtomically(cost){
   const costs=Object.entries(cost).filter(([,v])=>Number.isFinite(Number(v))&&Number(v)>0);
-  const missing=getMissingIngredients(Object.fromEntries(costs));
+  const aliases={fibre:['fibre','plantFibre'],hide:['hide','animalHide']};
+  const haveFor=k=>aliases[k] ? aliases[k].reduce((n,a)=>n+Math.max(0,Number(inventory[a])||0),0) : Math.max(0,Number(inventory[k])||0);
+  const missing=costs.filter(([k,v])=>haveFor(k)<Number(v));
   if(missing.length) return {ok:false,missing};
-  // Build the full next state first; only commit after every value is verified.
+  // Work out all deductions in a temporary copy first; do not mutate the real inventory until every cost passes.
   const next={};
   for(const [k,v] of costs){
-    const have=Number(inventory[k]);
-    if(!Number.isFinite(have)||have<Number(v)) return {ok:false,missing:[[k,Number(v)]]};
-    next[k]=have-Number(v);
+    const need=Number(v);
+    if(aliases[k]){
+      let remaining=need;
+      for(const alias of aliases[k]){
+        const have=Math.max(0,Number(inventory[alias])||0);
+        const take=Math.min(have,remaining); next[alias]=have-take; remaining-=take;
+      }
+      if(remaining>0) return {ok:false,missing:[[k,need]]};
+    }else{
+      const have=Math.max(0,Number(inventory[k])||0);
+      if(have<need) return {ok:false,missing:[[k,need]]};
+      next[k]=have-need;
+    }
   }
   for(const [k,v] of Object.entries(next)) inventory[k]=v;
-  normalizeMaterialInventory();
   return {ok:true,missing:[]};
 }
-function recipeCostText(cost){return Object.entries(cost).filter(([k,v])=>v>0).map(([k,v])=>`${v} ${k==='fibre'?'plant fibre':k==='hide'?'animal hide':k==='iron'?'iron ore':k==='copper'?'copper ore':k==='silver'?'silver ore':k==='gold'?'gold ore':k==='frost'?'frost shards':k}`).join(' · ');}
+function recipeCostText(cost){return Object.entries(cost).filter(([k,v])=>v>0).map(([k,v])=>`${v} ${(k==='fibre'||k==='plantFibre')?'plant fibre':(k==='hide'||k==='animalHide')?'animal hide':k==='iron'?'iron ore':k==='copper'?'copper ore':k==='silver'?'silver ore':k==='gold'?'gold ore':k==='frost'?'frost shards':k}`).join(' · ');}
 function renderCraftBook(){
  const cats=['All','Weapons','Armour','Tools','Survival','Building','Travel','Materials'];
  document.getElementById('recipeTabs').innerHTML=cats.map(c=>`<button data-cat="${c}" class="${activeRecipeCategory===c?'selected':''}">${c}</button>`).join('');
@@ -906,13 +912,13 @@ function craftRecipe(id){
  normalizeMaterialInventory();
  // Validate every ingredient before any crafting handler can change inventory.
  const preflightMissing=getMissingIngredients(r.cost||{});
- if(preflightMissing.length){toast('Not enough materials: '+preflightMissing.map(([k,v])=>String(Number(v)-(Number(inventory[k])||0))+' '+(k==='fibre'?'plant fibre':k==='hide'?'animal hide':k==='iron'?'iron ore':k==='copper'?'copper ore':k==='silver'?'silver ore':k==='gold'?'gold ore':k==='frost'?'frost shards':k)).join(', '));renderCraftBook();return;}
+ if(preflightMissing.length){toast('Not enough materials: '+preflightMissing.map(([k,v])=>String(Number(v)-(Number(inventory[k])||0))+' '+((k==='fibre'||k==='plantFibre')?'plant fibre':(k==='hide'||k==='animalHide')?'animal hide':k==='iron'?'iron ore':k==='copper'?'copper ore':k==='silver'?'silver ore':k==='gold'?'gold ore':k==='frost'?'frost shards':k)).join(', '));renderCraftBook();return;}
  if(r.special==='campfire'){craft();renderCraftBook();return;}
  if(r.special==='weapon'){const def=weaponDefs[r.weapon];if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}`);return;}const spend=spendIngredientsAtomically(r.cost);if(!spend.ok){toast('Not enough materials: '+spend.missing.map(([k,v])=>String(Number(v)-(Number(inventory[k])||0))+' '+k).join(', '));return;}ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped!`);updateHUD();renderCraftBook();return;}
  if(r.special==='boat'){craftBoat();renderCraftBook();return;} if(r.special==='rod'){craftFishingRod();renderCraftBook();return;}
  if(r.special==='reinforcedBoat'){if(!craftedBoat){toast('Craft a wooden boat first.');return;}if(inventory.reinforcedBoat>0){toast('You already crafted a reinforced boat upgrade.');return;}}
  if(r.special==='advancedRod'&&!fishingRod){toast('Craft a fishing rod first.');return;}
- const spend=spendIngredientsAtomically(r.cost);if(!spend.ok){toast('Not enough materials: '+spend.missing.map(([k,v])=>String(Number(v)-(Number(inventory[k])||0))+' '+(k==='fibre'?'plant fibre':k==='hide'?'animal hide':k)).join(', '));renderCraftBook();return;}
+ const spend=spendIngredientsAtomically(r.cost);if(!spend.ok){toast('Not enough materials: '+spend.missing.map(([k,v])=>String(Number(v)-(Number(inventory[k])||0))+' '+((k==='fibre'||k==='plantFibre')?'plant fibre':(k==='hide'||k==='animalHide')?'animal hide':k)).join(', '));renderCraftBook();return;}
  const output=r.out||r.id;inventory[output]=(inventory[output]||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
  if(output==='reinforcedBoat'){craftedBoat=true;toast('Reinforced boat upgrade crafted!');}else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}else toast(`${r.name} crafted!`);
  gainXP(8);updateHUD();renderCraftBook();
