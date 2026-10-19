@@ -159,7 +159,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore twelve islands, including a night-erupting volcano, a dragon boss island, a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village and Oldstead Isle, where a repairer can rebuild a rundown house for 40 wood and 20 stone.</p>
+    <p>Explore twenty islands, including jungle ruins, a desert pyramid, a swamp, floating-look sky pillars, a storm fortress, a reef shipwreck and a night-erupting volcano, a dragon boss island, a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village and Oldstead Isle, where a repairer can rebuild a rundown house for 40 wood and 20 stone.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -220,7 +220,7 @@ const sun = new THREE.DirectionalLight(0xffedcb,2.3); sun.position.set(-25,35,15
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
 const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238eaa,roughness:.24,metalness:.08}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
-const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'},{x:-220,z:440,name:'Oldstead Isle',radius:76,biome:'forest'}];
+const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'},{x:-220,z:440,name:'Oldstead Isle',radius:76,biome:'forest'},{x:440,z:0,name:'Verdant Wilds',radius:82,biome:'jungle'},{x:-440,z:0,name:'Ashenfall Isle',radius:78,biome:'ashen'},{x:440,z:220,name:'Murkmire Isle',radius:78,biome:'swamp'},{x:-440,z:220,name:'Sunscorch Desert',radius:82,biome:'desert'},{x:440,z:-220,name:'Cloverfield Isle',radius:76,biome:'farm'},{x:-440,z:-220,name:'Skyreach Isles',radius:76,biome:'sky'},{x:440,z:440,name:'Stormwatch Isle',radius:82,biome:'storm'},{x:-440,z:440,name:'Coralgrave Isle',radius:80,biome:'reef'}];
 const mountainPathLocal=[[0,85],[-16,66],[-28,46],[-27,27],[-14,11],[8,-3],[19,-20],[14,-38],[0,-47],[-11,-34],[-11,-14],[0,-7]];
 const islandGrounds=[];
 function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
@@ -236,7 +236,7 @@ function islandShapeGeometry(cx,cz,radius,scale=1,seed=0){
 for (let i=0;i<islandCenters.length;i++) {
   const c=islandCenters[i], r=c.radius;
   const beach=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r,1.0,i+1),sandMat); beach.rotation.x=-Math.PI/2; beach.position.set(c.x,.005,c.z); beach.receiveShadow=true; scene.add(beach);
-  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='volcano'?mat(0x39312f):c.biome==='village'?mat(0x709b5a):grassMat;
+  const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='volcano'||c.biome==='ashen'?mat(0x39312f):c.biome==='village'?mat(0x709b5a):c.biome==='jungle'?mat(0x245b35):c.biome==='swamp'?mat(0x4b6040):c.biome==='desert'?mat(0xc7a35e):c.biome==='farm'?mat(0x8abf62):c.biome==='sky'?mat(0x7e8d91):c.biome==='storm'?mat(0x586a70):c.biome==='reef'?mat(0x4ba5a0):grassMat;
   const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
 const water = new THREE.Mesh(new THREE.CircleGeometry(620,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
@@ -322,14 +322,22 @@ for(const c of islandCenters){
 
 // Populate the additional islands with their own resources and wildlings.
 for (const c of islandCenters.slice(1)) {
-  const treeCount=c.biome==='dragon'?0:c.biome==='snow'?10:c.biome==='meadow'?8:c.biome==='mountain'?4:c.biome==='village'?14:c.biome==='castle'?5:28;
+  const treeCount=c.biome==='dragon'?0:c.biome==='snow'?10:c.biome==='meadow'?8:c.biome==='mountain'?4:c.biome==='village'?14:c.biome==='castle'?5:c.biome==='desert'||c.biome==='ashen'||c.biome==='sky'||c.biome==='reef'?3:c.biome==='swamp'?20:c.biome==='farm'?18:c.biome==='jungle'?42:c.biome==='storm'?10:28;
   for(let i=0;i<treeCount;i++){const a=Math.random()*Math.PI*2,r=9+Math.random()*(c.radius-18);addTree(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.7+Math.random()*.45);}
   for(let i=0;i<(c.biome==='dragon'?0:18);i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addRock(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,.6+Math.random()*.65);}
   if(c.biome==='meadow'||c.biome==='forest'){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
   if(c.biome!=='dragon'){for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*(c.radius-16);addFibrePlant(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
   if(c.biome==='mines'){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*35;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<1;i++){const a=Math.random()*Math.PI*2,r=22+Math.random()*30;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
   if(c.biome==='snow'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=24+Math.random()*34;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
-  if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'){ for(let i=0;i<(c.biome==='snow'?7:5);i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+  if(c.biome==='jungle'){for(let i=0;i<6;i++){const a=Math.random()*Math.PI*2,r=16+Math.random()*45;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=16+Math.random()*45;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'copper');}}
+  if(c.biome==='ashen'){for(let i=0;i<8;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*45;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'obsidian');}for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*45;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}}
+  if(c.biome==='swamp'){for(let i=0;i<6;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*48;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'sulphur');}}
+  if(c.biome==='desert'){for(let i=0;i<8;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*48;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'gold');}for(let i=0;i<4;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*48;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'copper');}}
+  if(c.biome==='farm'){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*40;addBush(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+  if(c.biome==='sky'){for(let i=0;i<8;i++){const a=Math.random()*Math.PI*2,r=16+Math.random()*42;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}for(let i=0;i<3;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*40;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}}
+  if(c.biome==='storm'){for(let i=0;i<6;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*45;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<3;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*40;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}}
+  if(c.biome==='reef'){for(let i=0;i<7;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*44;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
+  if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'&&c.biome!=='farm'){ for(let i=0;i<(c.biome==='snow'?7:(c.biome==='ashen'||c.biome==='storm'||c.biome==='swamp'?8:5));i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
 // Keep the central ruin and shoreline repairer clear of random resource/enemy spawns.
 {const c=islandCenters.find(i=>i.name==='Oldstead Isle');for(const r of resources){const dx=r.mesh.position.x-c.x,dz=r.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){r.alive=false;world.remove(r.mesh);}}for(const e of enemies){const dx=e.mesh.position.x-c.x,dz=e.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){e.alive=false;world.remove(e.mesh);}}}
@@ -680,6 +688,64 @@ for(const c of islandCenters.filter(c=>c.biome==='snow')){
  // Mineable ore inside the cave makes exploration worthwhile.
  addOre(caveRoomOrigin.x-5,caveRoomOrigin.z-3,'crystal');addOre(caveRoomOrigin.x+5,caveRoomOrigin.z-4,'crystal');addOre(caveRoomOrigin.x-5,caveRoomOrigin.z+3,'iron');addOre(caveRoomOrigin.x+5,caveRoomOrigin.z+2,'iron');
 }
+// Signature landmarks for the eight newly added islands. All landmarks are lightweight Three.js primitives.
+function addLandmarkBox(c,material,w,h,d,x,z,y=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(c.x+x,y+h/2,c.z+z);m.castShadow=true;m.receiveShadow=true;world.add(m);decorations.push(m);return m;}
+function addLandmarkCone(c,material,r,h,x,z,y=0,sides=6){const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,sides),material);m.position.set(c.x+x,y+h/2,c.z+z);m.castShadow=true;world.add(m);decorations.push(m);return m;}
+function addLandmarkCylinder(c,material,rTop,rBottom,h,x,z,y=0,sides=8){const m=new THREE.Mesh(new THREE.CylinderGeometry(rTop,rBottom,h,sides),material);m.position.set(c.x+x,y+h/2,c.z+z);m.castShadow=true;world.add(m);decorations.push(m);return m;}
+{
+ const c=islandCenters.find(i=>i.name==='Verdant Wilds'),stone=mat(0x8c9a82),moss=mat(0x355e3a),glow=mat(0x5ce9c8,.25);
+ // Overgrown temple gate, four broken columns and a bright relic at its centre.
+ addLandmarkBox(c,stone,18,1.2,3,0,0,.1);addLandmarkBox(c,moss,20,.35,4,0,0,1.35);
+ for(const [x,h] of [[-7,8],[-2,6],[4,7],[8,5]]){addLandmarkCylinder(c,stone,.7,.95,h,x,0,1);addLandmarkCone(c,moss,1.2,1.3,x,0,h+1);}
+ const relic=new THREE.Mesh(new THREE.OctahedronGeometry(1.4,0),glow);relic.position.set(c.x,2.6,c.z+7);world.add(relic);decorations.push(relic);
+}
+{
+ const c=islandCenters.find(i=>i.name==='Ashenfall Isle'),basalt=mat(0x29282b),lava=mat(0xff612d,.3),dark=mat(0x4a4140);
+ for(const [x,z,h] of [[-20,-8,12],[-10,14,17],[17,-12,14],[23,9,9]])addLandmarkCone(c,basalt,5,h,x,z,0,5);
+ for(const [x,z] of [[-8,-3],[0,2],[10,-1]]){const crack=new THREE.Mesh(new THREE.BoxGeometry(5,.13,.55),lava);crack.position.set(c.x+x,.16,c.z+z);world.add(crack);decorations.push(crack);}
+ addLandmarkCylinder(c,dark,2.5,3,4,0,18,0,8);
+}
+{
+ const c=islandCenters.find(i=>i.name==='Murkmire Isle'),wood=mat(0x584735),green=mat(0x506e4a),water=mat(0x536e63,.3);
+ for(const [x,z] of [[-17,-12],[14,-10],[-3,18],[22,15]]){const pool=new THREE.Mesh(new THREE.CircleGeometry(5,18),water);pool.rotation.x=-Math.PI/2;pool.position.set(c.x+x,.05,c.z+z);world.add(pool);decorations.push(pool);}
+ for(const [x,z,h] of [[-23,-4,5],[-12,12,7],[9,-16,6],[21,4,8]]){addLandmarkCylinder(c,wood,.24,.4,h,x,z);addLandmarkCone(c,green,2.3,3,x,z,h);}
+ addLandmarkBox(c,wood,7,3,5,0,0,.2);addLandmarkCone(c,mat(0x4b4938),5,3,0,0,3.2,4);
+}
+{
+ const c=islandCenters.find(i=>i.name==='Sunscorch Desert'),sandstone=mat(0xb9854c),shadow=mat(0x78583c),gold=mat(0xf4cf59,.25);
+ // Stepped pyramid and scattered sandstone pillars.
+ for(let tier=0;tier<4;tier++)addLandmarkBox(c,sandstone,18-tier*4,2.3,18-tier*4,0,5,tier*2.25);
+ addLandmarkBox(c,shadow,3,4,3,0,5,9);const jewel=new THREE.Mesh(new THREE.OctahedronGeometry(.9,0),gold);jewel.position.set(c.x,12,c.z+5);world.add(jewel);decorations.push(jewel);
+ for(const [x,z,h] of [[-24,-10,5],[24,-6,7],[-20,22,4],[25,20,6]])addLandmarkCylinder(c,sandstone,.8,1.2,h,x,z);
+}
+{
+ const c=islandCenters.find(i=>i.name==='Cloverfield Isle'),wall=mat(0xe1d0a5),roof=mat(0x98583d),wood=mat(0x775239),crop=mat(0x8baf47);
+ addLandmarkBox(c,wall,10,5,8,0,0,.2);const r=new THREE.Mesh(new THREE.ConeGeometry(7,4,4),roof);r.position.set(c.x,7,c.z);r.rotation.y=Math.PI/4;world.add(r);decorations.push(r);
+ addLandmarkBox(c,wood,1.8,3,0,0,-4.05,.2);
+ for(const row of [-15,-10,10,15])for(let i=-2;i<=2;i++)addLandmarkBox(c,crop,.35,.35,7,i*2,row,.1);
+ addLandmarkCylinder(c,wood,.25,.35,4,18,-8);addLandmarkCone(c,wall,1.5,1.5,18,-8,4);
+}
+{
+ const c=islandCenters.find(i=>i.name==='Skyreach Isles'),rock=mat(0x8d999f),crystal=mat(0x77e7ff,.24),bridge=mat(0x6e5b48);
+ // Floating-look pillars, suspended-looking bridges and tall crystal clusters above the island surface.
+ for(const [x,z,h] of [[-22,-12,8],[-10,12,13],[12,-15,10],[23,8,15]]){addLandmarkCone(c,rock,5,h,x,z,0,6);addLandmarkCone(c,rock,2.5,4,x,z,h-1,6);}
+ for(const [x,z,rot] of [[-16,0,.55],[0,-1,-.35],[15,-2,.5]]){const b=new THREE.Mesh(new THREE.BoxGeometry(18,.45,1.5),bridge);b.position.set(c.x+x,.9,c.z+z);b.rotation.y=rot;world.add(b);decorations.push(b);}
+ for(const [x,z,h] of [[-4,10,5],[4,14,7],[8,5,4]])addLandmarkCone(c,crystal,1.8,h,x,z,.2,5);
+}
+{
+ const c=islandCenters.find(i=>i.name==='Stormwatch Isle'),stone=mat(0x6e777b),dark=mat(0x3b454b),light=mat(0xe9e5cf);
+ // Ruined fortress and a lighthouse at the cliffs.
+ addLandmarkBox(c,stone,22,1.2,18,0,0,.1);for(const [x,z,h] of [[-9,-7,8],[9,-7,7],[-9,7,5],[9,7,9]]){addLandmarkBox(c,dark,3,h,3,x,z,.7);addLandmarkCone(c,stone,2.4,2.2,x,z,h+.7,4);}
+ addLandmarkCylinder(c,light,2.5,3.5,13,27,17);addLandmarkCone(c,dark,3.8,3,27,17,13,8);
+ const beacon=new THREE.PointLight(0xffe8a6,1.8,30);beacon.position.set(c.x+27,13,c.z+17);scene.add(beacon);
+}
+{
+ const c=islandCenters.find(i=>i.name==='Coralgrave Isle'),coral=mat(0xf08d8a),blue=mat(0x5dcbd0),sand=mat(0xd7c9a0),wreck=mat(0x644b36);
+ for(const [x,z,h] of [[-18,-10,4],[-10,12,5],[13,-13,6],[21,8,4]]){addLandmarkCylinder(c,coral,.45,.9,h,x,z);addLandmarkCone(c,coral,1.3,2,x,z,h,5);}
+ for(const [x,z] of [[-23,14],[20,-20],[0,-24]]){const anemone=new THREE.Mesh(new THREE.SphereGeometry(2,10,8),blue);anemone.position.set(c.x+x,.8,c.z+z);anemone.scale.y=.55;world.add(anemone);decorations.push(anemone);}
+ addLandmarkBox(c,wreck,12,.65,3,0,0,.5).rotation.y=.25;addLandmarkBox(c,wreck,2,3,.45,-3,0,2).rotation.z=.35;addLandmarkBox(c,wreck,2,2,.45,4,0,1.8).rotation.z=-.4;
+}
+
 // Freshwater springs are marked by small bright-blue pools near each island's centre.
 const springs=[];
 for(const c of islandCenters){
@@ -891,7 +957,7 @@ const craftingRecipes=[
  {id:'leatherArmour',name:'Leather Armour',icon:'🦺',cat:'Armour',cost:{hide:5,fibre:3},desc:'Light protection made from animal hides.',out:'leatherArmour'},
  {id:'waterskin',name:'Waterskin',icon:'💧',cat:'Survival',cost:{hide:2,fibre:2},desc:'A portable water container.',out:'waterskin'},
  {id:'largeBackpack',name:'Large Backpack',icon:'🎒',cat:'Building',cost:{hide:4,fibre:4,wood:2},desc:'A crafted storage upgrade.',out:'largeBackpack'},
- {id:'reinforcedChest',name:'Reinforced Chest',icon:'📦',cat:'Building',cost:{hardwood:0,wood:8,copper:4},desc:'A sturdier chest for your base.',out:'reinforcedChest'},
+ {id:'reinforcedChest',name:'Reinforced Chest',icon:'📦',cat:'Building',cost:{wood:8,copper:4},desc:'A sturdier chest for your base.',out:'reinforcedChest'},
  {id:'watchtower',name:'Wooden Watchtower',icon:'🗼',cat:'Building',cost:{wood:14,stone:6,rope:2},desc:'A defensive lookout structure.',out:'watchtower'},
  {id:'advancedFurnace',name:'Advanced Furnace',icon:'🔥',cat:'Building',cost:{stone:12,copper:4,sulphur:2},desc:'A station for advanced crafting.',out:'advancedFurnace'},
  {id:'repairKit',name:'Repair Kit',icon:'🧰',cat:'Tools',cost:{copper:2,fibre:2,wood:1},desc:'A portable equipment repair kit.',out:'repairKit'},
@@ -962,20 +1028,21 @@ function renderCraftBook(){
 function openCraftBook(){renderCraftBook();document.getElementById('craftBook').style.display='block';}
 function closeCraftBook(){document.getElementById('craftBook').style.display='none';}
 function craftRecipe(id){
- const now=Date.now();if(now-lastCraftActionAt<450)return;lastCraftActionAt=now;
+ const now=Date.now();if(now-lastCraftActionAt<350)return;lastCraftActionAt=now;
  const r=craftingRecipes.find(x=>x.id===id);if(!r)return;
- const before={...inventory}, xpBefore=xp, levelBefore=level;
+ const before={...inventory},xpBefore=xp,levelBefore=level,boatBefore=craftedBoat,rodBefore=fishingRod,ownedBefore={...ownedWeapons},durabilityBefore={...weaponDurability},equippedBefore=equippedWeapon;
  const rollback=(message)=>{
    for(const k of Object.keys(inventory))if(!Object.prototype.hasOwnProperty.call(before,k))delete inventory[k];
-   Object.assign(inventory,before);xp=xpBefore;level=levelBefore;
-   updateHUD();renderCraftBook();toast(message||'Craft failed. No materials were lost.');
+   Object.assign(inventory,before);xp=xpBefore;level=levelBefore;craftedBoat=boatBefore;fishingRod=rodBefore;
+   for(const k of Object.keys(ownedWeapons))delete ownedWeapons[k];Object.assign(ownedWeapons,ownedBefore);
+   for(const k of Object.keys(weaponDurability))delete weaponDurability[k];Object.assign(weaponDurability,durabilityBefore);equippedWeapon=equippedBefore;
+   refreshSwordVisual();updateHUD();renderCraftBook();toast(message||'Craft failed. All ingredients were restored.');
  };
  try{
    normalizeMaterialInventory();
    if(r.special==='campfire'&&inventory.campfire>0){toast('You already built your first campfire. No materials were used.');return;}
    if(r.special==='weapon'){
-     const def=weaponDefs[r.weapon];
-     if(!def){toast('This weapon recipe is unavailable. No materials were used.');return;}
+     const def=weaponDefs[r.weapon];if(!def){toast('This weapon recipe is unavailable. No materials were used.');return;}
      if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}. No materials were used.`);return;}
    }
    if(r.special==='boat'&&craftedBoat){toast('You already crafted a boat. No materials were used.');return;}
@@ -983,37 +1050,43 @@ function craftRecipe(id){
    if(r.special==='reinforcedBoat'&&!craftedBoat){toast('Craft a wooden boat first. No materials were used.');return;}
    if(r.special==='reinforcedBoat'&&inventory.reinforcedBoat>0){toast('You already crafted this upgrade. No materials were used.');return;}
    if(r.special==='advancedRod'&&!fishingRod){toast('Craft a fishing rod first. No materials were used.');return;}
+   const output=r.out||r.id;
+   if(!r.special||!['campfire','boat','rod','weapon'].includes(r.special)){
+     if(!output||!Object.prototype.hasOwnProperty.call(inventory,output)){toast('This recipe output is unavailable. No materials were used.');return;}
+   }
    const missing=getMissingIngredients(r.cost||{});
    if(missing.length){
      const aliases={fibre:['fibre','plantFibre'],hide:['hide','animalHide']};
      const label=k=>({'iron':'iron ore','copper':'copper ore','silver':'silver ore','gold':'gold ore','frost':'frost shards','fibre':'plant fibre','plantFibre':'plant fibre','hide':'animal hide','animalHide':'animal hide','copperIngots':'copper ingots','silverIngots':'silver ingots'}[k]||k);
-     toast('Not enough materials: '+missing.map(([k,v])=>`${Math.max(0,Number(v)-(aliases[k]?aliases[k].reduce((n,a)=>n+(Number(inventory[a])||0),0):(Number(inventory[k])||0)))} ${label(k)}`).join(', ')+'. Nothing was used.');
-     renderCraftBook();return;
+     toast('Not enough materials: '+missing.map(([k,v])=>`${Math.max(0,Number(v)-(aliases[k]?aliases[k].reduce((n,a)=>n+(Number(inventory[a])||0),0):(Number(inventory[k])||0)))} ${label(k)}`).join(', ')+'. Nothing was used.');renderCraftBook();return;
    }
-   // Special builds already have a guarded, atomic material-spend path.
-   if(r.special==='campfire'){craft();renderCraftBook();return;}
-   if(r.special==='boat'){craftBoat();renderCraftBook();return;}
-   if(r.special==='rod'){craftFishingRod();renderCraftBook();return;}
-   const output=r.out||r.id;
-   if(r.special!=='weapon'&&(!output||!Object.prototype.hasOwnProperty.call(inventory,output))){
-     toast('This recipe output is unavailable. No materials were used.');return;
+   // Special builders manage their own spend; the snapshot is a safety net if they fail after preflight.
+   if(r.special==='campfire')craft();
+   else if(r.special==='boat')craftBoat();
+   else if(r.special==='rod')craftFishingRod();
+   else {
+     const spent=spendIngredientsAtomically(r.cost||{});
+     if(!spent.ok){toast('Not enough materials. Nothing was used.');renderCraftBook();return;}
+     if(r.special==='weapon'){
+       const def=weaponDefs[r.weapon];ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped!`);
+     }else{
+       inventory[output]=(Number(inventory[output])||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
+       if(output==='reinforcedBoat')toast('Reinforced boat upgrade crafted!');
+       else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}
+       else toast(`${r.name} crafted!`);
+       gainXP(8);
+     }
    }
-   const spent=spendIngredientsAtomically(r.cost||{});
-   if(!spent.ok){toast('Not enough materials. Nothing was used.');renderCraftBook();return;}
-   if(r.special==='weapon'){
-     const def=weaponDefs[r.weapon];
-     ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);
-     updateHUD();renderCraftBook();toast(`${def.name} crafted and equipped!`);return;
-   }
-   inventory[output]=(Number(inventory[output])||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
-   if(output==='reinforcedBoat')toast('Reinforced boat upgrade crafted!');
-   else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}
-   else toast(`${r.name} crafted!`);
-   gainXP(8);updateHUD();renderCraftBook();
- }catch(err){
-   rollback('Craft failed unexpectedly. Your materials have been restored.');
-   console.error('Craft rollback:',err);
- }
+   // Verify that the expected result exists. Any failed special builder is rolled back in full.
+   let success=false;
+   if(r.special==='campfire')success=(Number(inventory.campfire)||0)>(Number(before.campfire)||0);
+   else if(r.special==='boat')success=craftedBoat===true;
+   else if(r.special==='rod')success=fishingRod===true;
+   else if(r.special==='weapon')success=ownedWeapons[r.weapon]===true;
+   else success=(Number(inventory[output])||0)>(Number(before[output])||0);
+   if(!success){rollback('Craft did not complete. All ingredients were restored.');return;}
+   updateHUD();renderCraftBook();
+ }catch(err){rollback('Craft failed unexpectedly. All ingredients were restored.');console.error('Craft rollback:',err);}
 }
 function craftSword(){
  const key=document.getElementById('weaponSelect').value,def=weaponDefs[key];

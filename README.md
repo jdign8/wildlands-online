@@ -43,3 +43,6 @@ Install dependencies with `npm install`, then run `npm start`. The Render servic
 
 
 Latest update: removed the Wooden Shelter recipe, added Oldstead Isle with a rundown central house and a shoreline repairer (repair price: 40 wood + 20 stone), and hardened crafting so failed recipe checks roll back inventory/XP.
+
+
+Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Desert, Cloverfield Isle, Skyreach Isles, Stormwatch Isle and Coralgrave Isle. Crafting now validates outputs before spending and restores inventory and crafting state if a special craft fails. Wooden Shelter remains removed.
