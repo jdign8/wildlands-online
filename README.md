@@ -55,3 +55,10 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 - Added harvestable wheat fields to Cloverfield Isle. Gather wheat and sell 5 wheat to Tilly for 3 coins.
 - Reduced crystal cluster counts on several islands so crystals feel rarer.
 - Improved water colour, ambient lighting and distance atmosphere without changing ore visuals.
+
+
+## Stylized terrain redesign
+- Added layered, beveled cliff sides and shoreline shelves rather than flat circular island edges.
+- Added low rolling hills, sandy footpaths, shoreline rock groups and biome-themed ground plants.
+- Adjusted atmosphere and water material to better reveal the terrain.
+- Ore visuals and ore materials were not changed.

@@ -216,11 +216,11 @@ renderer.shadowMap.enabled = !isTouchDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xdff6ff,0x45553b,2.15));
-scene.fog=new THREE.Fog(0x9dc8c9,260,920);
+scene.add(new THREE.HemisphereLight(0xe7fbff,0x5b6046,2.35));
+scene.fog=new THREE.Fog(0xa6d9dc,300,1050);
 const sun = new THREE.DirectionalLight(0xffedcb,2.45); sun.position.set(-25,35,15); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
-const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x1d8da8,roughness:.2,metalness:.12}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
+const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238fa6,roughness:.28,metalness:.04}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
 const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'},{x:-220,z:440,name:'Oldstead Isle',radius:76,biome:'forest'},{x:440,z:0,name:'Verdant Wilds',radius:82,biome:'jungle'},{x:-440,z:0,name:'Ashenfall Isle',radius:78,biome:'ashen'},{x:440,z:220,name:'Murkmire Isle',radius:78,biome:'swamp'},{x:-440,z:220,name:'Sunscorch Desert',radius:82,biome:'desert'},{x:440,z:-220,name:'Cloverfield Isle',radius:76,biome:'farm'},{x:-440,z:-220,name:'Skyreach Isles',radius:76,biome:'sky'},{x:440,z:440,name:'Stormwatch Isle',radius:82,biome:'storm'},{x:-440,z:440,name:'Coralgrave Isle',radius:80,biome:'reef'}];
 islandCenters.forEach(c=>{c.radius=Math.round(c.radius*1.12);});
@@ -242,6 +242,43 @@ for (let i=0;i<islandCenters.length;i++) {
   const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='volcano'||c.biome==='ashen'?mat(0x39312f):c.biome==='village'?mat(0x709b5a):c.biome==='jungle'?mat(0x245b35):c.biome==='swamp'?mat(0x4b6040):c.biome==='desert'?mat(0xc7a35e):c.biome==='farm'?mat(0x8abf62):c.biome==='sky'?mat(0x7e8d91):c.biome==='storm'?mat(0x586a70):c.biome==='reef'?mat(0x4ba5a0):grassMat;
   const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
+
+// VISUAL REDESIGN: layered, beveled island cliffs and broad shoreline shelves.
+// The playable surface remains at y=0 to preserve movement and resource interactions.
+function makeIslandOutline(radius, seed, scale=1) {
+  const shape = new THREE.Shape(), points = 96;
+  for (let i=0;i<=points;i++) {
+    const a=i/points*Math.PI*2;
+    const wobble=1+0.045*Math.sin(a*3+seed)+0.028*Math.sin(a*7+seed*1.7)+0.018*Math.cos(a*11-seed);
+    const x=Math.cos(a)*radius*scale*wobble, y=Math.sin(a)*radius*scale*wobble;
+    if(i===0) shape.moveTo(x,y); else shape.lineTo(x,y);
+  }
+  return shape;
+}
+const cliffMats = {
+ forest:mat(0x625b49), mines:mat(0x62534a), snow:mat(0x7b969b),
+ meadow:mat(0x8d8060), mountain:mat(0x545d61), village:mat(0x6d6d51),
+ castle:mat(0x66645e), dragon:mat(0x3b3c40), volcano:mat(0x42332f),
+ jungle:mat(0x4d5941), ashen:mat(0x403a3a), swamp:mat(0x454e42),
+ desert:mat(0xb48a53), farm:mat(0x82734d), sky:mat(0x707c80),
+ storm:mat(0x596267), reef:mat(0x5a827c)
+};
+for(let i=0;i<islandCenters.length;i++){
+  const c=islandCenters[i], r=c.radius;
+  const cliff=new THREE.Mesh(new THREE.ExtrudeGeometry(makeIslandOutline(r-2,i+1,1.015),{
+    depth:7.5, steps:1, bevelEnabled:true, bevelSegments:2,
+    bevelSize:1.15, bevelThickness:1.15, curveSegments:3
+  }),cliffMats[c.biome]||cliffMats.forest);
+  cliff.rotation.x=-Math.PI/2;
+  cliff.position.set(c.x,-7.7,c.z);
+  cliff.castShadow=true; cliff.receiveShadow=true; scene.add(cliff);
+  const shelf=new THREE.Mesh(new THREE.ExtrudeGeometry(makeIslandOutline(r+1.5,i+1,1.015),{
+    depth:1.1, steps:1, bevelEnabled:false, curveSegments:3
+  }),c.biome==='snow'?mat(0xb6d4d8):c.biome==='desert'?mat(0xe4bd78):c.biome==='reef'?mat(0x69b8b1):sandMat);
+  shelf.rotation.x=-Math.PI/2; shelf.position.set(c.x,-1.35,c.z);
+  shelf.receiveShadow=true; scene.add(shelf);
+}
+
 const water = new THREE.Mesh(new THREE.CircleGeometry(620,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
 const world = new THREE.Group(); scene.add(world);
 const resources = [], enemies = [], decorations=[];
@@ -622,6 +659,54 @@ for(const c of islandCenters.filter(c=>c.biome!=='snow')){
   if(Math.random()<.48){const f=new THREE.Group();for(let j=0;j<3;j++){const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.18,4),leafMat);stem.position.set((j-1)*.07,.09,0);stem.rotation.z=(j-1)*.2;f.add(stem);const bloom=new THREE.Mesh(new THREE.SphereGeometry(.075,7,6),flowerMats[Math.floor(Math.random()*flowerMats.length)]);bloom.position.set((j-1)*.07,.2,0);f.add(bloom);}f.position.set(x,.025,z);world.add(f);decorations.push(f);}
  }
 }
+
+// Extra stylized terrain: low hillocks, sandy trails, coastline boulders and themed ground plants.
+const pathMat=mat(0xc9b58a), hillMats=[mat(0x679457),mat(0x7ba75b),mat(0x527c47)];
+const terrainDecor=[];
+for(const c of islandCenters){
+  const isSnow=c.biome==='snow', isDesert=c.biome==='desert';
+  const isAsh=c.biome==='ashen'||c.biome==='volcano'||c.biome==='dragon';
+  for(let n=0;n<9;n++){
+    const a=(n/9)*Math.PI*2+.24, r=c.radius*(.28+(n%3)*.105);
+    const x=c.x+Math.cos(a)*r, z=c.z+Math.sin(a)*r;
+    const hm=isSnow?snowMat:isDesert?mat(0xd9b36f):isAsh?mat(0x514744):hillMats[n%hillMats.length];
+    const mound=new THREE.Mesh(new THREE.SphereGeometry(1,10,7),hm);
+    mound.scale.set(5+(n%3)*1.4,.42+(n%2)*.22,4.5+(n%4)*.6);
+    mound.position.set(x,.03,z);mound.rotation.y=a;mound.receiveShadow=true;
+    world.add(mound);terrainDecor.push(mound);
+  }
+  if(!isSnow&&!isAsh&&c.biome!=='reef'&&c.biome!=='swamp'){
+    const pathLen=c.radius*.72;
+    for(let seg=0;seg<7;seg++){
+      const t=seg/6, z=c.z+c.radius*.58-t*pathLen, x=c.x+Math.sin(t*3.2)*5;
+      const bit=new THREE.Mesh(new THREE.CircleGeometry(3.2+(seg%2)*.45,12),pathMat);
+      bit.rotation.x=-Math.PI/2;bit.scale.set(1.45,.72,1);
+      bit.position.set(x,.028,z);world.add(bit);terrainDecor.push(bit);
+    }
+  }
+  for(let n=0;n<12;n++){
+    const a=n/12*Math.PI*2,r=c.radius-8-(n%3)*2.2;
+    const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(1.15+(n%3)*.4,0),
+      isSnow?mat(0xb4c6c8):isDesert?mat(0xb68a56):isAsh?mat(0x3e3a3a):(cliffMats[c.biome]||cliffMats.forest));
+    rock.scale.set(1.5,.72,1.1);rock.position.set(c.x+Math.cos(a)*r,.28,c.z+Math.sin(a)*r);
+    rock.rotation.set(.1,n*.7,.08);rock.castShadow=true;rock.receiveShadow=true;
+    world.add(rock);terrainDecor.push(rock);
+  }
+  if(['forest','jungle','farm','meadow','village','swamp','reef'].includes(c.biome)){
+    const fernMat=mat(c.biome==='swamp'?0x536e4a:c.biome==='reef'?0x459b89:0x3f8b49);
+    for(let n=0;n<18;n++){
+      const a=n*2.399,r=10+(n%7)*(c.radius-18)/7,g=new THREE.Group();
+      for(let k=0;k<5;k++){
+        const leaf=new THREE.Mesh(new THREE.ConeGeometry(.22,.95,5),fernMat);
+        leaf.position.set(Math.cos(k*1.25)*.35,.45,Math.sin(k*1.25)*.35);
+        leaf.rotation.z=Math.cos(k*1.25)*.55;leaf.rotation.x=Math.sin(k*1.25)*.45;g.add(leaf);
+      }
+      g.position.set(c.x+Math.cos(a)*r,.04,c.z+Math.sin(a)*r);
+      world.add(g);terrainDecor.push(g);
+    }
+  }
+}
+
 // Snowy island details: white caps on evergreen trees and pale ice boulders.
 for(const c of islandCenters.filter(c=>c.biome==='snow')){
  for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*42,x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;const cap=new THREE.Mesh(new THREE.SphereGeometry(.8,8,6),snowMat);cap.scale.set(1,.45,1);cap.position.set(x,.55,z);world.add(cap);decorations.push(cap);}
