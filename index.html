@@ -126,7 +126,7 @@
     <div id="travelStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Boat: not built · Fishing rod: not built</div>
     <div id="items"></div>
   </div>
-  <div id="craftBook" role="dialog" aria-modal="true" aria-label="Crafting Book">
+  <div id="boatMapPanel" style="display:none;position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,360px);max-height:75vh;overflow:auto;background:#10232a;border:2px solid #8ac9c0;border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 40px #000b"><h2>🗺️ Ship Navigation Map</h2><p style="font-size:13px">Choose a destination, then steer with your movement controls. The boat will not teleport.</p><div id="boatMapDestinations" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div><button id="closeBoatMapBtn" style="width:100%;margin-top:8px">Close map</button></div><div id="craftBook" role="dialog" aria-modal="true" aria-label="Crafting Book">
     <div id="craftBookCard">
       <div id="craftBookTop"><h2>📖 Wildlands Crafting Book</h2><button id="closeCraftBook" aria-label="Close crafting book">✕ Close</button></div>
       <p id="craftBookHelp">Tap any recipe to craft it. Ingredients are only spent when you have enough. Scroll for more recipes.</p>
@@ -148,7 +148,7 @@
     <div id="fishTradeOptions" style="display:none;gap:4px;flex-direction:column">
       <button id="sellSalmonBtn">Sell 1 salmon → 3 coins</button>
       <button id="sellCodBtn">Sell 1 cod → 2 coins</button>
-      <button id="sellWhitingBtn">Sell 1 whiting → 1 coin</button>
+      <button id="sellWhitingBtn">Sell 1 whiting → 1 coin</button><button id="sellMackerelBtn">Sell 1 rare mackerel → 8 coins</button><button id="sellSharkBtn">Sell 1 super-rare shark → 25 coins</button>
     </div>
     <div id="wheatTradeOptions" style="display:none;gap:4px;flex-direction:column"><button id="sellWheatBtn">Sell 5 wheat → 3 coins</button></div>
     <button id="closeTradeBtn" style="margin-top:5px">Close</button>
@@ -192,7 +192,7 @@
     <button id="gatherBtn">Gather / Mine</button><button id="swordBtn">Sword / Hit</button>
     <button id="interactBtn">Interact / Eat</button><button id="fishBtn">Fish</button>
     <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
-    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="sailBtn">Sail</button>
+    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="boatMapBtn">Ship map</button><button id="sailBtn">Set course</button>
   </div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -216,11 +216,11 @@ renderer.shadowMap.enabled = !isTouchDevice;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xe7fbff,0x5b6046,2.35));
-scene.fog=new THREE.Fog(0x9dd8d9,360,1200);
+scene.add(new THREE.HemisphereLight(0xdff6ff,0x45553b,2.15));
+scene.fog=new THREE.Fog(0x9dc8c9,260,920);
 const sun = new THREE.DirectionalLight(0xffedcb,2.45); sun.position.set(-25,35,15); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
-const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x238fa6,roughness:.28,metalness:.04}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
+const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x1d8da8,roughness:.2,metalness:.12}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
 const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'},{x:-220,z:440,name:'Oldstead Isle',radius:76,biome:'forest'},{x:440,z:0,name:'Verdant Wilds',radius:82,biome:'jungle'},{x:-440,z:0,name:'Ashenfall Isle',radius:78,biome:'ashen'},{x:440,z:220,name:'Murkmire Isle',radius:78,biome:'swamp'},{x:-440,z:220,name:'Sunscorch Desert',radius:82,biome:'desert'},{x:440,z:-220,name:'Cloverfield Isle',radius:76,biome:'farm'},{x:-440,z:-220,name:'Skyreach Isles',radius:76,biome:'sky'},{x:440,z:440,name:'Stormwatch Isle',radius:82,biome:'storm'},{x:-440,z:440,name:'Coralgrave Isle',radius:80,biome:'reef'}];
 islandCenters.forEach(c=>{c.radius=Math.round(c.radius*1.12);});
@@ -242,59 +242,10 @@ for (let i=0;i<islandCenters.length;i++) {
   const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='volcano'||c.biome==='ashen'?mat(0x39312f):c.biome==='village'?mat(0x709b5a):c.biome==='jungle'?mat(0x245b35):c.biome==='swamp'?mat(0x4b6040):c.biome==='desert'?mat(0xc7a35e):c.biome==='farm'?mat(0x8abf62):c.biome==='sky'?mat(0x7e8d91):c.biome==='storm'?mat(0x586a70):c.biome==='reef'?mat(0x4ba5a0):grassMat;
   const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
-
-// Previous overlay cliffs removed: keep the playable ground clearly visible.
-
 const water = new THREE.Mesh(new THREE.CircleGeometry(620,128),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
 const world = new THREE.Group(); scene.add(world);
 const resources = [], enemies = [], decorations=[];
 const beds=[];
-
-// TROPICAL LANDSCAPE PASS: unmistakable raised landforms and lagoon shallows.
-// These are decorative meshes placed above the ground; the ground itself stays unobstructed.
-const lagoonMat = new THREE.MeshStandardMaterial({color:0x38d2c4, roughness:.38, metalness:0.0});
-const deepLagoonMat = new THREE.MeshStandardMaterial({color:0x168d9e, roughness:.42, metalness:0.0});
-const cliffFaceMat = new THREE.MeshStandardMaterial({color:0x6b795e, roughness:1});
-const lushSlopeMat = new THREE.MeshStandardMaterial({color:0x367b43, roughness:1});
-const paleSandMat = new THREE.MeshStandardMaterial({color:0xf0d7a0, roughness:1});
-function addRaisedLandform(cx, cz, rx, rz, height, seed, material) {
-  const geo = new THREE.ConeGeometry(1, height, 9, 3);
-  const pos = geo.attributes.position;
-  for (let i=0;i<pos.count;i++) {
-    const y=pos.getY(i);
-    const jitter=1+0.12*Math.sin(i*2.31+seed)+0.06*Math.cos(i*1.17+seed);
-    pos.setX(i,pos.getX(i)*rx*jitter);
-    pos.setZ(i,pos.getZ(i)*rz*jitter);
-    // taper the top irregularly for a rugged mountain silhouette
-    if (y>height*.2) { pos.setX(i,pos.getX(i)*(0.62+0.06*Math.sin(seed))); pos.setZ(i,pos.getZ(i)*.62); }
-  }
-  geo.computeVertexNormals();
-  const mesh=new THREE.Mesh(geo,material);
-  mesh.position.set(cx,height*.48,cz); mesh.castShadow=true; mesh.receiveShadow=true;
-  scene.add(mesh); return mesh;
-}
-for (let i=0;i<islandCenters.length;i++) {
-  const c=islandCenters[i], r=c.radius;
-  // Clear turquoise shallows at the beach edge, visibly inset from the deeper ocean.
-  const lagoon=new THREE.Mesh(new THREE.CircleGeometry(r*.88,64),lagoonMat);
-  lagoon.rotation.x=-Math.PI/2; lagoon.scale.set(1.08,.88,1);
-  lagoon.position.set(c.x,-.105,c.z); scene.add(lagoon);
-  const beachInset=new THREE.Mesh(new THREE.RingGeometry(r*.82,r*.91,64),paleSandMat);
-  beachInset.rotation.x=-Math.PI/2; beachInset.scale.set(1.08,.88,1);
-  beachInset.position.set(c.x,.026,c.z); scene.add(beachInset);
-  // A dramatic, visible hill/mountain cluster on each island, sized to leave room to explore.
-  const biomeMat = c.biome==='snow'?snowMat:
-    (c.biome==='desert'?mat(0xc59a57):
-    (['volcano','dragon','ashen'].includes(c.biome)?mat(0x45413e):
-    (c.biome==='reef'?mat(0x398f76):lushSlopeMat)));
-  const peakHeight = ['mountain','castle','jungle','forest'].includes(c.biome)?r*.78:
-    (['volcano','dragon','snow'].includes(c.biome)?r*.68:r*.36);
-  addRaisedLandform(c.x-r*.12,c.z-r*.05,r*.40,r*.34,peakHeight,i+3,biomeMat);
-  if (['forest','jungle','farm','meadow','village','reef'].includes(c.biome)) {
-    addRaisedLandform(c.x+r*.25,c.z+r*.18,r*.22,r*.18,peakHeight*.48,i+13,lushSlopeMat);
-  }
-}
-
 function addTree(x,z,scale=1){
  const g=new THREE.Group();
  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.19*scale,.32*scale,2.05*scale,9),trunkMat); trunk.position.y=1.02*scale; trunk.castShadow=true; g.add(trunk);
@@ -671,7 +622,6 @@ for(const c of islandCenters.filter(c=>c.biome!=='snow')){
   if(Math.random()<.48){const f=new THREE.Group();for(let j=0;j<3;j++){const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.18,4),leafMat);stem.position.set((j-1)*.07,.09,0);stem.rotation.z=(j-1)*.2;f.add(stem);const bloom=new THREE.Mesh(new THREE.SphereGeometry(.075,7,6),flowerMats[Math.floor(Math.random()*flowerMats.length)]);bloom.position.set((j-1)*.07,.2,0);f.add(bloom);}f.position.set(x,.025,z);world.add(f);decorations.push(f);}
  }
 }
-
 // Snowy island details: white caps on evergreen trees and pale ice boulders.
 for(const c of islandCenters.filter(c=>c.biome==='snow')){
  for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*42,x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;const cap=new THREE.Mesh(new THREE.SphereGeometry(.8,8,6),snowMat);cap.scale.set(1,.45,1);cap.position.set(x,.55,z);world.add(cap);decorations.push(cap);}
@@ -938,9 +888,9 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,fibre:0,hide:0,berry:0,wheat:0,food:0,salmon:0,cod:0,whiting:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0,copperIngots:0,silverIngots:0,goldenSword:0,obsidianBlade:0,frostBlade:0,shelter:0,bed:0,animalHide:0,plantFibre:0};
+const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,fibre:0,hide:0,berry:0,wheat:0,food:0,salmon:0,cod:0,whiting:0,mackerel:0,shark:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0,copperIngots:0,silverIngots:0,goldenSword:0,obsidianBlade:0,frostBlade:0,shelter:0,bed:0,animalHide:0,plantFibre:0};
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
-let fishingCasts=0;
+let fishingCasts=0, lastFishCastAt=-10000, boatDestinationIndex=null;
 
 const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4},maxDurability:15},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3},maxDurability:30},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4},maxDurability:50},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3,maxDurability:70}};
 const ownedWeapons={};const weaponDurability={};let equippedWeapon=null;
@@ -973,9 +923,9 @@ function updateHUD(){
  if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','fibre','hide','rope','cloth','copperIngots','silverIngots','berry','wheat','food','salmon','cod','whiting','water','coins'];
- const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',plantFibre:'🌿 Plant fibre',hide:'🦌 Animal hide',animalHide:'🦌 Animal hide',rope:'🪢 Rope',cloth:'🧵 Cloth',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',berry:'🫐 Berries',wheat:'🌾 Wheat',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',water:'💧 Water',coins:'🪙 Coins'};
- document.getElementById('items').innerHTML=backpackMaterials.map(k=>{const v=k==='fibre'?((Number(inventory.fibre)||0)+(Number(inventory.plantFibre)||0)):k==='hide'?((Number(inventory.hide)||0)+(Number(inventory.animalHide)||0)):(Number(inventory[k])||0),label=materialLabels[k],foodItem=['food','salmon','cod','whiting','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('');
+ const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','fibre','hide','rope','cloth','copperIngots','silverIngots','berry','wheat','food','salmon','cod','whiting','mackerel','shark','water','coins'];
+ const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',plantFibre:'🌿 Plant fibre',hide:'🦌 Animal hide',animalHide:'🦌 Animal hide',rope:'🪢 Rope',cloth:'🧵 Cloth',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',berry:'🫐 Berries',wheat:'🌾 Wheat',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',mackerel:'🐟 Rare mackerel (+50 hunger)',shark:'🦈 Super-rare shark (+80 hunger)',water:'💧 Water',coins:'🪙 Coins'};
+ document.getElementById('items').innerHTML=backpackMaterials.map(k=>{const v=k==='fibre'?((Number(inventory.fibre)||0)+(Number(inventory.plantFibre)||0)):k==='hide'?((Number(inventory.hide)||0)+(Number(inventory.animalHide)||0)):(Number(inventory[k])||0),label=materialLabels[k],foodItem=['food','salmon','cod','whiting','mackerel','shark','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('');
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
@@ -1228,18 +1178,24 @@ function craftFishingRod(){
 function fish(){
  if(dead)return;
  if(!fishingRod){toast('Craft a fishing rod first: 3 wood + 1 iron ore.');return;}
+ const now=performance.now(), remaining=5000-(now-lastFishCastAt);
+ if(remaining>0){toast(`Wait ${Math.ceil(remaining/1000)} more second${Math.ceil(remaining/1000)===1?'':'s'} before casting again.`);return;}
  const pinewatch=islandCenters[1],dockX=pinewatch.x,dockZ=pinewatch.z+60;
- const dockDistance=Math.hypot(player.position.x-dockX,player.position.z-dockZ);
- if(activeIsland!==1||dockDistance>12){toast('You can only fish from the fishing dock on Pinewatch Isle.');return;}
- fishingCasts++;
- // Each cast is an independent 1-in-10 chance, not a guaranteed catch every tenth cast.
- if(Math.random()>=0.1){toast(`Cast ${fishingCasts}: no bite this time. Every cast has a 1-in-10 chance — try again!`);return;}
+ if(activeIsland!==1||Math.hypot(player.position.x-dockX,player.position.z-dockZ)>12){toast('You can only fish from the fishing dock on Pinewatch Isle.');return;}
+ lastFishCastAt=now; fishingCasts++;
+ if(Math.random()>=0.1){toast(`Cast ${fishingCasts}: no bite. Wait 5 seconds before casting again.`);return;}
  const roll=Math.random();let fishType,fishName;
- if(roll<0.25){fishType='salmon';fishName='Salmon';}
- else if(roll<0.65){fishType='cod';fishName='Cod';}
+ if(roll<0.015){fishType='shark';fishName='SUPER-RARE SHARK';}
+ else if(roll<0.09){fishType='mackerel';fishName='RARE MACKEREL';}
+ else if(roll<0.34){fishType='salmon';fishName='Salmon';}
+ else if(roll<0.69){fishType='cod';fishName='Cod';}
  else{fishType='whiting';fishName='Whiting';}
- inventory[fishType]++;gainXP(10);toast(`You caught a ${fishName}! Each fish restores different hunger: salmon 45, cod 35, whiting 20. Press Interact / Eat to eat a fish.`);updateHUD();
+ inventory[fishType]=(Number(inventory[fishType])||0)+1;
+ gainXP(fishType==='shark'?40:fishType==='mackerel'?20:10);
+ toast(`You caught ${fishName}! Wait 5 seconds before your next cast.`);
+ updateHUD();
 }
+
 function boardOrLeaveBoat(){
  if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
  if(!craftedBoat||!boatVisual){toast('Craft a boat first: 5 wood + 2 stone.');return;}
@@ -1256,22 +1212,23 @@ function boardOrLeaveBoat(){
  }
  updateHUD();
 }
-function sailToNextIsland(){
- if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
- if(dragonTrialActive){toast('The Dragonfall seal holds! Defeat the dragon before you can leave.');return;}
- if(dead)return;if(caveInterior){toast('Exit the cave before sailing.');return;}
- if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
- if(!aboardBoat){toast('Board your boat before sailing.');return;}
- do{activeIsland=(activeIsland+1)%islandCenters.length;}while(activeIsland===9);
- const next=islandCenters[activeIsland];
- // Arrive near the shore so the player can disembark safely.
- player.position.set(next.x,0,next.z+next.radius-15);player.userData.vy=0;
- if(next.name==='Crownspire Mountain'){player.position.x=next.x;player.position.z=next.z+85;}
- boatPosition={x:player.position.x,z:player.position.z+2.5};
- if(boatVisual){boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}
- if(mode==='online'&&socket&&socket.connected)sendNetworkState();
- toast('Arrived at '+next.name+'! Tap Leave boat to explore on foot.');updateHUD();
+function openBoatMap(){
+ if(!craftedBoat||!aboardBoat){toast('Board your boat to use its navigation map.');return;}
+ const list=document.getElementById('boatMapDestinations');
+ list.innerHTML=islandCenters.map((c,i)=>({c,i})).filter(o=>o.i!==9).map(({c,i})=>`<button data-destination="${i}" style="padding:8px;background:${i===boatDestinationIndex?'#286b62':'#203b43'};color:white;border:1px solid #8ac9c0;border-radius:8px">${c.name}</button>`).join('');
+ list.querySelectorAll('[data-destination]').forEach(b=>b.onclick=()=>{
+  boatDestinationIndex=Number(b.dataset.destination);
+  document.getElementById('boatMapPanel').style.display='none';
+  toast(`Course set for ${islandCenters[boatDestinationIndex].name}. Steer using W/A/S/D or movement controls.`);
+ });
+ document.getElementById('boatMapPanel').style.display='block';
 }
+function sailToNextIsland(){
+ if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ if(!aboardBoat){toast('Board your boat first.');return;}
+ openBoatMap();
+}
+
 function interact(){
  if(dead)return;
  if(castleArenaActive){toast('The arena is sealed! Defeat all 3 wildlings before you can leave.');return;}
@@ -1331,6 +1288,8 @@ function interact(){
  if(inventory.salmon>0){inventory.salmon--;hunger=Math.min(100,hunger+45);health=Math.min(maxHealth,health+8);toast('You ate salmon: +45 hunger and +8 health.');updateHUD();return;}
  if(inventory.cod>0){inventory.cod--;hunger=Math.min(100,hunger+35);health=Math.min(maxHealth,health+6);toast('You ate cod: +35 hunger and +6 health.');updateHUD();return;}
  if(inventory.whiting>0){inventory.whiting--;hunger=Math.min(100,hunger+20);health=Math.min(maxHealth,health+3);toast('You ate whiting: +20 hunger and +3 health.');updateHUD();return;}
+  if(inventory.mackerel>0){inventory.mackerel--;hunger=Math.min(100,hunger+50);health=Math.min(maxHealth,health+10);toast('You ate rare mackerel: +50 hunger and +10 health.');updateHUD();return;}
+  if(inventory.shark>0){inventory.shark--;hunger=Math.min(100,hunger+80);health=Math.min(maxHealth,health+20);toast('You ate super-rare shark: +80 hunger and +20 health.');updateHUD();return;}
  if(inventory.food>0){inventory.food--;hunger=Math.min(100,hunger+28);health=Math.min(maxHealth,health+6);toast('You ate cooked food');updateHUD();return;}
  if(inventory.berry>0){inventory.berry--;hunger=Math.min(100,hunger+12);toast('You ate berries');updateHUD();return;}
  if(inventory.campfire>0){health=Math.min(maxHealth,health+12);thirst=Math.min(100,thirst+5);toast('You rest by the campfire');updateHUD();return;}
@@ -1439,13 +1398,15 @@ function sellFish(type,price,label){
 }
 document.getElementById('sellSalmonBtn').onclick=()=>sellFish('salmon',3,'Salmon');
 document.getElementById('sellCodBtn').onclick=()=>sellFish('cod',2,'Cod');
+document.getElementById('sellMackerelBtn').onclick=()=>{if(inventory.mackerel>0){inventory.mackerel--;inventory.coins+=8;toast('Sold rare mackerel for 8 coins.');updateHUD();}else toast('You do not have a mackerel to sell.');};
+document.getElementById('sellSharkBtn').onclick=()=>{if(inventory.shark>0){inventory.shark--;inventory.coins+=25;toast('Sold super-rare shark for 25 coins!');updateHUD();}else toast('You do not have a shark to sell.');};
 document.getElementById('sellWhitingBtn').onclick=()=>sellFish('whiting',1,'Whiting');
 function buyArmour(type){if(tradeMode!=='armourer'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Ada at the Armoury to buy armour.');return;}const def=armorDefs[type],current=armorType?armorDefs[armorType]:null;if(current&&current.tier>=def.tier){toast(`You already have ${current.name} or better.`);return;}if(inventory.coins<def.cost){toast(`${def.name} costs ${def.cost} coins. You have ${inventory.coins}.`);return;}inventory.coins-=def.cost;armorType=type;maxHealth=100+def.bonus;health=maxHealth;refreshArmorVisual();document.getElementById('tradeDescription').textContent=`Equipped ${def.name}! Maximum health is now ${maxHealth}.`;toast(`${def.name} equipped! Max health increased to ${maxHealth}.`);updateHUD();}
 document.getElementById('stoneArmourBtn').onclick=()=>buyArmour('stone');document.getElementById('ironArmourBtn').onclick=()=>buyArmour('iron');document.getElementById('crystalArmourBtn').onclick=()=>buyArmour('crystal');
 document.getElementById('craftBtn').onclick=craft;
 document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
 document.getElementById('drinkBtn').onclick=drinkWater;
-document.getElementById('sailBtn').onclick=sailToNextIsland;
+document.getElementById('sailBtn').onclick=sailToNextIsland; document.getElementById('boatMapBtn').onclick=openBoatMap; document.getElementById('closeBoatMapBtn').onclick=()=>document.getElementById('boatMapPanel').style.display='none';
 document.getElementById('boardBoatBtn').onclick=boardOrLeaveBoat;
 
 let prev=performance.now();
@@ -1457,6 +1418,15 @@ function animate(now){
   const speed=aboardBoat?2.8:(keys.ShiftLeft?7:4.7);
   player.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed*dt;
   player.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed*dt;
+   if(aboardBoat&&boatVisual){
+    boatPosition.x=player.position.x;boatPosition.z=player.position.z;
+    boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=yaw;
+    if(boatDestinationIndex!==null){
+     const target=islandCenters[boatDestinationIndex],dist=Math.hypot(player.position.x-target.x,player.position.z-target.z);
+     if(dist<target.radius-8){activeIsland=boatDestinationIndex;boatDestinationIndex=null;toast(`You steered ashore at ${target.name}! Tap Leave boat to explore.`);updateHUD();}
+    }
+   }
+
   const island=islandCenters[activeIsland];
   if(caveInterior){player.position.x=Math.max(caveRoomOrigin.x-8.5,Math.min(caveRoomOrigin.x+8.5,player.position.x));player.position.z=Math.max(caveRoomOrigin.z-8.5,Math.min(caveRoomOrigin.z+8.5,player.position.z));player.position.y=0;player.userData.vy=0;}
   else {
