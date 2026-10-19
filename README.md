@@ -62,3 +62,10 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 - Added low rolling hills, sandy footpaths, shoreline rock groups and biome-themed ground plants.
 - Adjusted atmosphere and water material to better reveal the terrain.
 - Ore visuals and ore materials were not changed.
+
+
+## Tropical visual and ground-visibility fix
+- Removed the previous cliff/shelf overlays that could make the playable ground hard to see.
+- Removed the broad sand overlay and replaced it with a narrow beach ring so it no longer covers the island surface.
+- Added visible raised, irregular hills and mountain silhouettes, plus turquoise lagoon shallows.
+- Ore visuals remain unchanged.
