@@ -46,3 +46,12 @@ Latest update: removed the Wooden Shelter recipe, added Oldstead Isle with a run
 
 
 Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Desert, Cloverfield Isle, Skyreach Isles, Stormwatch Isle and Coralgrave Isle. Crafting now validates outputs before spending and restores inventory and crafting state if a special craft fails. Wooden Shelter remains removed.
+
+
+## Island exploration and farm update
+- Increased every island's shoreline and walkable ground size.
+- Added exploration treasure chests across the islands, with the jungle temple's reward chest placed inside the temple chamber.
+- Rebuilt Coralgrave Isle's wreck as a larger broken ship with a hull, deck, ribs, mast and torn sail.
+- Added harvestable wheat fields to Cloverfield Isle. Gather wheat and sell 5 wheat to Tilly for 3 coins.
+- Reduced crystal cluster counts on several islands so crystals feel rarer.
+- Improved water colour, ambient lighting and distance atmosphere without changing ore visuals.
