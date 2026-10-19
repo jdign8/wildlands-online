@@ -192,7 +192,7 @@
     <button id="gatherBtn">Gather / Mine</button><button id="swordBtn">Sword / Hit</button>
     <button id="interactBtn">Interact / Eat</button><button id="fishBtn">Fish</button>
     <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
-    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="boatMapBtn">Ship map</button><button id="sailBtn">Set course</button>
+    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="boatMapBtn">Ship map</button>
   </div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -1201,14 +1201,25 @@ function boardOrLeaveBoat(){
  if(!craftedBoat||!boatVisual){toast('Craft a boat first: 5 wood + 2 stone.');return;}
  if(aboardBoat){
   const c=islandCenters[activeIsland],dx=player.position.x-c.x,dz=player.position.z-c.z,d=Math.hypot(dx,dz)||1;
-  // Step off onto the nearest safe part of the current island.
   player.position.set(c.x+dx/d*Math.min(c.radius-12,Math.max(8,d)),0,c.z+dz/d*Math.min(c.radius-12,Math.max(8,d)));
-  aboardBoat=false;boatPosition={x:player.position.x+2,z:player.position.z+1.5};boatVisual.position.set(boatPosition.x,0,boatPosition.z);
-  toast('You stepped off the boat. Walk around the island; tap Board boat to get back on.');
+  aboardBoat=false;
+  boatPosition={x:player.position.x+2,z:player.position.z+1.5};
+  boatVisual.position.set(boatPosition.x,0,boatPosition.z);
+  toast('You stepped off the boat. Walk around the island; tap Board boat to launch again.');
  }else{
-  const d=Math.hypot(player.position.x-boatPosition.x,player.position.z-boatPosition.z);
-  if(d>6){toast('Walk closer to your wooden boat first.');return;}
-  aboardBoat=true;toast('You climbed into the boat. Tap Leave boat when you want to get off.');
+  const c=islandCenters[activeIsland];
+  const dx=player.position.x-c.x, dz=player.position.z-c.z, d=Math.hypot(dx,dz)||1;
+  // Launch just outside the current island's shoreline, over open water.
+  const launchRadius=c.radius+18;
+  const launchX=c.x+(dx/d)*launchRadius;
+  const launchZ=c.z+(dz/d)*launchRadius;
+  player.position.set(launchX,0,launchZ);
+  player.userData.vy=0;
+  boatPosition={x:launchX,z:launchZ};
+  boatVisual.position.set(launchX,0,launchZ);
+  boatVisual.rotation.y=yaw;
+  aboardBoat=true;
+  toast('You launched into the water! Open Ship Map to choose an island, then steer there with your movement controls.');
  }
  updateHUD();
 }
@@ -1406,7 +1417,7 @@ document.getElementById('stoneArmourBtn').onclick=()=>buyArmour('stone');documen
 document.getElementById('craftBtn').onclick=craft;
 document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
 document.getElementById('drinkBtn').onclick=drinkWater;
-document.getElementById('sailBtn').onclick=sailToNextIsland; document.getElementById('boatMapBtn').onclick=openBoatMap; document.getElementById('closeBoatMapBtn').onclick=()=>document.getElementById('boatMapPanel').style.display='none';
+document.getElementById('boatMapBtn').onclick=openBoatMap; document.getElementById('closeBoatMapBtn').onclick=()=>document.getElementById('boatMapPanel').style.display='none';
 document.getElementById('boardBoatBtn').onclick=boardOrLeaveBoat;
 
 let prev=performance.now();

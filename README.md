@@ -61,3 +61,9 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 - Ship map lets you select a destination; steer the boat using movement controls rather than teleporting.
 - Fishing casts have a five-second cooldown.
 - Added rare mackerel and super-rare shark catches, eating effects, and trader sale values.
+
+
+## Boat launch adjustment
+- Removed the separate sail/set-course button.
+- Pressing Board boat now launches the player and boat just offshore from the current island.
+- The Ship Map is used to choose a destination; the player then steers across the water using movement controls.
