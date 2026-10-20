@@ -72,3 +72,9 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 ## Boat initialization fix
 - Boarding now checks the saved crafted-boat flag separately from the boat's 3D visual.
 - If the boat was crafted but its visual was not initialized, the game recreates the visual before boarding.
+
+
+## Boat save-state compatibility fix
+- Synchronizes crafted boat state between the boat variable and inventory save payload.
+- Recognizes older saved boat flags and restores the crafted state during load/HUD refresh.
+- Boarding and crafting checks use the same state to avoid falsely asking for another boat.

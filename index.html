@@ -855,7 +855,7 @@ function connectMultiplayer() {
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
-    if(save.inventory){Object.assign(inventory,save.inventory);normalizeMaterialInventory();armorType=save.inventory.armorType||null;maxHealth=100+(armorType&&armorDefs[armorType]?armorDefs[armorType].bonus:0);refreshArmorVisual();craftedBoat=!!save.inventory.craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
+    if(save.inventory){Object.assign(inventory,save.inventory);normalizeMaterialInventory();armorType=save.inventory.armorType||null;maxHealth=100+(armorType&&armorDefs[armorType]?armorDefs[armorType].bonus:0);refreshArmorVisual();craftedBoat=!!(save.inventory.craftedBoat||save.inventory.boat||save.inventory.reinforcedBoat);inventory.craftedBoat=craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
     if(Number.isFinite(save.health)) health=save.health;
     if(Number.isFinite(save.hunger)) hunger=save.hunger;
     if(Number.isFinite(save.thirst)) thirst=save.thirst;
@@ -920,7 +920,7 @@ function ensureBoatVisual(){
 }
 function updateHUD(){
  normalizeMaterialInventory();
- if(craftedBoat) ensureBoatVisual();
+ craftedBoat=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat); inventory.craftedBoat=craftedBoat; if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
  const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','fibre','hide','rope','cloth','copperIngots','silverIngots','berry','wheat','food','salmon','cod','whiting','mackerel','shark','water','coins'];
@@ -1076,7 +1076,7 @@ function craftRecipe(id){
      const def=weaponDefs[r.weapon];if(!def){toast('This weapon recipe is unavailable. No materials were used.');return;}
      if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}. No materials were used.`);return;}
    }
-   if(r.special==='boat'&&craftedBoat){toast('You already crafted a boat. No materials were used.');return;}
+   if(r.special==='boat'&&(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat)){toast('You already crafted a boat. No materials were used.');return;}
    if(r.special==='rod'&&fishingRod){toast('You already have a fishing rod. No materials were used.');return;}
    if(r.special==='reinforcedBoat'&&!craftedBoat){toast('Craft a wooden boat first. No materials were used.');return;}
    if(r.special==='reinforcedBoat'&&inventory.reinforcedBoat>0){toast('You already crafted this upgrade. No materials were used.');return;}
@@ -1166,9 +1166,9 @@ function drinkWater(){
  toast('No water left! Find the blue spring pool on this island or travel to another island.');
 }
 function craftBoat(){
- if(craftedBoat){toast('You already crafted a boat.');return;}
+ if(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat){craftedBoat=true;inventory.craftedBoat=true;toast('You already crafted a boat.');return;}
  if(inventory.wood<5||inventory.stone<2){toast(`Boat needs 5 wood and 2 stone. You have ${inventory.wood} wood and ${inventory.stone} stone.`);return;}
- const spent=spendIngredientsAtomically({wood:5,stone:2});if(!spent.ok){toast('Boat needs 5 wood and 2 stone.');return;}craftedBoat=true;aboardBoat=false;boatPosition={x:player.position.x+2,z:player.position.z+1.5};ensureBoatVisual();if(boatVisual)boatVisual.position.set(boatPosition.x,0,boatPosition.z);toast('Boat crafted! Walk near it and tap Board boat. Tap Leave boat when you reach land.');updateHUD();
+ const spent=spendIngredientsAtomically({wood:5,stone:2});if(!spent.ok){toast('Boat needs 5 wood and 2 stone.');return;}craftedBoat=true;inventory.craftedBoat=true;aboardBoat=false;boatPosition={x:player.position.x+2,z:player.position.z+1.5};ensureBoatVisual();if(boatVisual)boatVisual.position.set(boatPosition.x,0,boatPosition.z);toast('Boat crafted! Walk near it and tap Board boat. Tap Leave boat when you reach land.');updateHUD();
 }
 function craftFishingRod(){
  if(fishingRod){toast('You already have a fishing rod.');return;}
@@ -1198,7 +1198,7 @@ function fish(){
 
 function boardOrLeaveBoat(){
  if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
- if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ craftedBoat=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat); if(!craftedBoat){toast('Boat not registered in this save. Open Crafting and check whether the Boat recipe says already crafted.');return;} inventory.craftedBoat=true;
  // Recreate the boat model if the saved craft flag exists but its 3D visual has not been initialized yet.
  if(!boatVisual) ensureBoatVisual();
  if(!boatVisual){toast('Your boat could not load. Try reopening the game.');return;}
