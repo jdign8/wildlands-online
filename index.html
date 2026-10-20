@@ -1198,7 +1198,10 @@ function fish(){
 
 function boardOrLeaveBoat(){
  if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
- if(!craftedBoat||!boatVisual){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ // Recreate the boat model if the saved craft flag exists but its 3D visual has not been initialized yet.
+ if(!boatVisual) ensureBoatVisual();
+ if(!boatVisual){toast('Your boat could not load. Try reopening the game.');return;}
  if(aboardBoat){
   const c=islandCenters[activeIsland],dx=player.position.x-c.x,dz=player.position.z-c.z,d=Math.hypot(dx,dz)||1;
   player.position.set(c.x+dx/d*Math.min(c.radius-12,Math.max(8,d)),0,c.z+dz/d*Math.min(c.radius-12,Math.max(8,d)));

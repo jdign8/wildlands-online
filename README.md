@@ -67,3 +67,8 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 - Removed the separate sail/set-course button.
 - Pressing Board boat now launches the player and boat just offshore from the current island.
 - The Ship Map is used to choose a destination; the player then steers across the water using movement controls.
+
+
+## Boat initialization fix
+- Boarding now checks the saved crafted-boat flag separately from the boat's 3D visual.
+- If the boat was crafted but its visual was not initialized, the game recreates the visual before boarding.
