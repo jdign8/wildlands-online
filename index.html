@@ -930,8 +930,8 @@ function updateHUD(){
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  if(dragonTrialActive){document.getElementById('mission').textContent=`DRAGONFALL BOSS FIGHT — Giant Dragon HP: ${Math.max(0,Math.ceil(dragonBoss?.hp||0))}/${dragonBoss?.maxHp||420}. Defeat it to unlock the portal and claim the hoard.`;}
- document.getElementById('sailBtn').textContent='Travel to island';
- document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':'Travel to island';
+ document.getElementById('sailBtn').textContent='Choose island';
+ document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':'Board boat';
  document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${fishingRod?'built':'not built'}`;
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire and bed. At night, stand beside the bed and press E or Interact / Eat to sleep.`;
@@ -1207,35 +1207,38 @@ function fish(){
 
 function boardOrLeaveBoat(){
  if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
- craftedBoat=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat); if(!craftedBoat){toast('Boat not registered in this save. Open Crafting and check whether the Boat recipe says already crafted.');return;} inventory.craftedBoat=true;
- // Recreate the boat model if the saved craft flag exists but its 3D visual has not been initialized yet.
- if(!boatVisual) ensureBoatVisual();
- if(!boatVisual){toast('Your boat could not load. Try reopening the game.');return;}
+ craftedBoat=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat);
+ if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ inventory.craftedBoat=true;
+ if(!boatVisual)ensureBoatVisual();
+ if(!boatVisual){toast('The boat could not load. Try reopening the game.');return;}
  if(aboardBoat){
-  const c=islandCenters[activeIsland],dx=player.position.x-c.x,dz=player.position.z-c.z,d=Math.hypot(dx,dz)||1;
-  player.position.set(c.x+dx/d*Math.min(c.radius-12,Math.max(8,d)),0,c.z+dz/d*Math.min(c.radius-12,Math.max(8,d)));
+  // Step safely onto the current island and leave the boat beside the player.
+  const c=islandCenters[activeIsland];
+  const dx=player.position.x-c.x,dz=player.position.z-c.z,d=Math.hypot(dx,dz)||1;
+  player.position.set(c.x+(dx/d)*Math.min(c.radius-12,Math.max(8,d)),0,c.z+(dz/d)*Math.min(c.radius-12,Math.max(8,d)));
+  player.userData.vy=0;
   aboardBoat=false;
   boatPosition={x:player.position.x+2,z:player.position.z+1.5};
   boatVisual.position.set(boatPosition.x,0,boatPosition.z);
-  toast('You stepped off the boat. Walk around the island; tap Board boat to launch again.');
+  toast('You stepped off the boat. Tap Board boat to get back in, or Choose island to travel.');
  }else{
-  const c=islandCenters[activeIsland];
-  const dx=player.position.x-c.x, dz=player.position.z-c.z, d=Math.hypot(dx,dz)||1;
-  // Launch just outside the current island's shoreline, over open water.
-  const launchRadius=c.radius+18;
-  const launchX=c.x+(dx/d)*launchRadius;
-  const launchZ=c.z+(dz/d)*launchRadius;
-  player.position.set(launchX,0,launchZ);
-  player.userData.vy=0;
-  boatPosition={x:launchX,z:launchZ};
-  boatVisual.position.set(launchX,0,launchZ);
-  boatVisual.rotation.y=yaw;
+  // Make boarding reliable: if the boat is too far away, bring it alongside the player.
+  const d=Math.hypot(player.position.x-boatPosition.x,player.position.z-boatPosition.z);
+  if(d>6){
+   boatPosition={x:player.position.x+1.8,z:player.position.z+1.2};
+   boatVisual.position.set(boatPosition.x,0,boatPosition.z);
+  }
   aboardBoat=true;
-  toast('You launched into the water! Open Ship Map to choose an island, then steer there with your movement controls.');
+  boatVisual.position.set(player.position.x,0,player.position.z);
+  boatVisual.rotation.y=yaw;
+  toast('You boarded the boat! Tap Choose island to pick where to travel, or Leave boat to get off.');
  }
+ if(mode==='online'&&socket&&socket.connected)sendNetworkState();
  updateHUD();
 }
 function openBoatMap(){
+ // The island chooser is available directly from the Choose island button.
  const list=document.getElementById('boatMapDestinations');
  list.innerHTML=islandCenters.map((c,i)=>({c,i})).filter(o=>o.i!==9).map(({c,i})=>`<button data-destination="${i}" style="padding:8px;background:#286b62;color:white;border:1px solid #8ac9c0;border-radius:8px">${c.name}</button>`).join('');
  list.querySelectorAll('[data-destination]').forEach(b=>b.onclick=()=>{
@@ -1246,15 +1249,15 @@ function openBoatMap(){
   boatDestinationIndex=null;
   player.position.set(target.x+8,0,target.z+8);
   player.userData.vy=0;
-  if(boatVisual) boatVisual.position.set(target.x+12,0,target.z+10);
-  boatPosition={x:target.x+12,z:target.z+10};
+  boatPosition={x:target.x+11,z:target.z+10};
+  if(boatVisual)boatVisual.position.set(boatPosition.x,0,boatPosition.z);
   document.getElementById('boatMapPanel').style.display='none';
-  toast(`Travelled to ${target.name}!`);
+  if(mode==='online'&&socket&&socket.connected)sendNetworkState();
+  toast(`Travelled to ${target.name}! Your boat is nearby if you have crafted one.`);
   updateHUD();
  });
  document.getElementById('boatMapPanel').style.display='block';
 }
-
 function sailToNextIsland(){
  openBoatMap();
 }

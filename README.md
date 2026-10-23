@@ -84,3 +84,8 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 - The island chooser now works without crafting or boarding a boat.
 - Choose an island in the map panel to teleport there instantly.
 - The travel button opens the island chooser; boat crafting is no longer required for island travel.
+
+
+## Boat boarding + island chooser repair
+- Restored a dedicated Board boat / Leave boat toggle. Boarding recreates the boat visual when needed and brings it alongside the player if it is too far away, preventing the old distance check from blocking boarding.
+- Choose island opens the island list and teleports directly to the selected island. This works independently from boarding, so the chooser is always available.
