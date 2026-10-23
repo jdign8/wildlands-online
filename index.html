@@ -1207,11 +1207,23 @@ function fish(){
 
 function boardOrLeaveBoat(){
  if(castleArenaActive){toast('The arena is sealed! Defeat all the wildlings before you can leave.');return;}
+ // Boarding must not get stuck behind an out-of-sync saved craftedBoat flag.
+ // If the player has no recorded boat, provide the basic raft automatically.
  craftedBoat=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat);
- if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
+ if(!craftedBoat){
+  craftedBoat=true;
+  inventory.craftedBoat=true;
+  inventory.boat=1;
+  boatPosition={x:player.position.x+1.8,z:player.position.z+1.2};
+ }
  inventory.craftedBoat=true;
  if(!boatVisual)ensureBoatVisual();
- if(!boatVisual){toast('The boat could not load. Try reopening the game.');return;}
+ if(!boatVisual){
+  // Retry after synchronizing the boat state, so a missing visual doesn't block boarding.
+  craftedBoat=true; inventory.craftedBoat=true; inventory.boat=1;
+  ensureBoatVisual();
+ }
+ if(!boatVisual){toast('The boat could not load. Please reload the game once.');return;}
  if(aboardBoat){
   // Step safely onto the current island and leave the boat beside the player.
   const c=islandCenters[activeIsland];

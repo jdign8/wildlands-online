@@ -89,3 +89,7 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 ## Boat boarding + island chooser repair
 - Restored a dedicated Board boat / Leave boat toggle. Boarding recreates the boat visual when needed and brings it alongside the player if it is too far away, preventing the old distance check from blocking boarding.
 - Choose island opens the island list and teleports directly to the selected island. This works independently from boarding, so the chooser is always available.
+
+
+## Boarding recovery fix
+Boarding no longer stops with ‘Craft a boat first’ when the saved boat flag is missing or out of sync. Tapping Board boat creates/synchronizes the basic raft state automatically, then boards it. Choose island remains available for instant island travel.
