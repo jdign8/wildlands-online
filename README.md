@@ -78,3 +78,9 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 - Synchronizes crafted boat state between the boat variable and inventory save payload.
 - Recognizes older saved boat flags and restores the crafted state during load/HUD refresh.
 - Boarding and crafting checks use the same state to avoid falsely asking for another boat.
+
+
+## Island teleport update
+- The island chooser now works without crafting or boarding a boat.
+- Choose an island in the map panel to teleport there instantly.
+- The travel button opens the island chooser; boat crafting is no longer required for island travel.

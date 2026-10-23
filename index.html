@@ -126,7 +126,7 @@
     <div id="travelStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Boat: not built · Fishing rod: not built</div>
     <div id="items"></div>
   </div>
-  <div id="boatMapPanel" style="display:none;position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,360px);max-height:75vh;overflow:auto;background:#10232a;border:2px solid #8ac9c0;border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 40px #000b"><h2>🗺️ Ship Navigation Map</h2><p style="font-size:13px">Choose a destination, then steer with your movement controls. The boat will not teleport.</p><div id="boatMapDestinations" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div><button id="closeBoatMapBtn" style="width:100%;margin-top:8px">Close map</button></div><div id="craftBook" role="dialog" aria-modal="true" aria-label="Crafting Book">
+  <div id="boatMapPanel" style="display:none;position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,360px);max-height:75vh;overflow:auto;background:#10232a;border:2px solid #8ac9c0;border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 40px #000b"><h2>🗺️ Ship Navigation Map</h2><p style="font-size:13px">Choose an island to travel to instantly.</p><div id="boatMapDestinations" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div><button id="closeBoatMapBtn" style="width:100%;margin-top:8px">Close map</button></div><div id="craftBook" role="dialog" aria-modal="true" aria-label="Crafting Book">
     <div id="craftBookCard">
       <div id="craftBookTop"><h2>📖 Wildlands Crafting Book</h2><button id="closeCraftBook" aria-label="Close crafting book">✕ Close</button></div>
       <p id="craftBookHelp">Tap any recipe to craft it. Ingredients are only spent when you have enough. Scroll for more recipes.</p>
@@ -192,7 +192,7 @@
     <button id="gatherBtn">Gather / Mine</button><button id="swordBtn">Sword / Hit</button>
     <button id="interactBtn">Interact / Eat</button><button id="fishBtn">Fish</button>
     <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
-    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="boatMapBtn">Ship map</button>
+    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="boatMapBtn">Choose island</button>
   </div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -930,8 +930,8 @@ function updateHUD(){
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  if(dragonTrialActive){document.getElementById('mission').textContent=`DRAGONFALL BOSS FIGHT — Giant Dragon HP: ${Math.max(0,Math.ceil(dragonBoss?.hp||0))}/${dragonBoss?.maxHp||420}. Defeat it to unlock the portal and claim the hoard.`;}
- document.getElementById('sailBtn').textContent=craftedBoat?'Sail to next island':'Sail (craft boat first)';
- document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':(craftedBoat?'Board boat':'Boat');
+ document.getElementById('sailBtn').textContent='Travel to island';
+ document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':'Travel to island';
  document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${fishingRod?'built':'not built'}`;
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire and bed. At night, stand beside the bed and press E or Interact / Eat to sleep.`;
@@ -1236,19 +1236,26 @@ function boardOrLeaveBoat(){
  updateHUD();
 }
 function openBoatMap(){
- if(!craftedBoat||!aboardBoat){toast('Board your boat to use its navigation map.');return;}
  const list=document.getElementById('boatMapDestinations');
- list.innerHTML=islandCenters.map((c,i)=>({c,i})).filter(o=>o.i!==9).map(({c,i})=>`<button data-destination="${i}" style="padding:8px;background:${i===boatDestinationIndex?'#286b62':'#203b43'};color:white;border:1px solid #8ac9c0;border-radius:8px">${c.name}</button>`).join('');
+ list.innerHTML=islandCenters.map((c,i)=>({c,i})).filter(o=>o.i!==9).map(({c,i})=>`<button data-destination="${i}" style="padding:8px;background:#286b62;color:white;border:1px solid #8ac9c0;border-radius:8px">${c.name}</button>`).join('');
  list.querySelectorAll('[data-destination]').forEach(b=>b.onclick=()=>{
-  boatDestinationIndex=Number(b.dataset.destination);
+  const destination=Number(b.dataset.destination);
+  const target=islandCenters[destination];
+  activeIsland=destination;
+  aboardBoat=false;
+  boatDestinationIndex=null;
+  player.position.set(target.x+8,0,target.z+8);
+  player.userData.vy=0;
+  if(boatVisual) boatVisual.position.set(target.x+12,0,target.z+10);
+  boatPosition={x:target.x+12,z:target.z+10};
   document.getElementById('boatMapPanel').style.display='none';
-  toast(`Course set for ${islandCenters[boatDestinationIndex].name}. Steer using W/A/S/D or movement controls.`);
+  toast(`Travelled to ${target.name}!`);
+  updateHUD();
  });
  document.getElementById('boatMapPanel').style.display='block';
 }
+
 function sailToNextIsland(){
- if(!craftedBoat){toast('Craft a boat first: 5 wood + 2 stone.');return;}
- if(!aboardBoat){toast('Board your boat first.');return;}
  openBoatMap();
 }
 
