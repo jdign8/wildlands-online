@@ -1053,7 +1053,7 @@ function renderCraftBook(){
  document.getElementById('recipeTabs').innerHTML=cats.map(c=>`<button data-cat="${c}" class="${activeRecipeCategory===c?'selected':''}">${c}</button>`).join('');
  document.querySelectorAll('#recipeTabs button').forEach(b=>b.onclick=()=>{activeRecipeCategory=b.dataset.cat;renderCraftBook();});
  const list=craftingRecipes.filter(r=>activeRecipeCategory==='All'||r.cat===activeRecipeCategory);
- document.getElementById('recipeList').innerHTML=list.map(r=>{const missing=getMissingIngredients(r.cost||{}).length>0;const locked=(r.special==='weapon'&&weaponDefs[r.weapon]?.level&&level<weaponDefs[r.weapon].level)||(r.special==='reinforcedBoat'&&!craftedBoat)||(r.special==='advancedRod'&&!fishingRod)||(r.special==='campfire'&&inventory.campfire>0)||(r.special==='boat'&&craftedBoat)||(r.special==='rod'&&fishingRod);return `<button class="recipe" data-recipe="${r.id}" ${locked?'disabled':''}><strong>${r.icon} ${r.name}</strong><span class="ingredients">${recipeCostText(r.cost)}</span><span class="recipeNote">${r.desc}${missing?' · Missing ingredients':locked?' · Requires prerequisite':''}</span></button>`;}).join('');
+ document.getElementById('recipeList').innerHTML=list.map(r=>{const missing=getMissingIngredients(r.cost||{}).length>0;const boatExists=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat);const locked=(r.special==='weapon'&&weaponDefs[r.weapon]?.level&&level<weaponDefs[r.weapon].level)||(r.special==='reinforcedBoat'&&!boatExists)||(r.special==='advancedRod'&&!fishingRod)||(r.special==='campfire'&&inventory.campfire>0)||(r.special==='boat'&&boatExists)||(r.special==='rod'&&fishingRod);return `<button class="recipe" data-recipe="${r.id}" ${locked?'disabled':''}><strong>${r.icon} ${r.name}</strong><span class="ingredients">${recipeCostText(r.cost)}</span><span class="recipeNote">${r.desc}${missing?' · Missing ingredients':locked?' · Requires prerequisite':''}</span></button>`;}).join('');
  document.querySelectorAll('.recipe').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();craftRecipe(b.dataset.recipe);});
 }
 function openCraftBook(){renderCraftBook();document.getElementById('craftBook').style.display='block';}
@@ -1091,9 +1091,18 @@ function craftRecipe(id){
      const label=k=>({'iron':'iron ore','copper':'copper ore','silver':'silver ore','gold':'gold ore','frost':'frost shards','fibre':'plant fibre','plantFibre':'plant fibre','hide':'animal hide','animalHide':'animal hide','copperIngots':'copper ingots','silverIngots':'silver ingots'}[k]||k);
      toast('Not enough materials: '+missing.map(([k,v])=>`${Math.max(0,Number(v)-(aliases[k]?aliases[k].reduce((n,a)=>n+(Number(inventory[a])||0),0):(Number(inventory[k])||0)))} ${label(k)}`).join(', ')+'. Nothing was used.');renderCraftBook();return;
    }
-   // Special builders manage their own spend; the snapshot is a safety net if they fail after preflight.
+   // Craft the boat directly in the recipe transaction. This avoids the separate
+   // craftBoat handler leaving the recipe result and HUD state out of sync.
    if(r.special==='campfire')craft();
-   else if(r.special==='boat')craftBoat();
+   else if(r.special==='boat'){
+     const spent=spendIngredientsAtomically(r.cost||{});
+     if(!spent.ok){toast('Boat needs 5 wood and 2 stone. Nothing was used.');renderCraftBook();return;}
+     craftedBoat=true; inventory.craftedBoat=true; inventory.boat=1; aboardBoat=false;
+     boatPosition={x:player.position.x+2,z:player.position.z+1.5};
+     ensureBoatVisual();
+     if(boatVisual)boatVisual.position.set(boatPosition.x,0,boatPosition.z);
+     toast('Boat crafted! Backpack updated. Tap Board boat to launch.');
+   }
    else if(r.special==='rod')craftFishingRod();
    else {
      const spent=spendIngredientsAtomically(r.cost||{});
@@ -1111,7 +1120,7 @@ function craftRecipe(id){
    // Verify that the expected result exists. Any failed special builder is rolled back in full.
    let success=false;
    if(r.special==='campfire')success=(Number(inventory.campfire)||0)>(Number(before.campfire)||0);
-   else if(r.special==='boat')success=craftedBoat===true;
+   else if(r.special==='boat')success=!!(craftedBoat&&inventory.craftedBoat&&inventory.boat===1);
    else if(r.special==='rod')success=fishingRod===true;
    else if(r.special==='weapon')success=ownedWeapons[r.weapon]===true;
    else success=(Number(inventory[output])||0)>(Number(before[output])||0);
