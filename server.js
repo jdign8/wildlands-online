@@ -29,7 +29,7 @@ function safeName(v){return String(v||'Survivor').replace(/[<>]/g,'').trim().sli
 function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex');}
 function roomPlayers(room){return [...(rooms.get(room)?.players.values()||[])].map(p=>({...p}));}
 function listPublicRooms(){
-  return [...rooms.values()].filter(r=>r.type==='public').map(r=>({name:r.name,players:r.players.size}));
+  return [...rooms.values()].filter(r=>r.type==='public' && r.players.size>0).map(r=>({name:r.name,players:r.players.size}));
 }
 function publicPlayer(p){return {id:p.id,name:p.name,room:p.room,x:p.x,z:p.z,rot:p.rot,color:p.color,health:p.health};}
 io.on('connection',socket=>{
@@ -37,19 +37,22 @@ io.on('connection',socket=>{
   socket.on('listRooms',()=>socket.emit('roomList',listPublicRooms()));
   socket.on('joinWorld',(payload={})=>{
     const room=safeRoom(payload.room), name=safeName(payload.name);
+    const action=payload.action==='create'?'create':'join';
     const type=payload.roomType==='private'?'private':'public';
     const password=String(payload.password||'');
     if(type==='private'&&password.length<4){socket.emit('joinError','Private world passwords must be at least 4 characters.');return;}
     let record=rooms.get(room);
+    if(action==='create' && record){socket.emit('joinError','That game name is already in use. Choose another name.');return;}
+    if(action==='join' && !record){socket.emit('joinError','That game is not running. Ask the host to create it first.');return;}
     if(record && record.type!==type){socket.emit('joinError','A world with that name already exists with a different visibility.');return;}
     if(record && record.type==='private' && record.passwordHash!==hash(password)){socket.emit('joinError','Incorrect private world password.');return;}
-    if(!record){record={name:room,type,passwordHash:type==='private'?hash(password):null,players:new Map()};rooms.set(room,record);}
+    if(!record){record={name:room,type,passwordHash:type==='private'?hash(password):null,hostId:socket.id,players:new Map()};rooms.set(room,record);}
     if(socket.data.room){const oldRoom=socket.data.room;rooms.get(oldRoom)?.players.delete(socket.id);socket.to(oldRoom).emit('playerLeft',socket.id);socket.leave(oldRoom);if(rooms.get(oldRoom)?.players.size===0)rooms.delete(oldRoom);}
     const saveKey=hash(name.toLowerCase()+'|'+room);
     const saved=saves[saveKey]||null;
     const p={id:socket.id,name,room,x:saved?.position?.x||0,z:saved?.position?.z||0,rot:0,color:0x5577bb+Math.floor(Math.random()*0x777777),health:saved?.health??100};
     record.players.set(socket.id,p);socket.data.room=room;socket.data.saveKey=saveKey;socket.join(room);
-    socket.emit('worldState',roomPlayers(room));socket.to(room).emit('playerJoined',publicPlayer(p));
+    socket.emit('worldState',roomPlayers(room));socket.to(room).emit('playerJoined',publicPlayer(p)); socket.emit('joinedWorld',{room,host:record.hostId===socket.id});
     socket.emit('yourSave',saved?.progress||null);
     socket.emit('serverMessage',`Joined ${type} world "${room}" as ${name}`);
     io.emit('roomList',listPublicRooms());
@@ -104,7 +107,16 @@ io.on('connection',socket=>{
   });
   socket.on('disconnect',()=>{
     const room=socket.data.room,record=rooms.get(room);
-    if(record){record.players.delete(socket.id);socket.to(room).emit('playerLeft',socket.id);if(record.players.size===0)rooms.delete(room);}
+    if(record){
+      if(record.hostId===socket.id){
+        io.to(room).emit('worldClosed','The host left. This game has closed, so it can no longer be joined.');
+        for(const id of record.players.keys()){if(id!==socket.id){const other=io.sockets.sockets.get(id);if(other){other.data.room=null;other.leave(room);other.disconnect(true);}}}
+        rooms.delete(room);
+      } else {
+        record.players.delete(socket.id);socket.to(room).emit('playerLeft',socket.id);
+        if(record.players.size===0)rooms.delete(room);
+      }
+    }
     scheduleSave();io.emit('roomList',listPublicRooms());
   });
 });

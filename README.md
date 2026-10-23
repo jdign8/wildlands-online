@@ -93,3 +93,12 @@ Latest update: adds Verdant Wilds, Ashenfall Isle, Murkmire Isle, Sunscorch Dese
 
 ## Boarding recovery fix
 Boarding no longer stops with ‘Craft a boat first’ when the saved boat flag is missing or out of sync. Tapping Board boat creates/synchronizes the basic raft state automatically, then boards it. Choose island remains available for instant island travel.
+
+
+## Multiplayer Create / Join update
+- Multiplayer now offers separate **Create game** and **Join a game** actions.
+- Creating a game creates a new room and makes the creator its host; public games appear in the live public game list.
+- Joining requires an already-running room; it never silently creates a missing room.
+- When the host disconnects or leaves, the server closes the room, disconnects all remaining players, and removes it from the public list. The closed room cannot be rejoined.
+- Socket.IO connection options include bounded retries/timeouts, and the UI reports server connection or room-join errors.
+- Public rooms are listed. Private rooms can be joined by entering the exact room name and password.

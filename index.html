@@ -170,11 +170,19 @@
       <select id="roomType" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
         <option value="public">Public world</option><option value="private">Private world</option>
       </select>
-      <input id="roomCode" maxlength="24" placeholder="World name (e.g. island-1)" value="island-1" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
+      <input id="roomCode" maxlength="24" placeholder="Game name (create or private join)" value="" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
       <input id="roomPassword" maxlength="40" placeholder="Private world password (required for private)" type="password" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit">
-      <button id="refreshRooms" type="button">Refresh public worlds</button>
-      <div id="roomBrowser" class="small">Public worlds will appear here when the server is running.</div>
-      <p class="small">Share the world name and password with friends for private worlds.</p>
+      <div class="modeRow" style="margin:4px 0">
+        <button id="createGameBtn" type="button">➕ Create game</button>
+        <button id="joinGameBtn" type="button">🔎 Join a game</button>
+      </div>
+      <div id="createHelp" class="small" style="display:none">You will be the host. Your game appears in the public list for friends. If you leave, the game closes for everyone.</div>
+      <div id="joinPanel" style="display:none;gap:8px">
+        <button id="refreshRooms" type="button">Refresh public games</button>
+        <div id="roomBrowser" class="small">Tap refresh to find games hosted by other players.</div>
+        <p class="small">To join a private game, enter its exact name and password.</p>
+      </div>
+      <p class="small">Choose Create game to host, or Join a game to enter an existing host's world.</p>
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
     <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. On Cloverfield Isle, harvest golden wheat and sell 5 wheat to Tilly for 3 coins. Search each island for its treasure chest.</p>
@@ -200,10 +208,12 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 let mode = 'solo';
+let multiplayerAction = null;
+let pendingWorldEntry = false;
 const soloBtn = document.getElementById('soloBtn'), onlineBtn = document.getElementById('onlineBtn');
 const networkFields = document.getElementById('networkFields');
-soloBtn.onclick = () => { mode='solo'; soloBtn.classList.add('selected'); onlineBtn.classList.remove('selected'); networkFields.style.display='none'; document.getElementById('modeInfo').textContent='Private solo world: no server connection required.'; };
-onlineBtn.onclick = () => { mode='online'; onlineBtn.classList.add('selected'); soloBtn.classList.remove('selected'); networkFields.style.display='grid'; document.getElementById('modeInfo').textContent='Multiplayer mode connects to the server you are hosting. Friends must open the same hosted address and join the same room.'; };
+soloBtn.onclick = () => { mode='solo'; multiplayerAction=null; soloBtn.classList.add('selected'); onlineBtn.classList.remove('selected'); networkFields.style.display='none'; document.getElementById('modeInfo').textContent='Private solo world: no server connection required.'; document.getElementById('play').textContent='ENTER THE ISLAND'; };
+onlineBtn.onclick = () => { mode='online'; onlineBtn.classList.add('selected'); soloBtn.classList.remove('selected'); networkFields.style.display='grid'; document.getElementById('modeInfo').textContent='Choose whether to host a new game or join an existing one.'; document.getElementById('play').textContent='ENTER SOLO ISLAND'; };
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9bd0d8);
 scene.fog = new THREE.Fog(0x9bd0d8, 90, 520);
@@ -826,19 +836,23 @@ function makeRemotePlayer(color=0x6fa6df) {
   for(const side of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.43,3,7),skin);arm.position.set(side*.39,1,0);g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.4,3,7),pants);leg.position.set(side*.15,.4,0);g.add(leg);}
   const pack=new THREE.Mesh(new THREE.BoxGeometry(.34,.42,.19),woodMat);pack.position.set(0,1.04,.32);g.add(pack);scene.add(g);return g;
 }
-function connectMultiplayer() {
+function connectMultiplayer(action) {
+  multiplayerAction = action; pendingWorldEntry = true;
   if (typeof io === 'undefined') { toast('Socket.IO failed to load. Check internet connection.'); return false; }
-  socket = io();
+  socket = io({reconnection:true, reconnectionAttempts:5, reconnectionDelay:700, timeout:8000});
   socket.on('connect', () => {
     mySocketId = socket.id;
     socket.emit('joinWorld', {
       name: (document.getElementById('playerName').value || 'Survivor').trim().slice(0,18),
       room: (document.getElementById('roomCode').value || 'island-1').trim().slice(0,24),
       roomType: document.getElementById('roomType').value,
-      password: document.getElementById('roomPassword').value
+      password: document.getElementById('roomPassword').value,
+      action: multiplayerAction
     });
-    toast('Connected to multiplayer server');
+    toast('Connected — opening multiplayer game…');
   });
+  socket.on('joinedWorld', () => { if(!pendingWorldEntry)return; pendingWorldEntry=false; document.getElementById('start').style.display='none'; if(!isTouchDevice && innerWidth>700)setPointer(); toast(multiplayerAction==='create'?'Game created. You are the host.':'Joined the host’s game.'); });
+  socket.on('worldClosed', (message) => { pendingWorldEntry=false; for(const p of remotePlayers.values())scene.remove(p.mesh); remotePlayers.clear(); document.getElementById('start').style.display='flex'; toast(message || 'The host left. This game has closed.'); if(socket){socket.disconnect();socket=null;} });
   socket.on('worldState', (players) => {
     for (const p of players) if (p.id !== mySocketId) addOrUpdateRemote(p);
   });
@@ -846,12 +860,12 @@ function connectMultiplayer() {
   socket.on('playerMoved', (p) => { if (p.id !== mySocketId) addOrUpdateRemote(p); });
   socket.on('playerLeft', (id) => { const p=remotePlayers.get(id); if(p){scene.remove(p.mesh);remotePlayers.delete(id);} });
   socket.on('serverMessage', (m) => toast(m));
-  socket.on('joinError', (m) => { toast(m); document.getElementById('start').style.display='flex'; });
+  socket.on('joinError', (m) => { pendingWorldEntry=false; toast(m); document.getElementById('start').style.display='flex'; if(socket){socket.disconnect();socket=null;} });
   socket.on('roomList', (rooms) => {
     const el=document.getElementById('roomBrowser');
-    if(!rooms.length){el.textContent='No public worlds yet. You can create one by joining a public world name.';return;}
+    if(!rooms.length){el.textContent='No public games are running right now. Create one or refresh later.';return;}
     el.innerHTML='<strong>Public worlds</strong><br>'+rooms.map(r=>`<button type="button" data-room="${String(r.name).replace(/[^a-zA-Z0-9_-]/g,'')}" style="margin:4px 4px 0 0;padding:5px 8px">${r.name} · ${r.players} player(s)</button>`).join('');
-    el.querySelectorAll('button[data-room]').forEach(b=>b.onclick=()=>{document.getElementById('roomCode').value=b.dataset.room;document.getElementById('roomType').value='public';});
+    el.querySelectorAll('button[data-room]').forEach(b=>b.onclick=()=>{document.getElementById('roomCode').value=b.dataset.room;document.getElementById('roomType').value='public'; multiplayerAction='join'; if(!connectMultiplayer('join'))return; });
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
@@ -1386,20 +1400,37 @@ document.getElementById('items').addEventListener('click',e=>{if(e.target.closes
 document.getElementById('items').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-food-info]')){e.preventDefault();showFoodFishInfo();}});
 function setPointer(){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();}
 document.getElementById('play').onclick=()=>{
-  if(mode==='online' && !connectMultiplayer()) return;
+  if(mode==='online') { toast('Choose Create game or Join a game first.'); return; }
   document.getElementById('start').style.display='none';
   if(!isTouchDevice && innerWidth>700)setPointer();
-  toast(mode==='solo'?'Survive the island. Drag to look, use the touch buttons to move.':'Joining multiplayer island…');
+  toast('Survive the island. Drag to look, use the touch buttons to move.');
+};
+document.getElementById('createGameBtn').onclick=()=>{
+  multiplayerAction='create';
+  document.getElementById('createHelp').style.display='block';
+  document.getElementById('joinPanel').style.display='none';
+  document.getElementById('roomType').value='public';
+  document.getElementById('roomCode').value=(document.getElementById('roomCode').value||'').trim() || 'wildlands-'+Math.random().toString(36).slice(2,7);
+  document.getElementById('modeInfo').textContent='Creating a new game… you will be its host.';
+  connectMultiplayer('create');
+};
+document.getElementById('joinGameBtn').onclick=()=>{
+  multiplayerAction='join';
+  document.getElementById('createHelp').style.display='none';
+  document.getElementById('joinPanel').style.display='grid';
+  document.getElementById('modeInfo').textContent='Choose a running public game below, or enter a private game name and password.';
+  if(!socket){socket=io({reconnection:true,reconnectionAttempts:5,reconnectionDelay:700,timeout:8000}); socket.on('connect',()=>socket.emit('listRooms')); socket.on('roomList',renderRoomList); socket.on('connect_error',()=>{document.getElementById('roomBrowser').textContent='Could not reach the multiplayer server. Try again shortly.';});}
+  else if(socket.connected)socket.emit('listRooms');
 };
 document.getElementById('refreshRooms').onclick=()=>{
-  if(!socket){socket=io();socket.on('connect',()=>socket.emit('listRooms'));socket.on('roomList',rooms=>renderRoomList(rooms));}
-  else socket.emit('listRooms');
+  if(!socket){socket=io({reconnection:true,reconnectionAttempts:5,reconnectionDelay:700,timeout:8000}); socket.on('connect',()=>socket.emit('listRooms')); socket.on('roomList',renderRoomList);}
+  else if(socket.connected)socket.emit('listRooms');
 };
 function renderRoomList(rooms){
  const el=document.getElementById('roomBrowser');
- if(!rooms.length){el.textContent='No public worlds yet. Create one by joining a public world name.';return;}
- el.innerHTML='<strong>Public worlds</strong><br>'+rooms.map(r=>`<button type="button" data-room="${String(r.name).replace(/[^a-zA-Z0-9_-]/g,'')}" style="margin:4px 4px 0 0;padding:5px 8px">${r.name} · ${r.players} player(s)</button>`).join('');
- el.querySelectorAll('button[data-room]').forEach(b=>b.onclick=()=>{document.getElementById('roomCode').value=b.dataset.room;document.getElementById('roomType').value='public';});
+ if(!rooms.length){el.textContent='No public games are running right now. Create one or refresh later.';return;}
+ el.innerHTML='<strong>Games currently hosted</strong><br>'+rooms.map(r=>`<button type="button" data-room="${String(r.name).replace(/[^a-zA-Z0-9_-]/g,'')}" style="margin:4px 4px 0 0;padding:7px 10px">${r.name} · ${r.players} player(s)</button>`).join('');
+ el.querySelectorAll('button[data-room]').forEach(b=>b.onclick=()=>{document.getElementById('roomCode').value=b.dataset.room;document.getElementById('roomType').value='public';connectMultiplayer('join');});
 }
 let lookPointer = null, lastLookX = 0, lastLookY = 0, lookMoved = false;
 renderer.domElement.addEventListener('pointerdown', e => {
