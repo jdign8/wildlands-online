@@ -1253,6 +1253,16 @@ function closeBoatMap(){
  const panel=document.getElementById('boatMapPanel');
  if(panel) panel.style.display='none';
 }
+// Each island has a safe arrival point. Crownspire Mountain starts at the foot
+// of the mountain beside the cave/path entrance, never on the summit.
+function getIslandArrivalPoint(index){
+ const target=islandCenters[index];
+ if(!target) return null;
+ if(index===6){ // Crownspire Mountain: bottom of the switchback trail
+  return {x:target.x, y:0, z:target.z+85, yaw:0};
+ }
+ return {x:target.x+8, y:0, z:target.z+8, yaw:0};
+}
 function openBoatMap(){
  const panel=document.getElementById('boatMapPanel');
  const list=document.getElementById('boatMapDestinations');
@@ -1271,12 +1281,15 @@ function openBoatMap(){
    const chosen=islandCenters[destination];
    if(!chosen || !player || !player.position){toast('That island could not be loaded. Please choose another island.');return;}
    try{
+    const arrival=getIslandArrivalPoint(destination);
+    if(!arrival){toast('That island has no starting point yet.');return;}
     activeIsland=destination;
     aboardBoat=false;
     boatDestinationIndex=null;
-    player.position.set(chosen.x+8,0,chosen.z+8);
+    player.position.set(arrival.x,arrival.y,arrival.z);
+    yaw=arrival.yaw;
     player.userData.vy=0;
-    boatPosition={x:chosen.x+11,z:chosen.z+10};
+    boatPosition={x:arrival.x+3,z:arrival.z+2};
     if(!craftedBoat){craftedBoat=true;inventory.craftedBoat=true;inventory.boat=1;}
     if(!boatVisual) ensureBoatVisual();
     if(boatVisual) boatVisual.position.set(boatPosition.x,0,boatPosition.z);
