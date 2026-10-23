@@ -126,7 +126,7 @@
     <div id="travelStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Boat: not built · Fishing rod: not built</div>
     <div id="items"></div>
   </div>
-  <div id="boatMapPanel" style="display:none;position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,360px);max-height:75vh;overflow:auto;background:#10232a;border:2px solid #8ac9c0;border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 40px #000b"><h2>🗺️ Ship Navigation Map</h2><p style="font-size:13px">Choose an island to travel to instantly.</p><div id="boatMapDestinations" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div><button id="closeBoatMapBtn" style="width:100%;margin-top:8px">Close map</button></div><div id="craftBook" role="dialog" aria-modal="true" aria-label="Crafting Book">
+  <div id="boatMapPanel" style="display:none;position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,360px);max-height:75vh;overflow:auto;background:#10232a;border:2px solid #8ac9c0;border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 40px #000b"><h2>🗺️ Ship Navigation Map</h2><p style="font-size:13px">Choose an island to travel to instantly.</p><div id="boatMapDestinations" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div><button id="closeBoatMapBtn" type="button" style="width:100%;margin-top:8px;min-height:44px;position:relative;z-index:2;touch-action:manipulation">✕ Close map</button></div><div id="craftBook" role="dialog" aria-modal="true" aria-label="Crafting Book">
     <div id="craftBookCard">
       <div id="craftBookTop"><h2>📖 Wildlands Crafting Book</h2><button id="closeCraftBook" aria-label="Close crafting book">✕ Close</button></div>
       <p id="craftBookHelp">Tap any recipe to craft it. Ingredients are only spent when you have enough. Scroll for more recipes.</p>
@@ -1249,27 +1249,52 @@ function boardOrLeaveBoat(){
  if(mode==='online'&&socket&&socket.connected)sendNetworkState();
  updateHUD();
 }
-function openBoatMap(){
- // The island chooser is available directly from the Choose island button.
- const list=document.getElementById('boatMapDestinations');
- list.innerHTML=islandCenters.map((c,i)=>({c,i})).filter(o=>o.i!==9).map(({c,i})=>`<button data-destination="${i}" style="padding:8px;background:#286b62;color:white;border:1px solid #8ac9c0;border-radius:8px">${c.name}</button>`).join('');
- list.querySelectorAll('[data-destination]').forEach(b=>b.onclick=()=>{
-  const destination=Number(b.dataset.destination);
-  const target=islandCenters[destination];
-  activeIsland=destination;
-  aboardBoat=false;
-  boatDestinationIndex=null;
-  player.position.set(target.x+8,0,target.z+8);
-  player.userData.vy=0;
-  boatPosition={x:target.x+11,z:target.z+10};
-  if(boatVisual)boatVisual.position.set(boatPosition.x,0,boatPosition.z);
-  document.getElementById('boatMapPanel').style.display='none';
-  if(mode==='online'&&socket&&socket.connected)sendNetworkState();
-  toast(`Travelled to ${target.name}! Your boat is nearby if you have crafted one.`);
-  updateHUD();
- });
- document.getElementById('boatMapPanel').style.display='block';
+function closeBoatMap(){
+ const panel=document.getElementById('boatMapPanel');
+ if(panel) panel.style.display='none';
 }
+function openBoatMap(){
+ const panel=document.getElementById('boatMapPanel');
+ const list=document.getElementById('boatMapDestinations');
+ if(!panel||!list){toast('The island map could not open. Please reload the game.');return;}
+ list.innerHTML='';
+ islandCenters.forEach((target,index)=>{
+  if(!target || index===9) return;
+  const button=document.createElement('button');
+  button.type='button';
+  button.dataset.destination=String(index);
+  button.textContent=target.name || `Island ${index+1}`;
+  button.style.cssText='padding:10px 6px;background:#286b62;color:white;border:1px solid #8ac9c0;border-radius:8px;min-height:42px;touch-action:manipulation;cursor:pointer';
+  button.addEventListener('click',(event)=>{
+   event.preventDefault(); event.stopPropagation();
+   const destination=Number(button.dataset.destination);
+   const chosen=islandCenters[destination];
+   if(!chosen || !player || !player.position){toast('That island could not be loaded. Please choose another island.');return;}
+   try{
+    activeIsland=destination;
+    aboardBoat=false;
+    boatDestinationIndex=null;
+    player.position.set(chosen.x+8,0,chosen.z+8);
+    player.userData.vy=0;
+    boatPosition={x:chosen.x+11,z:chosen.z+10};
+    if(!craftedBoat){craftedBoat=true;inventory.craftedBoat=true;inventory.boat=1;}
+    if(!boatVisual) ensureBoatVisual();
+    if(boatVisual) boatVisual.position.set(boatPosition.x,0,boatPosition.z);
+    closeBoatMap();
+    if(mode==='online'&&socket&&socket.connected) sendNetworkState();
+    updateHUD();
+    toast(`Travelled to ${chosen.name || 'the island'}!`);
+   }catch(error){
+    console.error('Island travel failed:',error);
+    toast('Travel failed. Please close the map and try again.');
+   }
+  });
+  list.appendChild(button);
+ });
+ panel.style.display='block';
+ panel.style.pointerEvents='auto';
+}
+
 function sailToNextIsland(){
  openBoatMap();
 }
@@ -1451,7 +1476,8 @@ document.getElementById('stoneArmourBtn').onclick=()=>buyArmour('stone');documen
 document.getElementById('craftBtn').onclick=craft;
 document.getElementById('jumpBtn').onclick=()=>{if(player.position.y<.03)player.userData.vy=5.2;};
 document.getElementById('drinkBtn').onclick=drinkWater;
-document.getElementById('boatMapBtn').onclick=openBoatMap; document.getElementById('closeBoatMapBtn').onclick=()=>document.getElementById('boatMapPanel').style.display='none';
+document.getElementById('boatMapBtn').onclick=openBoatMap; document.getElementById('closeBoatMapBtn').onclick=(e)=>{e.preventDefault();e.stopPropagation();closeBoatMap();};
+document.addEventListener('keydown',(e)=>{if(e.key==='Escape')closeBoatMap();});
 document.getElementById('boardBoatBtn').onclick=boardOrLeaveBoat;
 
 let prev=performance.now();
