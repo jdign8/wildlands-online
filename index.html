@@ -175,7 +175,7 @@
   <div id="startCard">
     <h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1>
     <p class="sub">A 3D survival adventure</p>
-    <p>Explore twenty enlarged islands with treasure chests, jungle temple loot, a desert pyramid, a swamp, floating-look sky pillars, a storm fortress, a full broken reef shipwreck and a night-erupting volcano, a dragon boss island, a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village and Oldstead Isle, where a repairer can rebuild a rundown house for 40 wood and 20 stone.</p>
+    <p>Explore twenty enlarged islands with treasure chests, jungle temple loot, a desert pyramid, a swamp, floating-look sky pillars, a storm fortress, a full broken reef shipwreck and a night-erupting volcano, a dragon boss island, a huge mountain with a cave at its base, a single winding trail and a summit chest, plus Coincrest Village, monster-threatened Hearthstone Village with a 100-wood base builder and farm plots, and Oldstead Isle, where a repairer can rebuild a rundown house for 40 wood and 20 stone.</p>
     <div class="modeRow">
       <button id="soloBtn" class="selected">🏝️ Private world</button>
       <button id="onlineBtn">🌐 Multiplayer world</button>
@@ -200,7 +200,7 @@
       <p class="small">Choose Create game to host, or Join a game to enter an existing host's world.</p>
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
-    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. On Cloverfield Isle, harvest golden wheat and sell 5 wheat to Tilly for 3 coins. Search each island for its treasure chest.</p>
+    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. In Hearthstone Village, find Bram the Builder to build a main base for 100 wood, upgrade defences, adopt a guard dog, buy a mount, start a clan, cook meals and take quests. Plant wheat in the village plots. Monsters can attack the village and base. On Cloverfield Isle, harvest golden wheat and sell 5 wheat to Tilly for 3 coins. Search each island for its treasure chest.</p>
     <div id="startBottomRow">
       <button id="play">ENTER THE ISLAND</button>
       <div id="globalRecords" class="panel" aria-live="polite"><h2>🏆 ALL-TIME XP TOP FIVE</h2><div id="globalRecordRows">Loading records…</div></div>
@@ -373,12 +373,13 @@ for (const c of islandCenters.slice(1)) {
   if(c.biome==='sky'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=16+Math.random()*42;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}for(let i=0;i<3;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*40;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}}
   if(c.biome==='storm'){for(let i=0;i<6;i++){const a=Math.random()*Math.PI*2,r=14+Math.random()*45;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'iron');}for(let i=0;i<3;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*40;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'silver');}}
   if(c.biome==='reef'){for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*44;addOre(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,'crystal');}}
-  if(c.name!=='Hearthstone Village'&&c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'&&c.biome!=='farm'){ for(let i=0;i<(c.biome==='snow'?7:(c.biome==='ashen'||c.biome==='storm'||c.biome==='swamp'?8:5));i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
+  if(c.biome!=='village'&&c.biome!=='castle'&&c.biome!=='dragon'&&c.biome!=='farm'){ for(let i=0;i<(c.biome==='snow'?7:(c.biome==='ashen'||c.biome==='storm'||c.biome==='swamp'?8:5));i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*(c.radius-28);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r);}}
 }
 // Keep the central ruin and shoreline repairer clear of random resource/enemy spawns.
 {const c=islandCenters.find(i=>i.name==='Oldstead Isle');for(const r of resources){const dx=r.mesh.position.x-c.x,dz=r.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){r.alive=false;world.remove(r.mesh);}}for(const e of enemies){const dx=e.mesh.position.x-c.x,dz=e.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){e.alive=false;world.remove(e.mesh);}}}
 const villageHouses=[], villagers=[];
 let oldsteadHouse=null, oldsteadHouseRepaired=false, oldsteadSecondBed=false, oldsteadStoredFood=0;
+let coincrestMainBaseBuilt=false, coincrestMainBase=null, villagePet=null, villageMount=null, isRidingMount=false, farmPlots=[], cookedMeals=0, swampBossDefeated=false;
 function oldsteadHouseSafeRadius(){return 65;}
 // Oldstead Isle: a ruined cottage in the middle and a repairer waiting near the shoreline.
 {
@@ -513,9 +514,16 @@ let dragonPortalActive=false, dragonTrialActive=false, dragonDefeated=false, dra
   const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),skin);head.position.y=1.5;g.add(head);
   const hat=new THREE.Mesh(new THREE.CylinderGeometry(.26,.3,.14,8),mat(color===0xb85c47?0xe2c18a:0x477b55));hat.position.y=1.74;g.add(hat);
   for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.025,6,6),eyes);eye.position.set(side*.075,1.52,-.205);g.add(eye);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.08,.34,3,6),skin);arm.position.set(side*.35,.98,0);g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.32,3,6),pants);leg.position.set(side*.13,.34,0);g.add(leg);}
-  g.position.set(x,0,z);world.add(g);villagers.push({mesh:g,job,name:job==='farmer'?'Pip the Farmer':job==='trader'?'Moss the Trader':'Wren the Villager'});
+  g.position.set(x,0,z);world.add(g);villagers.push({mesh:g,job,name:job==='farmer'?'Pip the Farmer':job==='trader'?'Moss the Trader':job==='baseBuilder'?'Bram the Builder':'Wren the Villager'});
  }
  villager(c.x-4,c.z-7,0x6a9e65,'farmer');villager(c.x+7,c.z+5,0xb85c47,'trader');villager(c.x+22,c.z-2,0x668ab6,'villager');
+ // Builder NPC: offers the main 100-wood base and the new survival systems.
+ villager(c.x-23,c.z+2,0xc18a42,'baseBuilder');
+ // Farm beds are physical plots that can be planted and harvested.
+ for(let row=0;row<2;row++)for(let col=0;col<3;col++){
+  const plot=new THREE.Mesh(new THREE.BoxGeometry(2.2,.14,1.7),mat(0x60472d));plot.position.set(c.x-24+col*2.6,.1,c.z-17+row*2.2);world.add(plot);
+  const sprout=new THREE.Group();const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,.45,5),mat(0x4b8d39));stem.position.y=.3;sprout.add(stem);for(let side of [-1,1]){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,7,5),mat(0x73b74b));leaf.position.set(side*.12,.42,0);leaf.scale.set(1,.35,1.8);sprout.add(leaf);}sprout.position.set(plot.position.x,.16,plot.position.z);sprout.visible=false;world.add(sprout);farmPlots.push({mesh:plot,sprout,planted:false,ready:false,growAt:0});
+ }
 }
 // Coincrest Village: two marked houses, one for wood-to-coin trades and one for armour upgrades.
 {
@@ -545,6 +553,8 @@ let dragonPortalActive=false, dragonTrialActive=false, dragonDefeated=false, dra
  tradeVillager(c.x+16,c.z-5,0x647f9c,'armourer','Ada the Armourer');
  tradeVillager(c.x,c.z-20,0x6c9b72,'medic','Mira the Healer');
  const signpost=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;signpost.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(4.5,.85,.18),woodMat);board.position.set(0,1.55,0);signpost.add(board);signpost.position.set(c.x,0,c.z+24);world.add(signpost);
+ // Unbuilt main-base plot in Coincrest Village. Monsters can still spawn and attack here.
+ const plot=new THREE.Group();const plotBase=new THREE.Mesh(new THREE.BoxGeometry(11,.22,9),mat(0x8a7656));plotBase.position.y=.12;plot.add(plotBase);for(const sx of [-5.1,5.1]){const post=new THREE.Mesh(new THREE.BoxGeometry(.35,1.4,.35),mat(0x65452f));post.position.set(sx,.8,0);plot.add(post);}const plotSign=new THREE.Mesh(new THREE.BoxGeometry(3.7,1.05,.18),mat(0x7a5835));plotSign.position.set(0,1.65,4.6);plot.add(plotSign);plot.position.set(c.x-1,c.z+13,0);plot.position.set(c.x-1,0,c.z+13);world.add(plot);coincrestMainBase={plot,plotSign};
 }
 
 // Coincrest's forbidden portal: 50 stone opens the way to Dragonfall Isle.
@@ -1422,6 +1432,16 @@ function interact(){
  }
  if(activeIsland===6){const c=islandCenters[6];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+79.5))<8.5){caveInterior=true;aboardBoat=false;player.position.set(caveRoomOrigin.x,0,caveRoomOrigin.z+5);yaw=Math.PI;player.userData.vy=0;toast('You entered Crownspire Cave! Mine the glowing crystal and iron deposits. Walk to the doorway and press E to leave.');updateHUD();return;}}
  if(dragonTrialActive){toast('The Dragonfall seal is locked! Defeat the giant dragon before you can leave.');return;}
+ if(activeIsland===7 && coincrestMainBase && Math.hypot(player.position.x-(islandCenters[7].x-1),player.position.z-(islandCenters[7].z+13))<7.5){
+  if(!coincrestMainBaseBuilt){if(inventory.wood<100){toast(`Coincrest Base: The main base costs 100 wood. You have ${inventory.wood} wood. Nothing was taken.`);return;}inventory.wood-=100;coincrestMainBaseBuilt=true;world.remove(coincrestMainBase.plot);const c=islandCenters[7],g=new THREE.Group(),wood=mat(0x765033),dark=mat(0x4c3326),roof=mat(0x536c70),floor=mat(0x9b805a);
+   const foundation=new THREE.Mesh(new THREE.BoxGeometry(10,.35,8),floor);foundation.position.y=.2;g.add(foundation);
+   for(const x of [-4.7,4.7])for(const z of [-3.7,3.7]){const beam=new THREE.Mesh(new THREE.BoxGeometry(.42,3.7,.42),dark);beam.position.set(x,2,z);g.add(beam);}
+   for(const z of [-3.7,3.7]){const wall=new THREE.Mesh(new THREE.BoxGeometry(9.5,3.1,.32),wood);wall.position.set(0,1.95,z);g.add(wall);}
+   for(const x of [-4.7,4.7]){const wall=new THREE.Mesh(new THREE.BoxGeometry(.32,3.1,7.1),wood);wall.position.set(x,1.95,0);g.add(wall);}
+   const door=new THREE.Mesh(new THREE.BoxGeometry(1.45,2.5,.22),dark);door.position.set(0,1.45,3.9);g.add(door);const roofMesh=new THREE.Mesh(new THREE.ConeGeometry(7.4,3.1,4),roof);roofMesh.position.y=5.25;roofMesh.rotation.y=Math.PI/4;g.add(roofMesh);
+   const banner=new THREE.Mesh(new THREE.BoxGeometry(3.6,.85,.18),mat(0xc49a45));banner.position.set(0,3.1,4.12);g.add(banner);g.position.set(c.x-1,0,c.z+13);world.add(g);coincrestMainBase.base=g;gainXP(75);toast('MAIN BASE BUILT! 100 wood spent. Coincrest is not monster-safe — wildlings can still spawn and attack you here.');updateHUD();return;
+  }toast('Your main base is built in Coincrest Village. This village is dangerous: monsters can still spawn and attack here.');return;
+ }
  if(activeIsland===7){const c=islandCenters[7];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+36))<7.5){if(!dragonPortalActive){if(inventory.stone<50){toast(`The Dragon Portal needs 50 stone to activate. You have ${inventory.stone}.`);return;}inventory.stone-=50;dragonPortalActive=true;dragonTrialActive=true;activeIsland=9;aboardBoat=false;player.position.set(islandCenters[9].x,0,islandCenters[9].z+27);yaw=Math.PI;player.userData.vy=0;toast('PORTAL ACTIVATED! 50 stone consumed. You are trapped on Dragonfall Isle until you defeat the strongest monster: the giant dragon!');updateHUD();return;}if(!dragonDefeated){toast('The portal leads to Dragonfall Isle, but the dragon must be defeated before you can return.');return;}activeIsland=7;player.position.set(c.x,0,c.z+29);yaw=0;toast('You returned safely to Coincrest Village.');updateHUD();return;}}
  if(activeIsland===9 && Math.hypot(player.position.x-islandCenters[9].x,player.position.z-(islandCenters[9].z+38))<7.5){if(dragonTrialActive){toast('The portal is sealed until the dragon is defeated!');return;}if(dragonDefeated){activeIsland=7;player.position.set(islandCenters[7].x,0,islandCenters[7].z+29);yaw=0;toast('You returned to Coincrest Village with the dragon treasure!');updateHUD();return;}}
  if(activeHouse && activeHouse.isOldstead){
@@ -1456,7 +1476,48 @@ function interact(){
  if(activeIsland===8 && !castleArenaActive && !castleArenaRewarded && Math.hypot(player.position.x-islandCenters[8].x,player.position.z-(islandCenters[8].z+34))<18){
   startCastleTrial();return;
  }
+ // Farming plots in Hearthstone Village: E plants 2 wheat or harvests mature crops.
+ const nearbyPlot=farmPlots.find(p=>Math.hypot(player.position.x-p.mesh.position.x,player.position.z-p.mesh.position.z)<2.2);
+ if(nearbyPlot){if(!nearbyPlot.planted){if(inventory.wheat<2){toast('You need 2 wheat seeds to plant this plot.');return;}inventory.wheat-=2;nearbyPlot.planted=true;nearbyPlot.ready=false;nearbyPlot.growAt=elapsed+25;nearbyPlot.sprout.visible=true;toast('Seeds planted! They will be ready in about 25 seconds.');updateHUD();return;}if(!nearbyPlot.ready&&elapsed<nearbyPlot.growAt){toast('Your crops are growing. Come back in a little while.');return;}nearbyPlot.planted=false;nearbyPlot.ready=false;nearbyPlot.sprout.visible=false;inventory.wheat+=5;inventory.berry+=1;gainXP(8);toast('Harvested 5 wheat and 1 berry!');updateHUD();return;}
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
+ if(nearbyVillager && nearbyVillager.job==='baseBuilder'){
+  const choice=prompt('HEARTHSTONE BUILDER\n1 = Build main base (100 wood)\n2 = House upgrade (20 wood + 10 stone)\n3 = Adopt guard dog (10 food)\n4 = Buy riding mount (25 wood + 5 food)\n5 = Mount up / dismount\n6 = Cook meals (5 berries or wheat -> 3 cooked meals)\n7 = Village quest (bring 10 stone for 8 coins + 80 XP)\nType a number, or CANCEL.');
+  if(!choice)return;
+  if(choice.trim()==='1'){
+   if(coincrestMainBaseBuilt){toast('Your main base is already built in Hearthstone Village. Upgrade it with option 2.');return;}
+   if(inventory.wood<100){toast(`The main base costs 100 wood. You have ${inventory.wood}. Nothing was spent.`);return;}
+   inventory.wood-=100;coincrestMainBaseBuilt=true;
+   const c=islandCenters.find(i=>i.name==='Hearthstone Village');coincrestMainBase=new THREE.Group();
+   const base=new THREE.Mesh(new THREE.BoxGeometry(13,.35,11),woodMat);base.position.set(c.x+29,.22,c.z+25);coincrestMainBase.add(base);
+   for(const [x,z,w,d] of [[-6,0,.35,11],[6,0,.35,11],[0,-5.3,12,.35],[0,5.3,12,.35]]){const wall=new THREE.Mesh(new THREE.BoxGeometry(w,2.5,d),mat(0x795333));wall.position.set(c.x+29+x,1.55,c.z+25+z);coincrestMainBase.add(wall);}
+   const gate=new THREE.Mesh(new THREE.BoxGeometry(2.4,2.4,.45),mat(0xb58a53));gate.position.set(c.x+29,1.5,c.z+30.2);coincrestMainBase.add(gate);
+   const tower=new THREE.Mesh(new THREE.BoxGeometry(2.4,5,2.4),mat(0x8e653f));tower.position.set(c.x+23,2.7,c.z+20);coincrestMainBase.add(tower);
+   world.add(coincrestMainBase);gainXP(100);toast('MAIN BASE BUILT! 100 wood spent. Monsters can attack Hearthstone Village and your base. Build walls and towers to defend it.');updateHUD();return;
+  }
+  if(choice.trim()==='2'){
+   if(!coincrestMainBaseBuilt){toast('Build the main base first for 100 wood.');return;}if(inventory.wood<20||inventory.stone<10){toast('Upgrade costs 20 wood and 10 stone.');return;}inventory.wood-=20;inventory.stone-=10;inventory.watchtower=(inventory.watchtower||0)+1;
+   const tower=new THREE.Mesh(new THREE.BoxGeometry(3,5.5,3),mat(0x9a7049));const bc=islandCenters.find(i=>i.name==='Hearthstone Village');tower.position.set(bc.x+29+((inventory.watchtower%2)?5:-5),2.9,bc.z+22);world.add(tower);toast('Base upgraded! A watchtower has been added. Monsters can still attack.');updateHUD();return;
+  }
+  if(choice.trim()==='3'){
+   if(villagePet){toast('You already have a guard dog companion.');return;}if(inventory.food<10){toast('A guard dog needs 10 food to adopt.');return;}inventory.food-=10;villagePet=new THREE.Group();const body=new THREE.Mesh(new THREE.SphereGeometry(.48,12,9),mat(0x9b7652));body.scale.set(1,.7,1.35);body.position.y=.6;villagePet.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),mat(0x9b7652));head.position.set(0,.8,-.48);villagePet.add(head);for(const x of [-.22,.22]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.07,.1,.35,6),mat(0x65452f));leg.position.set(x,.25,.15);villagePet.add(leg);}world.add(villagePet);toast('Guard dog adopted! It will follow you and help guard your base.');updateHUD();return;
+  }
+  if(choice.trim()==='4'){
+   if(villageMount){toast('You already own a riding mount.');return;}if(inventory.wood<25||inventory.food<5){toast('A mount costs 25 wood and 5 food.');return;}inventory.wood-=25;inventory.food-=5;villageMount=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(.9,1.1,1.8),mat(0x805637));body.position.y=.95;villageMount.add(body);const neck=new THREE.Mesh(new THREE.BoxGeometry(.55,1.3,.55),mat(0x805637));neck.position.set(0,1.6,-.6);villageMount.add(neck);const head=new THREE.Mesh(new THREE.BoxGeometry(.55,.55,.7),mat(0x805637));head.position.set(0,2.15,-.75);villageMount.add(head);for(const x of [-.3,.3])for(const z of [-.55,.55]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.09,.12,.75,6),mat(0x453126));leg.position.set(x,.4,z);villageMount.add(leg);}world.add(villageMount);toast('Riding mount purchased! It will follow you around the island.');updateHUD();return;
+  }
+  if(choice.trim()==='5'){
+   if(!villageMount){toast('Buy a riding mount first (option 4).');return;}
+   isRidingMount=!isRidingMount;
+   toast(isRidingMount?'Mounted up! You move faster while riding. Choose option 5 again to dismount.':'You dismounted. Your mount will follow you.');
+   updateHUD();return;
+  }
+  if(choice.trim()==='6'){
+   const ingredient=inventory.berry>=5?'berry':inventory.wheat>=5?'wheat':null;if(!ingredient){toast('Cooking needs 5 berries or 5 wheat. Gather ingredients first.');return;}inventory[ingredient]-=5;cookedMeals+=3;inventory.food+=3;toast('Cooked 3 meals! They have been added to your food supply.');updateHUD();return;
+  }
+  if(choice.trim()==='7'){
+   if(inventory.stone<10){toast('Village quest: bring 10 stone to the builder.');return;}inventory.stone-=10;inventory.coins+=8;gainXP(80);toast('Quest complete! Earned 8 coins and 80 XP.');updateHUD();return;
+  }
+  return;
+ }
  if(nearbyVillager && nearbyVillager.job==='houseRepairer'){
   if(oldsteadHouseRepaired){
    if(!oldsteadSecondBed){if(inventory.coins<1){toast('Oldstead Repairer: I can build a second bed for 1 coin. You do not have enough coins yet.');return;}inventory.coins-=1;oldsteadSecondBed=true;
@@ -1636,7 +1697,7 @@ function animate(now){
  if(document.getElementById('start').style.display==='none'&&!dead){
   let f=0,s=0;if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyA||keys.ArrowLeft)s-=1;if(keys.KeyD||keys.ArrowRight)s+=1;
   const len=Math.hypot(f,s)||1;f/=len;s/=len;
-  const speed=aboardBoat?2.8:(keys.ShiftLeft?7:4.7);
+  const speed=aboardBoat?2.8:(isRidingMount&&villageMount?8.5:(keys.ShiftLeft?7:4.7));
   player.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)*speed*dt;
   player.position.z+=(-Math.cos(yaw)*f+Math.sin(yaw)*s)*speed*dt;
    if(aboardBoat&&boatVisual){
@@ -1673,6 +1734,10 @@ function animate(now){
    player.position.y=0;player.userData.vy=0;
   }
   if(f||s)player.rotation.y=yaw;
+  if(villagePet){const tx=player.position.x+Math.sin(yaw)*2.2,tz=player.position.z+Math.cos(yaw)*2.2;villagePet.position.x+=(tx-villagePet.position.x)*Math.min(1,dt*3);villagePet.position.z+=(tz-villagePet.position.z)*Math.min(1,dt*3);}
+  if(villageMount){if(isRidingMount){villageMount.position.set(player.position.x,0,player.position.z);villageMount.rotation.y=yaw;player.position.y=0;}else{const tx=player.position.x-Math.sin(yaw)*3,tz=player.position.z+Math.cos(yaw)*3;villageMount.position.x+=(tx-villageMount.position.x)*Math.min(1,dt*2);villageMount.position.z+=(tz-villageMount.position.z)*Math.min(1,dt*2);}}
+  for(const plot of farmPlots){if(plot.planted&&elapsed>=plot.growAt)plot.ready=true;if(plot.ready){plot.sprout.scale.set(1.4,1.7,1.4);}}
+
   // Crossing the castle gate teleports the player into the arena and starts the locked trial.
   if(activeIsland===8 && !castleArenaActive && !castleArenaRewarded){
    const castle=islandCenters[8], localX=player.position.x-castle.x, localZ=player.position.z-castle.z;
