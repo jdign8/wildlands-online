@@ -829,7 +829,7 @@ const guardianBody=new THREE.Mesh(new THREE.DodecahedronGeometry(2.05,1),guardia
 const guardianHead=new THREE.Mesh(new THREE.DodecahedronGeometry(1.05,1),guardianDark);guardianHead.position.set(0,3.35,-1.35);guardianHead.castShadow=true;islandGuardian.add(guardianHead);
 for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),guardianGlow);eye.position.set(side*.42,3.52,-2.22);islandGuardian.add(eye);const horn=new THREE.Mesh(new THREE.ConeGeometry(.25,1.1,6),guardianMat);horn.position.set(side*.72,4.25,-1.2);horn.rotation.z=side*-.45;islandGuardian.add(horn);const leg=new THREE.Mesh(new THREE.CylinderGeometry(.3,.42,1.15,8),guardianDark);leg.position.set(side*.9,.6,-.1);islandGuardian.add(leg);}
 islandGuardian.position.set(13,0,10);islandGuardian.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(islandGuardian);
-let soloBossHP=1200, soloBossDefeated=false, bossHP=1200, bossMaxHP=1200, bossDefeated=false;
+let soloBossHP=1200, soloBossDefeated=false, bossHP=1200, bossMaxHP=1200, bossDefeated=false, guardianAttackCooldown=1.2, guardianBitePhase=0;
 function renderBoss(hp,max=1200){bossHP=Math.max(0,Number(hp)||0);bossMaxHP=max||1200;const panel=document.getElementById('bossPanel');panel.style.display=bossDefeated?'none':'block';document.getElementById('bossFill').style.width=(bossHP/bossMaxHP*100)+'%';document.getElementById('bossHealthText').textContent=`${Math.ceil(bossHP)} / ${bossMaxHP} HP`;}
 function bossRewards(team=false){if(bossDefeated)return;bossDefeated=true;islandGuardian.visible=false;document.getElementById('bossPanel').style.display='none';inventory.coins+=10;inventory.crystal+=5;inventory.iron+=15;gainXP(250);health=Math.min(maxHealth,health+25);updateHUD();toast(team?'TEAM VICTORY! +250 XP, 10 coins, 5 crystals, 15 iron and 25 health restored.':'GUARDIAN DEFEATED! +250 XP, 10 coins, 5 crystals, 15 iron and 25 health restored.');}
 
@@ -959,8 +959,8 @@ function renderGlobalRecords(rows){
   el.innerHTML=(rows||[]).length ? rows.slice(0,5).map((r,i)=>`<div class="record-row"><span>${i+1}. ${String(r.codename||'Survivor').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}</span><strong>${Math.floor(Number(r.xp)||0).toLocaleString()} XP</strong></div>`).join('') : '<div class="small">No records yet. Be the first!</div>';
 }
 async function loadGlobalRecords(){ try{const r=await fetch('/api/xp-records');if(r.ok)renderGlobalRecords(await r.json());}catch{}}
-async function checkGlobalRecord(scoreOverride=null){
-  const score=Number.isFinite(scoreOverride)?Math.max(0,Math.floor(scoreOverride)):totalExperience(); if(score<=lastRecordCheck||recordPromptOpen)return; lastRecordCheck=score;
+async function checkGlobalRecord(){
+  const score=totalExperience(); if(score<=lastRecordCheck||recordPromptOpen)return; lastRecordCheck=score;
   try{
     const check=await fetch('/api/xp-records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({xp:score})});
     const result=await check.json();
@@ -984,7 +984,7 @@ const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,nigh
 const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
 const toastEl=document.getElementById('toast'); let toastTimer=0;
 function toast(msg){toastEl.textContent=msg;toastEl.style.opacity=1;toastTimer=2.2;}
-function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL UP! You reached level '+level);}}
+function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL UP! You reached level '+level);} checkGlobalRecord();}
 function ensureBoatVisual(){
  if(boatVisual || !craftedBoat) return;
  boatVisual=new THREE.Group();
@@ -1677,6 +1677,26 @@ function animate(now){
   }
   // Dragonfall is a boss-only island: clear any non-boss enemies and never let them chase into it.
   if(activeIsland===9){for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(!e.isDragonBoss){world.remove(e.mesh);enemies.splice(i,1);}}}
+  // Island Guardian AI: it wakes on The Shore, tracks the player, and attacks at close range.
+  if(!bossDefeated && islandGuardian.visible && activeIsland===0){
+   guardianBitePhase+=dt;
+   const dx=player.position.x-islandGuardian.position.x,dz=player.position.z-islandGuardian.position.z,d=Math.hypot(dx,dz);
+   islandGuardian.rotation.y=Math.atan2(dx,dz);
+   // Idle breathing animation makes it visibly alive even before the player approaches.
+   guardianBody.scale.y=1+Math.sin(guardianBitePhase*3.2)*0.035;
+   if(d<32 && d>3.25){
+    const speed=d<9?2.9:2.2;
+    islandGuardian.position.x+=dx/d*speed*dt;
+    islandGuardian.position.z+=dz/d*speed*dt;
+   }
+   guardianAttackCooldown-=dt;
+   if(d<=3.45 && guardianAttackCooldown<=0 && Math.abs(player.position.y-islandGuardian.position.y)<2.5){
+    const mitigation=armorType?armorDefs[armorType].reduction:0;
+    health=Math.max(0,health-18*(1-mitigation));
+    guardianAttackCooldown=1.35;
+    toast('THE ISLAND GUARDIAN STRIKES! You take damage — fight back or retreat!');
+   }
+  }
   for(const e of enemies){
    if(!e.alive)continue;
    // Enemies only pursue the player on their own island. Mountain wildlings remain at ground level and cannot hit a climber high above them.
@@ -1690,7 +1710,7 @@ function animate(now){
   if(castleArenaActive && castleArenaWildlings.length && castleArenaWildlings.every(e=>!e.alive)){
    castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('CASTLE CHAMPION! You defeated all 3 tough wildlings and earned 8 coins + 100 XP! The castle is now open.');updateHUD();
   }
-  if(health<=0&&!dead){dead=true;checkGlobalRecord();toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';}
+  if(health<=0){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';}
   if(Math.floor(elapsed)%2===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt))updateHUD();
  }
  // Day/night tint: a full cycle lasts about three minutes.
@@ -1708,12 +1728,7 @@ function animate(now){
  if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)toastEl.style.opacity=0;}
 }
 requestAnimationFrame(animate);
-// Check the final score only when a run ends or the page is refreshed/closed.
-try { const pending=localStorage.getItem('wildlandsPendingRecordXP'); if(pending!==null){localStorage.removeItem('wildlandsPendingRecordXP'); setTimeout(()=>checkGlobalRecord(Number(pending)),900);} } catch {}
-window.addEventListener('beforeunload',()=>{
-  try { localStorage.setItem('wildlandsPendingRecordXP',String(totalExperience())); } catch {}
-  if(socket&&socket.connected&&mode==='online')socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory:saveInventoryPayload(),health,hunger,thirst,xp,level});
-});
+window.addEventListener('beforeunload',()=>{if(socket&&socket.connected&&mode==='online')socket.emit('saveProgress',{name:document.getElementById('playerName').value,x:player.position.x,z:player.position.z,inventory:saveInventoryPayload(),health,hunger,thirst,xp,level});});
 function resizeGame(){
   camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
