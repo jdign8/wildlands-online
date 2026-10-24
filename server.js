@@ -68,13 +68,13 @@ io.on('connection',socket=>{
     if(action==='join' && !record){socket.emit('joinError','That game is not running. Ask the host to create it first.');return;}
     if(record && record.type!==type){socket.emit('joinError','A world with that name already exists with a different visibility.');return;}
     if(record && record.type==='private' && record.passwordHash!==hash(password)){socket.emit('joinError','Incorrect private world password.');return;}
-    if(!record){record={name:room,type,passwordHash:type==='private'?hash(password):null,hostId:socket.id,players:new Map()};rooms.set(room,record);}
+    if(!record){record={name:room,type,passwordHash:type==='private'?hash(password):null,hostId:socket.id,players:new Map(),boss:{hp:1200,maxHp:1200,defeated:false,contributors:{}}};rooms.set(room,record);}
     if(socket.data.room){const oldRoom=socket.data.room;rooms.get(oldRoom)?.players.delete(socket.id);socket.to(oldRoom).emit('playerLeft',socket.id);socket.leave(oldRoom);if(rooms.get(oldRoom)?.players.size===0)rooms.delete(oldRoom);}
     const saveKey=hash(name.toLowerCase()+'|'+room);
     const saved=saves[saveKey]||null;
     const p={id:socket.id,name,room,x:saved?.position?.x||0,z:saved?.position?.z||0,rot:0,color:0x5577bb+Math.floor(Math.random()*0x777777),health:saved?.health??100,xp:saved?.progress?.xp||0,level:saved?.progress?.level||1};
     record.players.set(socket.id,p);socket.data.room=room;socket.data.saveKey=saveKey;socket.join(room);
-    socket.emit('worldState',roomPlayers(room));socket.to(room).emit('playerJoined',publicPlayer(p)); socket.emit('joinedWorld',{room,host:record.hostId===socket.id});
+    socket.emit('worldState',roomPlayers(room));socket.emit('bossState',record.boss);socket.to(room).emit('playerJoined',publicPlayer(p)); socket.emit('joinedWorld',{room,host:record.hostId===socket.id});
     socket.emit('yourSave',saved?.progress||null);
     socket.emit('serverMessage',`Joined ${type} world "${room}" as ${name}`);
     io.emit('roomList',listPublicRooms());broadcastLeaderboard(room);
@@ -86,6 +86,16 @@ io.on('connection',socket=>{
     p.x=Math.max(-44,Math.min(44,n(payload.x)));p.z=Math.max(-44,Math.min(44,n(payload.z)));p.rot=n(payload.rot);
     const oldXP=p.xp||0,oldLevel=p.level||1;p.xp=Math.max(0,Math.min(999999,n(payload.xp,p.xp||0)));p.level=Math.max(1,Math.min(999,n(payload.level,p.level||1)));
     socket.to(room).emit('playerMoved',publicPlayer(p));if(p.xp!==oldXP||p.level!==oldLevel)broadcastLeaderboard(room);
+  });
+  socket.on('bossAttack',({damage}={})=>{
+    const room=socket.data.room,record=rooms.get(room),attacker=record?.players.get(socket.id);
+    if(!record||!attacker||!record.boss||record.boss.defeated)return;
+    if(Math.hypot(attacker.x-13,attacker.z-10)>10){socket.emit('serverMessage','Move closer to the Island Guardian to attack it.');return;}
+    const now=Date.now(); if(now-socket.data.lastBossAttack<450)return; socket.data.lastBossAttack=now;
+    const hit=Math.max(5,Math.min(50,Number(damage)||10)); record.boss.hp=Math.max(0,record.boss.hp-hit);
+    record.boss.contributors[attacker.id]=(record.boss.contributors[attacker.id]||0)+hit;
+    if(record.boss.hp===0){record.boss.defeated=true;io.to(room).emit('bossDefeated',{name:attacker.name,rewards:{xp:250,coins:10,crystal:5,iron:15}});}
+    io.to(room).emit('bossState',record.boss);
   });
   socket.on('pvpAttack',({targetId,damage}={})=>{
     const now=Date.now(),room=socket.data.room,record=rooms.get(room);

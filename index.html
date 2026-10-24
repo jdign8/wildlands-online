@@ -132,6 +132,7 @@
     <div class="stat"><div class="stat-head"><span>Thirst</span><span id="thirstNum">100</span></div><div class="bar"><div id="thirstFill" class="fill"></div></div></div>
     <div class="stat"><div class="stat-head"><span>Level <span id="levelNum">1</span></span><span id="xpText">0 / 100 XP</span></div><div class="bar"><div id="xpFill" class="fill"></div></div></div>
   </div>
+  <div id="bossPanel" class="panel" style="display:none;position:absolute;left:50%;top:12px;transform:translateX(-50%);width:min(340px,80vw);z-index:9;text-align:center"><strong>🐗 ISLAND GUARDIAN</strong><div style="height:10px;background:#3a2020;border-radius:8px;overflow:hidden;margin:6px 0"><div id="bossFill" style="height:100%;width:100%;background:linear-gradient(90deg,#e84c3d,#ffb347)"></div></div><div id="bossHealthText" style="font-size:12px">1200 / 1200 HP</div><div style="font-size:11px">Defeat it for team rewards!</div></div>
   <div id="quest" class="panel"><h2>Current mission</h2><p id="mission">Gather 5 wood and 3 stone to prepare your first camp.</p><p id="levelText">Level 1 · Survivor</p><p id="worldText">World: Private solo</p></div>
   <div id="leaderboard" class="panel"><h2>🏆 XP Leaderboard</h2><div id="leaderboardRows">Join a multiplayer game to compete.</div></div>
   <div id="inventory" class="panel"><h2>Backpack</h2><p class="small">Materials and resources only. Crafted items are tracked by their crafting recipes.</p>
@@ -820,6 +821,18 @@ for(let i=0;i<islandCenters.length;i++){
  g.position.set(c.x,.02,c.z-edge);scene.add(g);rafts.push(g);
 }
 let activeIsland=0;
+
+// World Boss: an oversized Island Guardian on The Shore. In multiplayer its health is shared by the room.
+const guardianMat=mat(0x456c3c), guardianDark=mat(0x253a2a), guardianGlow=mat(0xffc04a,.5);
+const islandGuardian=new THREE.Group();
+const guardianBody=new THREE.Mesh(new THREE.DodecahedronGeometry(2.05,1),guardianMat);guardianBody.position.y=2.05;guardianBody.scale.set(1.25,1,1.05);guardianBody.castShadow=true;islandGuardian.add(guardianBody);
+const guardianHead=new THREE.Mesh(new THREE.DodecahedronGeometry(1.05,1),guardianDark);guardianHead.position.set(0,3.35,-1.35);guardianHead.castShadow=true;islandGuardian.add(guardianHead);
+for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),guardianGlow);eye.position.set(side*.42,3.52,-2.22);islandGuardian.add(eye);const horn=new THREE.Mesh(new THREE.ConeGeometry(.25,1.1,6),guardianMat);horn.position.set(side*.72,4.25,-1.2);horn.rotation.z=side*-.45;islandGuardian.add(horn);const leg=new THREE.Mesh(new THREE.CylinderGeometry(.3,.42,1.15,8),guardianDark);leg.position.set(side*.9,.6,-.1);islandGuardian.add(leg);}
+islandGuardian.position.set(13,0,10);islandGuardian.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(islandGuardian);
+let soloBossHP=1200, soloBossDefeated=false, bossHP=1200, bossMaxHP=1200, bossDefeated=false;
+function renderBoss(hp,max=1200){bossHP=Math.max(0,Number(hp)||0);bossMaxHP=max||1200;const panel=document.getElementById('bossPanel');panel.style.display=bossDefeated?'none':'block';document.getElementById('bossFill').style.width=(bossHP/bossMaxHP*100)+'%';document.getElementById('bossHealthText').textContent=`${Math.ceil(bossHP)} / ${bossMaxHP} HP`;}
+function bossRewards(team=false){if(bossDefeated)return;bossDefeated=true;islandGuardian.visible=false;document.getElementById('bossPanel').style.display='none';inventory.coins+=10;inventory.crystal+=5;inventory.iron+=15;gainXP(250);health=Math.min(maxHealth,health+25);updateHUD();toast(team?'TEAM VICTORY! +250 XP, 10 coins, 5 crystals, 15 iron and 25 health restored.':'GUARDIAN DEFEATED! +250 XP, 10 coins, 5 crystals, 15 iron and 25 health restored.');}
+
 const player = new THREE.Group();
 const skinMat=mat(0xe9c39b), pantsMat=mat(0x354b58), bootMat=mat(0x40372e), hairMat=mat(0x49382c), beltMat=mat(0x65462f);
 const body = new THREE.Mesh(new THREE.CapsuleGeometry(.31,.58,5,10),shirtMat); body.position.y=1.02; body.castShadow=true; player.add(body);
@@ -875,6 +888,8 @@ function connectMultiplayer(action) {
     renderLeaderboard(players);
   });
   socket.on('leaderboard', renderLeaderboard);
+  socket.on('bossState', (b)=>{if(!b)return;bossDefeated=!!b.defeated;islandGuardian.visible=!bossDefeated;renderBoss(b.hp,b.maxHp);if(bossDefeated)document.getElementById('bossPanel').style.display='none';});
+  socket.on('bossDefeated', (data)=>{if(!bossDefeated){bossDefeated=false;bossRewards(true);}toast('Guardian defeated by '+(data?.name||'your team')+'! Everyone in the world gets rewards.');});
   socket.on('playerJoined', (p) => { if (p.id !== mySocketId) { addOrUpdateRemote(p); toast(p.name+' joined the island'); } });
   socket.on('playerMoved', (p) => { if (p.id !== mySocketId) addOrUpdateRemote(p); });
   socket.on('playerLeft', (id) => { const p=remotePlayers.get(id); if(p){scene.remove(p.mesh);remotePlayers.delete(id);} });
@@ -961,7 +976,7 @@ async function checkGlobalRecord(){
     }
   }catch{}
 }
-loadGlobalRecords(); setInterval(loadGlobalRecords,15000);
+loadGlobalRecords(); setInterval(loadGlobalRecords,15000); renderBoss(1200,1200);
 
 const armorDefs={stone:{name:'Stone armour',cost:3,bonus:25,reduction:.1,tier:1},iron:{name:'Iron armour',cost:7,bonus:50,reduction:.2,tier:2},crystal:{name:'Crystal armour',cost:12,bonus:80,reduction:.3,tier:3}};
 function refreshArmorVisual(){for(const [type,group] of Object.entries(armorVisualGroups))group.visible=type===armorType;}
@@ -1020,6 +1035,13 @@ function attack(){
  if(dead)return;
  if(attackCooldown>0){toast('Wait a moment before attacking again');return;}
  attackCooldown=.42;
+ const guardianDistance=player.position.distanceTo(islandGuardian.position);
+ if(!bossDefeated && islandGuardian.visible && guardianDistance<8){
+   const damage=equippedWeapon?weaponDefs[equippedWeapon].damage:10;
+   if(equippedWeapon){weaponDurability[equippedWeapon]=Math.max(0,(weaponDurability[equippedWeapon]||weaponDefs[equippedWeapon].maxDurability)-1);if(weaponDurability[equippedWeapon]===0){ownedWeapons[equippedWeapon]=false;toast(weaponDefs[equippedWeapon].name+' broke!');equippedWeapon=null;refreshSwordVisual();}}
+   if(mode==='online'&&socket&&socket.connected){socket.emit('bossAttack',{damage});}else{soloBossHP=Math.max(0,soloBossHP-damage);renderBoss(soloBossHP);if(soloBossHP===0)bossRewards(false);else toast('Island Guardian hit!');}
+   gainXP(2);return;
+ }
  if(mode==='online' && socket && socket.connected){
    let remoteTarget=null, remoteDistance=3.4;
    for(const [id,rp] of remotePlayers){const d=player.position.distanceTo(rp.mesh.position);if(d<remoteDistance){remoteDistance=d;remoteTarget=id;}}
