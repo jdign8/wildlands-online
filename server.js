@@ -11,6 +11,27 @@ const io = new Server(server, { cors: { origin: true, methods: ['GET','POST'] } 
 const PORT = process.env.PORT || 3000;
 const rooms = new Map();
 const savesFile = path.join(__dirname, 'player-saves.json');
+const recordsFile = path.join(__dirname, 'xp-records.json');
+let globalRecords = [];
+try { globalRecords = JSON.parse(fs.readFileSync(recordsFile, 'utf8')); if (!Array.isArray(globalRecords)) globalRecords = []; } catch { globalRecords = []; }
+function persistRecords() { try { const tmp=recordsFile+'.tmp'; fs.writeFileSync(tmp, JSON.stringify(globalRecords, null, 2)); fs.renameSync(tmp, recordsFile); } catch(e) { console.error('Could not save XP records:', e.message); } }
+function cleanCodename(v) { return String(v||'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,18); }
+function rankFor(score) { return globalRecords.filter(r => Number(r.xp) > score).length + 1; }
+app.use(express.json({limit:'10kb'}));
+app.get('/api/xp-records', (_req,res) => res.json(globalRecords.slice(0,5)));
+app.post('/api/xp-records', (req,res) => {
+  const xp = Math.max(0, Math.floor(Math.min(999999999, Number(req.body?.xp)||0)));
+  const codename = cleanCodename(req.body?.codename);
+  const existing = globalRecords.find(r => r.codename.toLowerCase() === codename.toLowerCase());
+  const qualifying = globalRecords.length < 5 || xp > Number(globalRecords[globalRecords.length-1]?.xp || -1);
+  if (!codename) { res.json({qualifies: qualifying, rank: rankFor(xp), needsName: qualifying}); return; }
+  if (!qualifying && !existing) { res.json({qualifies:false, records:globalRecords.slice(0,5)}); return; }
+  if (existing) globalRecords = globalRecords.filter(r => r.codename.toLowerCase() !== codename.toLowerCase());
+  globalRecords.push({codename, xp, achievedAt: new Date().toISOString()});
+  globalRecords.sort((a,b)=>b.xp-a.xp || a.codename.localeCompare(b.codename));
+  globalRecords = globalRecords.slice(0,5); persistRecords();
+  res.json({qualifies:globalRecords.some(r=>r.codename.toLowerCase()===codename.toLowerCase() && r.xp===xp), records:globalRecords});
+});
 let saves = {};
 try { saves = JSON.parse(fs.readFileSync(savesFile, 'utf8')); } catch { saves = {}; }
 let saveTimer = null;
@@ -31,7 +52,8 @@ function roomPlayers(room){return [...(rooms.get(room)?.players.values()||[])].m
 function listPublicRooms(){
   return [...rooms.values()].filter(r=>r.type==='public' && r.players.size>0).map(r=>({name:r.name,players:r.players.size}));
 }
-function publicPlayer(p){return {id:p.id,name:p.name,room:p.room,x:p.x,z:p.z,rot:p.rot,color:p.color,health:p.health};}
+function publicPlayer(p){return {id:p.id,name:p.name,room:p.room,x:p.x,z:p.z,rot:p.rot,color:p.color,health:p.health,xp:p.xp||0,level:p.level||1};}
+function broadcastLeaderboard(room){const record=rooms.get(room);if(!record)return;const rows=[...record.players.values()].map(p=>({id:p.id,name:p.name,xp:Math.max(0,Number(p.xp)||0),level:Math.max(1,Number(p.level)||1)})).sort((a,b)=>b.xp-a.xp||b.level-a.level||a.name.localeCompare(b.name));io.to(room).emit('leaderboard',rows);}
 io.on('connection',socket=>{
   socket.data.room=null; socket.data.saveKey=null; socket.data.lastAttack=0;
   socket.on('listRooms',()=>socket.emit('roomList',listPublicRooms()));
@@ -50,21 +72,22 @@ io.on('connection',socket=>{
     if(socket.data.room){const oldRoom=socket.data.room;rooms.get(oldRoom)?.players.delete(socket.id);socket.to(oldRoom).emit('playerLeft',socket.id);socket.leave(oldRoom);if(rooms.get(oldRoom)?.players.size===0)rooms.delete(oldRoom);}
     const saveKey=hash(name.toLowerCase()+'|'+room);
     const saved=saves[saveKey]||null;
-    const p={id:socket.id,name,room,x:saved?.position?.x||0,z:saved?.position?.z||0,rot:0,color:0x5577bb+Math.floor(Math.random()*0x777777),health:saved?.health??100};
+    const p={id:socket.id,name,room,x:saved?.position?.x||0,z:saved?.position?.z||0,rot:0,color:0x5577bb+Math.floor(Math.random()*0x777777),health:saved?.health??100,xp:saved?.progress?.xp||0,level:saved?.progress?.level||1};
     record.players.set(socket.id,p);socket.data.room=room;socket.data.saveKey=saveKey;socket.join(room);
     socket.emit('worldState',roomPlayers(room));socket.to(room).emit('playerJoined',publicPlayer(p)); socket.emit('joinedWorld',{room,host:record.hostId===socket.id});
     socket.emit('yourSave',saved?.progress||null);
     socket.emit('serverMessage',`Joined ${type} world "${room}" as ${name}`);
-    io.emit('roomList',listPublicRooms());
+    io.emit('roomList',listPublicRooms());broadcastLeaderboard(room);
   });
   socket.on('move',(payload={})=>{
     const room=socket.data.room,record=rooms.get(room),p=record?.players.get(socket.id);if(!p)return;
     const n=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
     // Movement is clamped, bounded and rate-limited. For a production game, movement should be fully simulated server-side.
     p.x=Math.max(-44,Math.min(44,n(payload.x)));p.z=Math.max(-44,Math.min(44,n(payload.z)));p.rot=n(payload.rot);
-    socket.to(room).emit('playerMoved',publicPlayer(p));
+    const oldXP=p.xp||0,oldLevel=p.level||1;p.xp=Math.max(0,Math.min(999999,n(payload.xp,p.xp||0)));p.level=Math.max(1,Math.min(999,n(payload.level,p.level||1)));
+    socket.to(room).emit('playerMoved',publicPlayer(p));if(p.xp!==oldXP||p.level!==oldLevel)broadcastLeaderboard(room);
   });
-  socket.on('pvpAttack',({targetId}={})=>{
+  socket.on('pvpAttack',({targetId,damage}={})=>{
     const now=Date.now(),room=socket.data.room,record=rooms.get(room);
     if(!record||now-socket.data.lastAttack<650)return;
     const attacker=record.players.get(socket.id),target=record.players.get(String(targetId||''));
@@ -72,7 +95,8 @@ io.on('connection',socket=>{
     const d=Math.hypot(attacker.x-target.x,attacker.z-target.z);
     if(d>3.6){socket.emit('serverMessage','Move closer to attack that player.');return;}
     socket.data.lastAttack=now;
-    target.health=Math.max(0,(target.health??100)-18);
+    const hitDamage=Math.max(10,Math.min(50,Number.isFinite(Number(damage))?Number(damage):10));
+    target.health=Math.max(0,(target.health??100)-hitDamage);
     io.to(room).emit('pvpResult',{attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,health:target.health,message:`You hit ${target.name}!`});
     if(target.health===0){
       target.health=100;target.x=0;target.z=0;
@@ -80,6 +104,7 @@ io.on('connection',socket=>{
       io.to(room).emit('playerMoved',publicPlayer(target));
     }
     if(target.id===socket.id) socket.emit('pvpResult',{attackerId:attacker.id,targetId:target.id,health:target.health});
+    broadcastLeaderboard(room);
   });
   socket.on('saveProgress',(data={})=>{
     const key=socket.data.saveKey;if(!key)return;
@@ -103,6 +128,7 @@ io.on('connection',socket=>{
         level:clamp(data.level,1,999,1)
       }
     };
+    const activeRoom=socket.data.room,activePlayer=rooms.get(activeRoom)?.players.get(socket.id);if(activePlayer){activePlayer.xp=clamp(data.xp,0,999999,activePlayer.xp||0);activePlayer.level=clamp(data.level,1,999,activePlayer.level||1);broadcastLeaderboard(activeRoom);}
     scheduleSave();
   });
   socket.on('disconnect',()=>{
@@ -117,7 +143,7 @@ io.on('connection',socket=>{
         if(record.players.size===0)rooms.delete(room);
       }
     }
-    scheduleSave();io.emit('roomList',listPublicRooms());
+    scheduleSave();io.emit('roomList',listPublicRooms());if(room)broadcastLeaderboard(room);
   });
 });
 process.on('SIGINT',()=>{persistSaves();server.close(()=>process.exit(0));});
