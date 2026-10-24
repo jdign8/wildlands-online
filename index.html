@@ -378,7 +378,8 @@ for (const c of islandCenters.slice(1)) {
 // Keep the central ruin and shoreline repairer clear of random resource/enemy spawns.
 {const c=islandCenters.find(i=>i.name==='Oldstead Isle');for(const r of resources){const dx=r.mesh.position.x-c.x,dz=r.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){r.alive=false;world.remove(r.mesh);}}for(const e of enemies){const dx=e.mesh.position.x-c.x,dz=e.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){e.alive=false;world.remove(e.mesh);}}}
 const villageHouses=[], villagers=[];
-let oldsteadHouse=null, oldsteadHouseRepaired=false;
+let oldsteadHouse=null, oldsteadHouseRepaired=false, oldsteadSecondBed=false, oldsteadStoredFood=0;
+function oldsteadHouseSafeRadius(){return 65;}
 // Oldstead Isle: a ruined cottage in the middle and a repairer waiting near the shoreline.
 {
  const c=islandCenters.find(i=>i.name==='Oldstead Isle');
@@ -399,7 +400,14 @@ let oldsteadHouse=null, oldsteadHouseRepaired=false;
  const roofMesh=new THREE.Mesh(new THREE.ConeGeometry(6.2,2.6,4),freshRoof);roofMesh.position.set(c.x,4.05,c.z);roofMesh.rotation.y=Math.PI/4;repaired.add(roofMesh);
  for(const x of [-3.2,3.2]){const window=new THREE.Mesh(new THREE.BoxGeometry(.8,.75,.12),mat(0x83c6d5));window.position.set(c.x+x,1.9,c.z+3.31);repaired.add(window);}
  world.add(ruined);world.add(repaired);repaired.visible=false;
- oldsteadHouse={x:c.x,z:c.z,ruined,repaired};
+ // Furnishings are placed inside the rebuilt cottage; the food chest stores food safely.
+ const houseBed=new THREE.Group();
+ const bedFrame=new THREE.Mesh(new THREE.BoxGeometry(2.1,.35,1.15),oldWood);bedFrame.position.set(c.x-1.8,.42,c.z-.8);houseBed.add(bedFrame);
+ const mattress=new THREE.Mesh(new THREE.BoxGeometry(1.95,.28,1.02),mat(0xd8d2bd));mattress.position.set(c.x-1.8,.7,c.z-.8);houseBed.add(mattress);
+ const pillow=new THREE.Mesh(new THREE.BoxGeometry(.48,.15,.65),mat(0xf2eee4));pillow.position.set(c.x-1.8,.88,c.z-1.05);houseBed.add(pillow);repaired.add(houseBed);
+ const foodChest=new THREE.Group();const foodBox=new THREE.Mesh(new THREE.BoxGeometry(1.05,.65,.72),mat(0x81502b));foodBox.position.set(c.x+2,.5,c.z-1.2);foodChest.add(foodBox);
+ const foodLid=new THREE.Mesh(new THREE.BoxGeometry(1.08,.18,.76),mat(0xb17a3c));foodLid.position.set(c.x+2,.91,c.z-1.2);foodChest.add(foodLid);repaired.add(foodChest);
+ oldsteadHouse={x:c.x,z:c.z,ruined,repaired,bed:houseBed,chest:foodChest};
  // A small sign by the house advertises the repair price.
  const sign=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,2,7),trunkMat);post.position.y=1;sign.add(post);
  const board=new THREE.Mesh(new THREE.BoxGeometry(3.8,.8,.18),woodMat);board.position.set(0,1.65,0);sign.add(board);
@@ -829,7 +837,7 @@ const guardianBody=new THREE.Mesh(new THREE.DodecahedronGeometry(2.05,1),guardia
 const guardianHead=new THREE.Mesh(new THREE.DodecahedronGeometry(1.05,1),guardianDark);guardianHead.position.set(0,3.35,-1.35);guardianHead.castShadow=true;islandGuardian.add(guardianHead);
 for(const side of [-1,1]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),guardianGlow);eye.position.set(side*.42,3.52,-2.22);islandGuardian.add(eye);const horn=new THREE.Mesh(new THREE.ConeGeometry(.25,1.1,6),guardianMat);horn.position.set(side*.72,4.25,-1.2);horn.rotation.z=side*-.45;islandGuardian.add(horn);const leg=new THREE.Mesh(new THREE.CylinderGeometry(.3,.42,1.15,8),guardianDark);leg.position.set(side*.9,.6,-.1);islandGuardian.add(leg);}
 islandGuardian.position.set(13,0,10);islandGuardian.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(islandGuardian);
-let soloBossHP=1200, soloBossDefeated=false, bossHP=1200, bossMaxHP=1200, bossDefeated=false, guardianAttackCooldown=1.2, guardianBitePhase=0;
+let soloBossHP=1200, soloBossDefeated=false, bossHP=1200, bossMaxHP=1200, bossDefeated=false, guardianAttackCooldown=1.2, guardianBitePhase=0, guardianProvoked=false;
 function renderBoss(hp,max=1200){bossHP=Math.max(0,Number(hp)||0);bossMaxHP=max||1200;const panel=document.getElementById('bossPanel');panel.style.display=bossDefeated?'none':'block';document.getElementById('bossFill').style.width=(bossHP/bossMaxHP*100)+'%';document.getElementById('bossHealthText').textContent=`${Math.ceil(bossHP)} / ${bossMaxHP} HP`;}
 function bossRewards(team=false){if(bossDefeated)return;bossDefeated=true;islandGuardian.visible=false;document.getElementById('bossPanel').style.display='none';inventory.coins+=10;inventory.crystal+=5;inventory.iron+=15;gainXP(250);health=Math.min(maxHealth,health+25);updateHUD();toast(team?'TEAM VICTORY! +250 XP, 10 coins, 5 crystals, 15 iron and 25 health restored.':'GUARDIAN DEFEATED! +250 XP, 10 coins, 5 crystals, 15 iron and 25 health restored.');}
 
@@ -960,11 +968,12 @@ function renderGlobalRecords(rows){
 }
 async function loadGlobalRecords(){ try{const r=await fetch('/api/xp-records');if(r.ok)renderGlobalRecords(await r.json());}catch{}}
 async function checkGlobalRecord(){
-  const score=totalExperience(); if(score<=lastRecordCheck||recordPromptOpen)return; lastRecordCheck=score;
+  const score=totalExperience(); if(score<=lastRecordCheck||recordPromptOpen)return;
   try{
     const check=await fetch('/api/xp-records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({xp:score})});
     const result=await check.json();
     if(result.needsName){
+      lastRecordCheck=score;
       recordPromptOpen=true;
       const answer=prompt(`NEW ALL-TIME TOP FIVE RECORD! Your score is ${score.toLocaleString()} XP. Choose a codename (up to 18 characters):`);
       recordPromptOpen=false;
@@ -973,7 +982,7 @@ async function checkGlobalRecord(){
         const data=await saved.json(); if(data.records)renderGlobalRecords(data.records);
         if(data.qualifies)toast('All-time XP record saved as '+answer.trim().slice(0,18)+'!');
       }
-    }
+    } else { lastRecordCheck=score; }
   }catch{}
 }
 loadGlobalRecords(); setInterval(loadGlobalRecords,15000); renderBoss(1200,1200);
@@ -984,7 +993,7 @@ const keys={}; let yaw=0,pitch=-.18,locked=false,attackCooldown=0,elapsed=0,nigh
 const raycaster=new THREE.Raycaster(); const center=new THREE.Vector2(0,0);
 const toastEl=document.getElementById('toast'); let toastTimer=0;
 function toast(msg){toastEl.textContent=msg;toastEl.style.opacity=1;toastTimer=2.2;}
-function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL UP! You reached level '+level);} checkGlobalRecord();}
+function gainXP(n){xp+=n;while(xp>=level*100){xp-=level*100;level++;toast('LEVEL UP! You reached level '+level);}}
 function ensureBoatVisual(){
  if(boatVisual || !craftedBoat) return;
  boatVisual=new THREE.Group();
@@ -1037,6 +1046,7 @@ function attack(){
  attackCooldown=.42;
  const guardianDistance=player.position.distanceTo(islandGuardian.position);
  if(!bossDefeated && islandGuardian.visible && guardianDistance<8){
+   guardianProvoked=true;
    const damage=equippedWeapon?weaponDefs[equippedWeapon].damage:10;
    if(equippedWeapon){weaponDurability[equippedWeapon]=Math.max(0,(weaponDurability[equippedWeapon]||weaponDefs[equippedWeapon].maxDurability)-1);if(weaponDurability[equippedWeapon]===0){ownedWeapons[equippedWeapon]=false;toast(weaponDefs[equippedWeapon].name+' broke!');equippedWeapon=null;refreshSwordVisual();}}
    if(mode==='online'&&socket&&socket.connected){socket.emit('bossAttack',{damage});}else{soloBossHP=Math.max(0,soloBossHP-damage);renderBoss(soloBossHP);if(soloBossHP===0)bossRewards(false);else toast('Island Guardian hit!');}
@@ -1414,6 +1424,19 @@ function interact(){
  if(dragonTrialActive){toast('The Dragonfall seal is locked! Defeat the giant dragon before you can leave.');return;}
  if(activeIsland===7){const c=islandCenters[7];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+36))<7.5){if(!dragonPortalActive){if(inventory.stone<50){toast(`The Dragon Portal needs 50 stone to activate. You have ${inventory.stone}.`);return;}inventory.stone-=50;dragonPortalActive=true;dragonTrialActive=true;activeIsland=9;aboardBoat=false;player.position.set(islandCenters[9].x,0,islandCenters[9].z+27);yaw=Math.PI;player.userData.vy=0;toast('PORTAL ACTIVATED! 50 stone consumed. You are trapped on Dragonfall Isle until you defeat the strongest monster: the giant dragon!');updateHUD();return;}if(!dragonDefeated){toast('The portal leads to Dragonfall Isle, but the dragon must be defeated before you can return.');return;}activeIsland=7;player.position.set(c.x,0,c.z+29);yaw=0;toast('You returned safely to Coincrest Village.');updateHUD();return;}}
  if(activeIsland===9 && Math.hypot(player.position.x-islandCenters[9].x,player.position.z-(islandCenters[9].z+38))<7.5){if(dragonTrialActive){toast('The portal is sealed until the dragon is defeated!');return;}if(dragonDefeated){activeIsland=7;player.position.set(islandCenters[7].x,0,islandCenters[7].z+29);yaw=0;toast('You returned to Coincrest Village with the dragon treasure!');updateHUD();return;}}
+ if(activeHouse && activeHouse.isOldstead){
+  const h=activeHouse;
+  if(Math.hypot(player.position.x-(h.x+2),player.position.z-(h.z-1.2))<1.6){
+   const choice=prompt(`Food chest: ${oldsteadStoredFood} food stored. Type DEPOSIT to put all your food in, WITHDRAW to take it all out, or CANCEL.`);
+   if(choice&&choice.trim().toLowerCase()==='deposit'){oldsteadStoredFood+=inventory.food;inventory.food=0;toast(`Stored food safely. Chest now has ${oldsteadStoredFood} food.`);updateHUD();return;}
+   if(choice&&choice.trim().toLowerCase()==='withdraw'){inventory.food+=oldsteadStoredFood;toast(`Took ${oldsteadStoredFood} food from the chest.`);oldsteadStoredFood=0;updateHUD();return;}
+   if(choice&&choice.trim().toLowerCase()==='cancel')return;
+  }
+  const bedNear=Math.hypot(player.position.x-(h.x-1.8),player.position.z-(h.z-.8))<1.7;
+  const secondBedNear=oldsteadSecondBed&&Math.hypot(player.position.x-(h.x+1.65),player.position.z-(h.z+1.05))<1.7;
+  if(bedNear||secondBedNear){const cycleValue=(Math.sin(elapsed*.035)+1)/2;if(cycleValue>=.18){toast('You can only sleep at night.');return;}let attempts=0;while((Math.sin(elapsed*.035)+1)/2<.35&&attempts<400){elapsed+=.5;attempts++;}health=Math.min(maxHealth,health+25);hunger=Math.max(0,hunger-2);thirst=Math.max(0,thirst-2);toast('You slept safely in your house until morning.');updateHUD();return;}
+  h.repaired.visible=false;h.repaired.visible=true;activeHouse=null;player.position.set(h.x,0,h.z+5.2);toast('You stepped outside your home.');return;
+ }
  if(activeHouse){
   const h=activeHouse;
   if(h.hasChest && !h.opened && h.chest && Math.hypot(player.position.x-(h.x+.95),player.position.z-(h.z-1.25))<3){
@@ -1422,6 +1445,7 @@ function interact(){
   // E exits the cottage; the roof/walls return outside.
   h.interior.visible=false;h.shell.visible=true;player.position.set(h.x,0,h.z+4.2);activeHouse=null;toast('You stepped outside the cottage.');return;
  }
+ if(activeIsland===11 && oldsteadHouseRepaired && oldsteadHouse && Math.hypot(player.position.x-oldsteadHouse.x,player.position.z-oldsteadHouse.z)<6.5){activeHouse={...oldsteadHouse,isOldstead:true};oldsteadHouse.repaired.visible=true;oldsteadHouse.ruined.visible=false;player.position.set(oldsteadHouse.x,0,oldsteadHouse.z);aboardBoat=false;toast('Welcome home! Go to the bed and press E to sleep at night, or the chest to deposit/withdraw food. Press E near the doorway to leave.');return;}
  const nearbyHouse=villageHouses.find(h=>Math.hypot(player.position.x-h.x,player.position.z-h.z)<4.5);
  if(nearbyHouse){activeHouse=nearbyHouse;nearbyHouse.shell.visible=false;nearbyHouse.interior.visible=true;player.position.set(nearbyHouse.x,0,nearbyHouse.z);aboardBoat=false;toast(nearbyHouse.hasChest?'You entered the cottage. Walk to the chest and press E to open it. Press E again to leave.':'You entered the cottage. Look around, then press E to leave.');return;}
  // The Verdant temple chest is inside the chamber, so players must walk through its doorway to loot it.
@@ -1434,12 +1458,18 @@ function interact(){
  }
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
  if(nearbyVillager && nearbyVillager.job==='houseRepairer'){
-  if(oldsteadHouseRepaired){toast('Oldstead Repairer: The house is already repaired. Enjoy your new home!');return;}
+  if(oldsteadHouseRepaired){
+   if(!oldsteadSecondBed){if(inventory.coins<1){toast('Oldstead Repairer: I can build a second bed for 1 coin. You do not have enough coins yet.');return;}inventory.coins-=1;oldsteadSecondBed=true;
+    const secondBed=new THREE.Group();const frame=new THREE.Mesh(new THREE.BoxGeometry(2.1,.35,1.15),mat(0x65452f));frame.position.set(oldsteadHouse.x+1.65,.42,oldsteadHouse.z+1.05);secondBed.add(frame);const mattress=new THREE.Mesh(new THREE.BoxGeometry(1.95,.28,1.02),mat(0xc4d7df));mattress.position.set(oldsteadHouse.x+1.65,.7,oldsteadHouse.z+1.05);secondBed.add(mattress);oldsteadHouse.repaired.add(secondBed);oldsteadHouse.secondBed=secondBed;toast('The repairer built a second bed for 1 coin!');updateHUD();return;
+   }
+   toast('Oldstead Repairer: The house is repaired and both beds are ready.');return;
+  }
   if(inventory.wood<40||inventory.stone<20){toast(`Oldstead Repairer: I can repair the ruined house for 40 wood and 20 stone. You have ${inventory.wood} wood and ${inventory.stone} stone. Nothing was taken.`);return;}
   const paid=spendIngredientsAtomically({wood:40,stone:20});
   if(!paid.ok){toast('You need 40 wood and 20 stone. Nothing was taken.');return;}
   oldsteadHouseRepaired=true;oldsteadHouse.ruined.visible=false;oldsteadHouse.repaired.visible=true;
-  gainXP(50);toast('The repairer rebuilt the rundown house for 40 wood and 20 stone! It is yours now.');updateHUD();return;
+  for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(Math.hypot(e.mesh.position.x-oldsteadHouse.x,e.mesh.position.z-oldsteadHouse.z)<oldsteadHouseSafeRadius()){world.remove(e.mesh);enemies.splice(i,1);}}
+  gainXP(50);toast('The house is rebuilt! Monsters cannot spawn on Oldstead Isle. Press E by the house to enter; use the bed to sleep and the chest to store food. Talk to the repairer again to buy a second bed for 1 coin.');updateHUD();return;
  }
  if(nearbyVillager){
   if(['woodTrader','armourer','medic','fishTrader','farmTrader'].includes(nearbyVillager.job)){
@@ -1657,10 +1687,10 @@ function animate(now){
   const isNight=cycleValue<.18;
   if(isNight&&!wasNight){
    nightWaveCount++;
-   if(activeIsland!==9){const c=islandCenters[activeIsland];
+   if(activeIsland!==9 && !(activeIsland===11 && oldsteadHouseRepaired)){const c=islandCenters[activeIsland];
     for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,r=12+Math.random()*Math.max(8,c.radius-22);addEnemy(c.x+Math.cos(a)*r,c.z+Math.sin(a)*r,8,true);}
     toast('NIGHTFALL! 50 tougher night monsters have spawned on this island!');
-   }else{toast('DRAGONFALL IS SEALED — no wildlings or night monsters appear here. Only the dragon awaits.');}
+   }else if(activeIsland===9){toast('DRAGONFALL IS SEALED — no wildlings or night monsters appear here. Only the dragon awaits.');}else{toast('Your rebuilt house island is protected: no monsters spawn here.');}
   }
   if(!isNight&&wasNight){
    for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(e.nightSpawn){world.remove(e.mesh);enemies.splice(i,1);}}
@@ -1677,24 +1707,25 @@ function animate(now){
   }
   // Dragonfall is a boss-only island: clear any non-boss enemies and never let them chase into it.
   if(activeIsland===9){for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(!e.isDragonBoss){world.remove(e.mesh);enemies.splice(i,1);}}}
-  // Island Guardian AI: it wakes on The Shore, tracks the player, and attacks at close range.
+  // Island Guardian stays peaceful until the player hits it.
   if(!bossDefeated && islandGuardian.visible && activeIsland===0){
    guardianBitePhase+=dt;
    const dx=player.position.x-islandGuardian.position.x,dz=player.position.z-islandGuardian.position.z,d=Math.hypot(dx,dz);
    islandGuardian.rotation.y=Math.atan2(dx,dz);
-   // Idle breathing animation makes it visibly alive even before the player approaches.
    guardianBody.scale.y=1+Math.sin(guardianBitePhase*3.2)*0.035;
-   if(d<32 && d>3.25){
-    const speed=d<9?2.9:2.2;
-    islandGuardian.position.x+=dx/d*speed*dt;
-    islandGuardian.position.z+=dz/d*speed*dt;
-   }
-   guardianAttackCooldown-=dt;
-   if(d<=3.45 && guardianAttackCooldown<=0 && Math.abs(player.position.y-islandGuardian.position.y)<2.5){
-    const mitigation=armorType?armorDefs[armorType].reduction:0;
-    health=Math.max(0,health-18*(1-mitigation));
-    guardianAttackCooldown=1.35;
-    toast('THE ISLAND GUARDIAN STRIKES! You take damage — fight back or retreat!');
+   if(guardianProvoked){
+    if(d<32 && d>3.25){
+     const speed=d<9?2.9:2.2;
+     islandGuardian.position.x+=dx/d*speed*dt;
+     islandGuardian.position.z+=dz/d*speed*dt;
+    }
+    guardianAttackCooldown-=dt;
+    if(d<=3.45 && guardianAttackCooldown<=0 && Math.abs(player.position.y-islandGuardian.position.y)<2.5){
+     const mitigation=armorType?armorDefs[armorType].reduction:0;
+     health=Math.max(0,health-18*(1-mitigation));
+     guardianAttackCooldown=1.35;
+     toast('THE ISLAND GUARDIAN STRIKES BACK!');
+    }
    }
   }
   for(const e of enemies){
@@ -1710,7 +1741,7 @@ function animate(now){
   if(castleArenaActive && castleArenaWildlings.length && castleArenaWildlings.every(e=>!e.alive)){
    castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('CASTLE CHAMPION! You defeated all 3 tough wildlings and earned 8 coins + 100 XP! The castle is now open.');updateHUD();
   }
-  if(health<=0){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';}
+  if(health<=0&&!dead){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';checkGlobalRecord();}
   if(Math.floor(elapsed)%2===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt))updateHUD();
  }
  // Day/night tint: a full cycle lasts about three minutes.
