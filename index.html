@@ -200,7 +200,7 @@
       <p class="small">Choose Create game to host, or Join a game to enter an existing host's world.</p>
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
-    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. In Hearthstone Village, find Bram the Builder to build a main base for 100 wood, upgrade defences, adopt a guard dog, buy a mount, start a clan, cook meals and take quests. Plant wheat in the village plots. Monsters can attack the village and base. On Cloverfield Isle, harvest golden wheat and sell 5 wheat to Tilly for 3 coins. Search each island for its treasure chest.</p>
+    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. In Hearthstone Village, find Bram the Builder to build a main base for 100 wood, upgrade defences, adopt a guard dog, buy a mount, cook meals and take quests. Craft the Woodland Bow with 5 wood and 4 plant fibre; arrows are automatic and unlimited. Plant wheat in the village plots. Monsters can attack the village and base. On Cloverfield Isle, harvest golden wheat and sell 5 wheat to Tilly for 3 coins. Search each island for its treasure chest.</p>
     <div id="startBottomRow">
       <button id="play">ENTER THE ISLAND</button>
       <div id="globalRecords" class="panel" aria-live="polite"><h2>🏆 ALL-TIME XP TOP FIVE</h2><div id="globalRecordRows">Loading records…</div></div>
@@ -921,7 +921,7 @@ function connectMultiplayer(action) {
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
-    if(save.inventory){Object.assign(inventory,save.inventory);normalizeMaterialInventory();armorType=save.inventory.armorType||null;maxHealth=100+(armorType&&armorDefs[armorType]?armorDefs[armorType].bonus:0);refreshArmorVisual();craftedBoat=!!(save.inventory.craftedBoat||save.inventory.boat||save.inventory.reinforcedBoat);inventory.craftedBoat=craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
+    if(save.inventory){Object.assign(inventory,save.inventory);normalizeMaterialInventory();armorType=save.inventory.armorType||null;maxHealth=100+(armorType&&armorDefs[armorType]?armorDefs[armorType].bonus:0);refreshArmorVisual();craftedBoat=!!(save.inventory.craftedBoat||save.inventory.boat||save.inventory.reinforcedBoat);inventory.craftedBoat=craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;ownedWeapons.bow=!!save.inventory.bow;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
     if(Number.isFinite(save.health)) health=save.health;
     if(Number.isFinite(save.hunger)) hunger=save.hunger;
     if(Number.isFinite(save.thirst)) thirst=save.thirst;
@@ -952,7 +952,7 @@ function renderLeaderboard(rows){
   all.sort((a,b)=>b.xp-a.xp||b.level-a.level||a.name.localeCompare(b.name));
   list.innerHTML=all.length?all.map((p,i)=>`<div class="leader-row ${p.id===mySocketId?'me':''}"><span>${i+1}. ${p.name}${p.id===mySocketId?' (you)':''}</span><span>${p.xp} XP</span></div>`).join(''):'Waiting for players…';
 }
-function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,armorType,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,weaponDurability:{...weaponDurability},equippedWeapon:equippedWeapon||null};}
+function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,armorType,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,bow:!!ownedWeapons.bow,weaponDurability:{...weaponDurability},equippedWeapon:equippedWeapon||null};}
 function sendNetworkState() {
   if(socket && socket.connected && mode==='online') {
     socket.emit('move', {x:player.position.x, z:player.position.z, rot:player.rotation.y, xp, level});
@@ -967,7 +967,7 @@ const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidi
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
 let fishingCasts=0, lastFishCastAt=-10000, boatDestinationIndex=null;
 
-const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4},maxDurability:15},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3},maxDurability:30},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4},maxDurability:50},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3,maxDurability:70}};
+const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4},maxDurability:15},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3},maxDurability:30},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4},maxDurability:50},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3,maxDurability:70},bow:{name:'Woodland Bow',damage:25,color:0x9b7045,cost:{wood:5,fibre:4},maxDurability:100}};
 const ownedWeapons={};const weaponDurability={};let equippedWeapon=null;
 let health=100,maxHealth=100,armorType=null,hunger=100,thirst=100,xp=0,level=1,dead=false;
 let lastRecordCheck = -1, recordPromptOpen = false;
@@ -1054,6 +1054,18 @@ function attack(){
  if(dead)return;
  if(attackCooldown>0){toast('Wait a moment before attacking again');return;}
  attackCooldown=.42;
+ // The bow automatically supplies arrows: no arrow inventory or crafting is required.
+ if(equippedWeapon==='bow'){
+   let rangedTarget=null,rangedDistance=18;
+   for(const e of enemies){if(!e.alive)continue;const d=player.position.distanceTo(e.mesh.position);if(d<rangedDistance){rangedDistance=d;rangedTarget=e;}}
+   const guardianDistanceForBow=player.position.distanceTo(islandGuardian.position);
+   if(!rangedTarget && (bossDefeated||!islandGuardian.visible||guardianDistanceForBow>=18)){toast('No target in bow range (18 metres). Your arrows are unlimited.');return;}
+   const damage=weaponDefs.bow.damage;
+   if(rangedTarget){rangedTarget.hp-=damage/10;toast('🏹 Arrow hit! '+Math.round(damage/10)+' damage · unlimited arrows');if(rangedTarget.hp<=0){rangedTarget.alive=false;world.remove(rangedTarget.mesh);if(rangedTarget.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! Treasure collected!');}else{inventory.food+=1;inventory.hide+=1;gainXP(30);toast('Wildling defeated with your bow! Collected 1 animal hide and 1 food.');}}}
+   else {guardianProvoked=true;if(mode==='online'&&socket&&socket.connected)socket.emit('bossAttack',{damage});else{soloBossHP=Math.max(0,soloBossHP-damage);renderBoss(soloBossHP);if(soloBossHP===0)bossRewards(false);else toast('🏹 Arrow hit the Island Guardian!');}}
+   weaponDurability.bow=Math.max(0,(weaponDurability.bow||weaponDefs.bow.maxDurability)-1);if(weaponDurability.bow===0){ownedWeapons.bow=false;equippedWeapon=null;refreshSwordVisual();toast('Your Woodland Bow broke. Craft another one.');}
+   gainXP(4);updateHUD();return;
+ }
  const guardianDistance=player.position.distanceTo(islandGuardian.position);
  if(!bossDefeated && islandGuardian.visible && guardianDistance<8){
    guardianProvoked=true;
@@ -1079,6 +1091,7 @@ function attack(){
 function refreshSwordVisual(){
  while(swordHolder.children.length)swordHolder.remove(swordHolder.children[0]);
  if(!equippedWeapon)return;
+ if(equippedWeapon==='bow'){const wood=new THREE.MeshStandardMaterial({color:0x9b7045,roughness:.8});const curve=new THREE.Mesh(new THREE.TorusGeometry(.25,.035,8,20,Math.PI),wood);curve.rotation.z=Math.PI/2;curve.position.set(0,.12,-.12);swordHolder.add(curve);const string=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.48,5),new THREE.MeshBasicMaterial({color:0xe8d7a8}));string.position.set(0,.12,-.12);swordHolder.add(string);return;}
  const def=weaponDefs[equippedWeapon], bladeMat=new THREE.MeshStandardMaterial({color:def.color,metalness:equippedWeapon==='wood'?.05:.65,roughness:.32,emissive:equippedWeapon==='crystal'?0x167c9b:0x000000,emissiveIntensity:.55});
  const blade=new THREE.Mesh(new THREE.BoxGeometry(.075,.62,.12),bladeMat);blade.position.set(0,.36,-.12);blade.rotation.z=-.12;swordHolder.add(blade);
  const guard=new THREE.Mesh(new THREE.BoxGeometry(.28,.055,.09),trunkMat);guard.position.set(0,.06,-.12);swordHolder.add(guard);
