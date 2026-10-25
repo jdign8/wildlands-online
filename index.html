@@ -221,6 +221,25 @@
     <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="boatMapBtn">Choose island</button>
   </div>
 </div>
+<script>
+// Safety fallback: if the game module fails to load, never leave ENTER THE ISLAND silently unresponsive.
+window.addEventListener('DOMContentLoaded', function () {
+  var playButton = document.getElementById('play');
+  if (!playButton) return;
+  playButton.addEventListener('click', function () {
+    if (typeof playButton.onclick === 'function') return;
+    var old = document.getElementById('wildlandsStartError');
+    if (!old) {
+      old = document.createElement('p');
+      old.id = 'wildlandsStartError';
+      old.setAttribute('role', 'alert');
+      old.style.cssText = 'margin:12px auto 0;padding:10px;color:#fff;background:#7b2d20;border-radius:8px;max-width:520px;text-align:center';
+      playButton.insertAdjacentElement('afterend', old);
+    }
+    old.textContent = 'The game engine did not finish loading. Check your internet connection, reload the page, and try again. If it keeps happening, check the browser console for a Three.js loading error.';
+  });
+});
+</script>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
