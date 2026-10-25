@@ -224,19 +224,46 @@
 <script>
 // Safety fallback: if the game module fails to load, never leave ENTER THE ISLAND silently unresponsive.
 window.addEventListener('DOMContentLoaded', function () {
+  // Load the existing server-side records independently of the game module.
+  // This still works if a later module error prevents its own records code running.
+  var rowsEl = document.getElementById('globalRecordRows');
+  if (rowsEl) {
+    var recordsRequest = fetch('/api/xp-records', {cache:'no-store'});
+    var recordsTimeout = new Promise(function (_, reject) { setTimeout(function () { reject(new Error('timeout')); }, 7000); });
+    Promise.race([recordsRequest, recordsTimeout]).then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    }).then(function (records) {
+      if (!Array.isArray(records)) throw new Error('Invalid records response');
+      rowsEl.innerHTML = records.length ? records.slice(0,5).map(function (record, i) {
+        var name = String(record.codename || 'Survivor').replace(/[&<>\"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]; });
+        var xp = Math.max(0, Math.floor(Number(record.xp) || 0)).toLocaleString();
+        return '<div class="record-row"><span>' + (i+1) + '. ' + name + '</span><strong>' + xp + ' XP</strong></div>';
+      }).join('') : '<div class="small">No records yet. Be the first!</div>';
+    }).catch(function () {
+      if (rowsEl && rowsEl.textContent.trim() === 'Loading records…') rowsEl.textContent = 'Could not load saved records. They have not been changed. Check the server and reload to try again.';
+    });
+  }
   var playButton = document.getElementById('play');
-  if (!playButton) return;
+  var startScreen = document.getElementById('start');
+  if (!playButton || !startScreen) return;
+  // Independent fallback: the module can fail after drawing the scene but before
+  // assigning its own click handler. Keep the solo world enterable in that case.
   playButton.addEventListener('click', function () {
+    var soloButton = document.getElementById('soloBtn');
+    var onlineButton = document.getElementById('onlineBtn');
+    var soloSelected = !onlineButton || onlineButton.classList.contains('selected') === false;
+    if (soloButton && soloButton.classList.contains('selected')) soloSelected = true;
+    if (!soloSelected) return;
+    // Let the normal module handler run when present; this listener is only the fallback.
     if (typeof playButton.onclick === 'function') return;
-    var old = document.getElementById('wildlandsStartError');
-    if (!old) {
-      old = document.createElement('p');
-      old.id = 'wildlandsStartError';
-      old.setAttribute('role', 'alert');
-      old.style.cssText = 'margin:12px auto 0;padding:10px;color:#fff;background:#7b2d20;border-radius:8px;max-width:520px;text-align:center';
-      playButton.insertAdjacentElement('afterend', old);
-    }
-    old.textContent = 'The game engine did not finish loading. Check your internet connection, reload the page, and try again. If it keeps happening, check the browser console for a Three.js loading error.';
+    startScreen.style.display = 'none';
+    var warning = document.getElementById('wildlandsStartError');
+    if (warning) warning.style.display = 'none';
+    var help = document.getElementById('lookHelp');
+    if (help) help.style.display = 'block';
+    var toast = document.getElementById('toast');
+    if (toast) { toast.textContent = 'The island opened in fallback mode. If movement does not work, reload the page and check the game engine connection.'; toast.style.display = 'block'; }
   });
 });
 </script>
@@ -1034,7 +1061,21 @@ function renderGlobalRecords(rows){
   const el=document.getElementById('globalRecordRows'); if(!el)return;
   el.innerHTML=(rows||[]).length ? rows.slice(0,5).map((r,i)=>`<div class="record-row"><span>${i+1}. ${String(r.codename||'Survivor').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}</span><strong>${Math.floor(Number(r.xp)||0).toLocaleString()} XP</strong></div>`).join('') : '<div class="small">No records yet. Be the first!</div>';
 }
-async function loadGlobalRecords(){ try{const r=await fetch('/api/xp-records');if(r.ok)renderGlobalRecords(await r.json());}catch{}}
+async function loadGlobalRecords(){
+  const el=document.getElementById('globalRecordRows');
+  try{
+    const request=fetch('/api/xp-records',{cache:'no-store'});
+    const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),7000));
+    const r=await Promise.race([request,timeout]);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const rows=await r.json();
+    if(!Array.isArray(rows)) throw new Error('Invalid records response');
+    renderGlobalRecords(rows);
+  }catch(e){
+    // Display a status only; never clear or overwrite the server's saved records.
+    if(el && el.textContent.trim()==='Loading records…') el.textContent='Could not load saved records. They have not been changed. Check the server and reload to try again.';
+  }
+}
 async function checkGlobalRecord(){
   const score=totalExperience(); if(score<=lastRecordCheck||recordPromptOpen)return;
   try{
