@@ -27,3 +27,10 @@ Replace `index.html` and `server.js` in the existing repository with these files
 - Clan features are intentionally excluded.
 - Rare mackerel and super-rare shark fishing/selling are retained.
 - Existing Island Guardian and Dragon boss encounters, plus existing craftable sword and armour tiers, are retained.
+
+
+## Combined island + bow update
+- Includes the three new islands: Moonfall Grove, Glacierwatch Isle, and Golden Dunes.
+- Includes the Woodland Bow recipe: 5 wood + 4 plant fibre. Arrows are handled automatically; no separate arrow crafting is needed.
+- The bow is a ranged weapon with a stated range of 18 metres and 100-shot durability.
+- Clan features remain excluded.
