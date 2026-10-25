@@ -34,3 +34,6 @@ Replace `index.html` and `server.js` in the existing repository with these files
 - Includes the Woodland Bow recipe: 5 wood + 4 plant fibre. Arrows are handled automatically; no separate arrow crafting is needed.
 - The bow is a ranged weapon with a stated range of 18 metres and 100-shot durability.
 - Clan features remain excluded.
+
+
+Enter Island loading patch: index.html now retries Three.js from unpkg if jsDelivr fails. No server.js or package.json changes were made; existing server-side records are not modified by this patch.
