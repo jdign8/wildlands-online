@@ -122,52 +122,6 @@
     #mobile .actions { grid-template-columns:repeat(2, 66px); }
   }
 </style>
-<script>
-/* Early startup diagnostics: runs before the game module. */
-(function () {
-  function showStartupFailure(message) {
-    var start = document.getElementById('start');
-    var play = document.getElementById('play');
-    if (!start || !play) return;
-    var box = document.getElementById('wildlandsStartError');
-    if (!box) {
-      box = document.createElement('div');
-      box.id = 'wildlandsStartError';
-      box.setAttribute('role', 'alert');
-      box.style.cssText = 'margin:12px auto 0;padding:10px;color:#fff;background:#7b2d20;border-radius:8px;max-width:520px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.4';
-      play.insertAdjacentElement('afterend', box);
-    }
-    box.textContent = 'Wildlands could not start the game code. Details: ' + String(message || 'Unknown startup error').slice(0, 350) + '. Try reloading. Your saved game data has not been deliberately cleared.';
-  }
-  window.addEventListener('error', function (event) {
-    var msg = event && (event.message || (event.target && event.target.src) || 'A script failed to load');
-    // Ignore unrelated resource errors; report script/module failures.
-    if (event && (event.error || /module|script|three/i.test(String(msg)))) showStartupFailure(msg);
-  }, true);
-  window.addEventListener('unhandledrejection', function (event) {
-    var reason = event && event.reason;
-    showStartupFailure(reason && (reason.message || String(reason)) || 'A module promise was rejected');
-  });
-  document.addEventListener('DOMContentLoaded', function () {
-    var play = document.getElementById('play');
-    if (!play) return;
-    // Native touch activation is more reliable on iPad than depending on keyboard Enter.
-    play.style.touchAction = 'manipulation';
-    play.addEventListener('pointerup', function () {
-      window.setTimeout(function () {
-        if (play.isConnected && typeof play.onclick !== 'function') {
-          showStartupFailure('The game module did not attach the Enter button handler.');
-        }
-      }, 1200);
-    });
-    window.setTimeout(function () {
-      if (play.isConnected && typeof play.onclick !== 'function') {
-        showStartupFailure('The game module did not finish initialising within 12 seconds.');
-      }
-    }, 12000);
-  });
-})();
-</script>
 </head>
 <body>
 <div id="hud">
@@ -308,32 +262,8 @@ window.addEventListener('DOMContentLoaded', function () {
 </script>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
-// Load Three.js with a backup CDN. If both fail, show a clear message instead of a dead Enter button.
-let THREE;
-try {
-  THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
-} catch (primaryError) {
-  try {
-    THREE = await import('https://unpkg.com/three@0.160.0/build/three.module.js');
-  } catch (backupError) {
-    const start = document.getElementById('start');
-    if (start) {
-      let warning = document.getElementById('wildlandsStartError');
-      if (!warning) {
-        warning = document.createElement('p');
-        warning.id = 'wildlandsStartError';
-        warning.setAttribute('role', 'alert');
-        warning.style.cssText = 'margin:12px auto 0;padding:10px;color:#fff;background:#7b2d20;border-radius:8px;max-width:520px;text-align:center';
-        const play = document.getElementById('play');
-        if (play) play.insertAdjacentElement('afterend', warning); else start.appendChild(warning);
-      }
-      warning.textContent = 'The 3D game engine could not load from either source. Check your internet connection or try reloading the page. The island has not started.';
-    }
-    throw backupError;
-  }
-}
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
-try {
 let mode = 'solo';
 let multiplayerAction = null;
 let pendingWorldEntry = false;
@@ -381,6 +311,18 @@ for (let i=0;i<islandCenters.length;i++) {
   const groundMat=c.biome==='snow'?snowMat:c.biome==='meadow'?meadowMat:c.biome==='mountain'?rockDark:c.biome==='dragon'?mat(0x393d43):c.biome==='volcano'||c.biome==='ashen'?mat(0x39312f):c.biome==='village'?mat(0x709b5a):c.biome==='jungle'?mat(0x245b35):c.biome==='swamp'?mat(0x4b6040):c.biome==='desert'?mat(0xc7a35e):c.biome==='farm'?mat(0x8abf62):c.biome==='sky'?mat(0x7e8d91):c.biome==='storm'?mat(0x586a70):c.biome==='reef'?mat(0x4ba5a0):grassMat;
   const g=new THREE.Mesh(islandShapeGeometry(c.x,c.z,r-6,.99,i+1),groundMat); g.rotation.x=-Math.PI/2; g.position.set(c.x,.018,c.z); g.receiveShadow=true; scene.add(g); islandGrounds.push(g);
 }
+// Gentle, irregular ground tint helps break up the single-colour island surfaces.
+for(const ground of islandGrounds){
+ const c=islandCenters.find(v=>Math.abs(v.x-ground.position.x)<.01&&Math.abs(v.z-ground.position.z)<.01);
+ if(!c||!['forest','meadow','village','farm','jungle','sky','swamp'].includes(c.biome))continue;
+ const geo=ground.geometry;const pos=geo.attributes.position;const colors=[];
+ for(let i=0;i<pos.count;i++){const shade=.91+Math.random()*.17;colors.push(shade,shade,shade);}
+ geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));ground.material=ground.material.clone();ground.material.vertexColors=true;ground.material.color.set(0xffffff);
+}
+const water = new THREE.Mesh(new THREE.CircleGeometry(850,160),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
+const world = new THREE.Group(); scene.add(world);
+const resources = [], enemies = [], decorations=[];
+
 // Natural grass: varied blade heights, tones and directions, distributed in irregular patches.
 // Instanced meshes keep the extra landscape detail efficient on iPad/mobile devices.
 {
@@ -410,17 +352,7 @@ for (let i=0;i<islandCenters.length;i++) {
   mesh.castShadow=false;mesh.receiveShadow=true;world.add(mesh);decorations.push(mesh);
  }
 }
-// Gentle, irregular ground tint helps break up the single-colour island surfaces.
-for(const ground of islandGrounds){
- const c=islandCenters.find(v=>Math.abs(v.x-ground.position.x)<.01&&Math.abs(v.z-ground.position.z)<.01);
- if(!c||!['forest','meadow','village','farm','jungle','sky','swamp'].includes(c.biome))continue;
- const geo=ground.geometry;const pos=geo.attributes.position;const colors=[];
- for(let i=0;i<pos.count;i++){const shade=.91+Math.random()*.17;colors.push(shade,shade,shade);}
- geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));ground.material=ground.material.clone();ground.material.vertexColors=true;ground.material.color.set(0xffffff);
-}
-const water = new THREE.Mesh(new THREE.CircleGeometry(850,160),waterMat); water.rotation.x=-Math.PI/2; water.position.y=-.22; scene.add(water);
-const world = new THREE.Group(); scene.add(world);
-const resources = [], enemies = [], decorations=[];
+
 const beds=[];
 function addTree(x,z,scale=1){
  const g=new THREE.Group();
@@ -1995,21 +1927,6 @@ window.addEventListener('resize',resizeGame);
 window.addEventListener('orientationchange',()=>setTimeout(resizeGame,180));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)resizeGame();});
 updateHUD();
-
-} catch (startupError) {
-  console.error('Wildlands startup failed:', startupError);
-  const play = document.getElementById('play');
-  let panel = document.getElementById('wildlandsStartError');
-  if (!panel) {
-    panel = document.createElement('pre');
-    panel.id = 'wildlandsStartError';
-    panel.setAttribute('role', 'alert');
-    panel.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;margin:12px auto;padding:12px;max-width:540px;color:#fff;background:#7b2d20;border-radius:8px;font:14px/1.4 system-ui;text-align:left';
-    if (play) play.insertAdjacentElement('afterend', panel);
-    else document.getElementById('start')?.appendChild(panel);
-  }
-  panel.textContent = 'Wildlands startup error: ' + (startupError?.stack || startupError?.message || String(startupError));
-}
 </script>
 </body>
 </html>
