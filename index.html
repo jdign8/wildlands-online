@@ -223,12 +223,12 @@
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
-// Load Three.js from a backup CDN if jsDelivr is unavailable. Keep the rest of the game unchanged.
+// Load Three.js from a primary and backup CDN. If the first host is blocked or times out,
+// the backup keeps the game module from failing before the Enter button is initialized.
 let THREE;
 try {
   THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
-} catch (primaryThreeError) {
-  console.warn('Wildlands: jsDelivr Three.js failed; trying unpkg.', primaryThreeError);
+} catch (primaryError) {
   THREE = await import('https://unpkg.com/three@0.160.0/build/three.module.js');
 }
 
