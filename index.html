@@ -333,6 +333,7 @@ try {
   }
 }
 
+try {
 let mode = 'solo';
 let multiplayerAction = null;
 let pendingWorldEntry = false;
@@ -1994,6 +1995,21 @@ window.addEventListener('resize',resizeGame);
 window.addEventListener('orientationchange',()=>setTimeout(resizeGame,180));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)resizeGame();});
 updateHUD();
+
+} catch (startupError) {
+  console.error('Wildlands startup failed:', startupError);
+  const play = document.getElementById('play');
+  let panel = document.getElementById('wildlandsStartError');
+  if (!panel) {
+    panel = document.createElement('pre');
+    panel.id = 'wildlandsStartError';
+    panel.setAttribute('role', 'alert');
+    panel.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;margin:12px auto;padding:12px;max-width:540px;color:#fff;background:#7b2d20;border-radius:8px;font:14px/1.4 system-ui;text-align:left';
+    if (play) play.insertAdjacentElement('afterend', panel);
+    else document.getElementById('start')?.appendChild(panel);
+  }
+  panel.textContent = 'Wildlands startup error: ' + (startupError?.stack || startupError?.message || String(startupError));
+}
 </script>
 </body>
 </html>
