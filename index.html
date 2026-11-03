@@ -20,6 +20,7 @@
   canvas { display:block; touch-action:none; }
   #hud { position:fixed; inset:0; pointer-events:none; }
   .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px; backdrop-filter:blur(12px); box-shadow:0 10px 32px #0004 }
+  #accountControls{position:fixed;left:12px;top:12px;z-index:40;display:none;gap:6px;pointer-events:auto}#accountControls button{padding:8px;font-size:12px}#achievementPanel{display:none;position:fixed;z-index:60;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,92vw);max-height:80vh;overflow:auto;pointer-events:auto}.achievement-row{padding:7px;border-bottom:1px solid #ffffff18;font-size:12px}.achievement-row.done{color:#83d8a2}#accountPanel{margin:10px 0;padding:12px;border:1px solid #ffffff25;border-radius:12px;background:#0b151b}#accountPanel input{width:100%;padding:10px;margin:4px 0;border-radius:8px;border:1px solid #ffffff25;background:#0b151b;color:#fff;font:inherit}
   #brand { position:absolute; left:14px; top:14px; max-width:min(360px,calc(100vw - 28px)) }
   #brand h1 { font-size:17px; letter-spacing:.08em; margin:0 0 4px; }
   #brand p { margin:0; color:#bac7d1; font-size:12px; line-height:1.4 }
@@ -124,7 +125,7 @@
 </style>
 </head>
 <body>
-<div id="hud">
+<div id="hud"><div id="accountControls"><button id="usernameBtn">👤 Player</button><button id="achievementsBtn">🏆 Achievements</button></div><div id="achievementPanel" class="panel"><div style="display:flex;justify-content:space-between"><strong>🏆 Achievements</strong><button id="closeAchievements">✕</button></div><p id="achievementCount" class="small">0 / 20 unlocked</p><div id="achievementRows"></div></div>
   <div id="brand" class="panel"><h1>WILDLANDS <span style="color:#83d8a2">ONLINE</span></h1><p>Survival adventure · Islands, crafting & habitats</p><p id="timeText" style="color:#f4d58a;margin-top:4px">☀️ Day</p></div>
   <div id="stats" class="panel">
     <div class="stat"><div class="stat-head"><span>Health</span><span id="healthNum">100</span></div><div class="bar"><div id="healthFill" class="fill"></div></div></div>
@@ -201,6 +202,7 @@
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
     <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. On Cloverfield Isle, harvest golden wheat and sell 5 wheat to Tilly for 3 coins. Search each island for its treasure chest.</p>
+<div id="accountPanel"><strong>Account</strong><p class="small">Create an account or log in. Your username is used for XP records.</p><input id="accountUsername" maxlength="18" autocomplete="username" placeholder="Username (3–18 characters)"><input id="accountPassword" type="password" maxlength="100" autocomplete="current-password" placeholder="Password (at least 6 characters)"><div class="modeRow"><button id="registerAccount" type="button">Create account</button><button id="loginAccount" type="button">Log in</button></div><div id="accountStatus" class="small">Create an account or log in to continue.</div></div>
     <div id="startBottomRow">
       <button id="play">ENTER THE ISLAND</button>
       <div id="globalRecords" class="panel" aria-live="polite"><h2>🏆 ALL-TIME XP TOP FIVE</h2><div id="globalRecordRows">Loading records…</div></div>
@@ -964,27 +966,20 @@ let lastRecordCheck = -1, recordPromptOpen = false;
 function totalExperience(){ return Math.max(0, Math.floor((level-1)*100 + xp)); }
 function renderGlobalRecords(rows){
   const el=document.getElementById('globalRecordRows'); if(!el)return;
-  el.innerHTML=(rows||[]).length ? rows.slice(0,5).map((r,i)=>`<div class="record-row"><span>${i+1}. ${String(r.codename||'Survivor').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}</span><strong>${Math.floor(Number(r.xp)||0).toLocaleString()} XP</strong></div>`).join('') : '<div class="small">No records yet. Be the first!</div>';
+  el.innerHTML=(rows||[]).length ? rows.slice(0,5).map((r,i)=>`<div class="record-row"><span>${i+1}. ${String(r.username||r.codename||'Survivor').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}</span><strong>${Math.floor(Number(r.xp)||0).toLocaleString()} XP</strong></div>`).join('') : '<div class="small">No records yet. Be the first!</div>';
 }
 async function loadGlobalRecords(){ try{const r=await fetch('/api/xp-records');if(r.ok)renderGlobalRecords(await r.json());}catch{}}
-async function checkGlobalRecord(){
-  const score=totalExperience(); if(score<=lastRecordCheck||recordPromptOpen)return;
-  try{
-    const check=await fetch('/api/xp-records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({xp:score})});
-    const result=await check.json();
-    if(result.needsName){
-      lastRecordCheck=score;
-      recordPromptOpen=true;
-      const answer=prompt(`NEW ALL-TIME TOP FIVE RECORD! Your score is ${score.toLocaleString()} XP. Choose a codename (up to 18 characters):`);
-      recordPromptOpen=false;
-      if(answer&&answer.trim()){
-        const saved=await fetch('/api/xp-records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({xp:score,codename:answer.trim()})});
-        const data=await saved.json(); if(data.records)renderGlobalRecords(data.records);
-        if(data.qualifies)toast('All-time XP record saved as '+answer.trim().slice(0,18)+'!');
-      }
-    } else { lastRecordCheck=score; }
-  }catch{}
-}
+async function checkGlobalRecord(){const score=totalExperience();if(score<=lastRecordCheck||recordPromptOpen||!accountToken)return;try{const r=await fetch('/api/xp-records',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+accountToken},body:JSON.stringify({xp:score})});if(r.status===401)return;const d=await r.json();if(d.records)renderGlobalRecords(d.records);if(d.qualifies)toast('XP record saved for '+accountUsername+'!');lastRecordCheck=score;}catch{}}
+
+
+let accountToken='',accountUsername='';const achievementDefs=[['first_steps','First Steps','Enter the island'],['wood_gatherer','Wood Gatherer','Collect 25 wood'],['stone_collector','Stone Collector','Collect 25 stone'],['resourceful','Resourceful','Collect five materials'],['treasure_hunter','Treasure Hunter','Open your first chest'],['treasure_expert','Treasure Expert','Open ten chests'],['fisher','Fisher','Catch your first fish'],['master_angler','Master Angler','Catch 25 fish'],['builder','Builder','Craft your first item'],['crafting_expert','Crafting Expert','Craft 25 items'],['explorer','Explorer','Visit five islands'],['world_traveller','World Traveller','Visit all 20 islands'],['wildling_hunter','Wildling Hunter','Defeat 10 wildlings'],['monster_slayer','Monster Slayer','Defeat 50 wildlings'],['guardian_challenger','Guardian Challenger','Fight the island guardian'],['guardian_champion','Guardian Champion','Defeat the island guardian'],['dragon_challenger','Dragon Challenger','Reach Dragonfall Isle'],['dragon_slayer','Dragon Slayer','Defeat the dragon'],['experienced_survivor','Experienced Survivor','Reach level 10'],['island_legend','Island Legend','Reach level 25']];let unlockedAchievements=new Set(),achievementStats={islands:new Set(),chests:0,fishes:0,crafts:0,kills:0};
+async function accountAction(action){const username=document.getElementById('accountUsername').value.trim(),password=document.getElementById('accountPassword').value,status=document.getElementById('accountStatus');if(!username||!password){status.textContent='Enter a username and password.';return;}try{const r=await fetch('/api/account/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})}),d=await r.json();if(!r.ok){status.textContent=d.error||'Account request failed.';return;}accountToken=d.token;accountUsername=d.username;document.getElementById('playerName').value=accountUsername;document.getElementById('usernameBtn').textContent='👤 '+accountUsername;document.getElementById('accountControls').style.display='flex';status.textContent='Signed in as '+accountUsername+'.';const ar=await fetch('/api/account/achievements',{headers:{'Authorization':'Bearer '+accountToken}});if(ar.ok)unlockedAchievements=new Set((await ar.json()).unlocked||[]);renderAchievements();}catch{status.textContent='Could not connect to account server.';}}
+document.getElementById('registerAccount').onclick=()=>accountAction('register');document.getElementById('loginAccount').onclick=()=>accountAction('login');document.getElementById('usernameBtn').onclick=()=>toast('Logged in as '+accountUsername);document.getElementById('achievementsBtn').onclick=()=>{renderAchievements();document.getElementById('achievementPanel').style.display='block';};document.getElementById('closeAchievements').onclick=()=>document.getElementById('achievementPanel').style.display='none';
+function renderAchievements(){document.getElementById('achievementCount').textContent=unlockedAchievements.size+' / 20 unlocked';document.getElementById('achievementRows').innerHTML=achievementDefs.map(([id,n,d])=>`<div class="achievement-row ${unlockedAchievements.has(id)?'done':''}">${unlockedAchievements.has(id)?'🏅':'🔒'} <strong>${n}</strong> — ${d}</div>`).join('');}
+async function unlockAchievement(id){if(!accountToken||unlockedAchievements.has(id))return;unlockedAchievements.add(id);renderAchievements();try{await fetch('/api/account/achievements',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+accountToken},body:JSON.stringify({unlocked:[id]})});toast('Achievement unlocked: '+achievementDefs.find(x=>x[0]===id)?.[1]);}catch{}}
+function checkAchievements(){if(!accountToken)return;const mats=Object.entries(inventory).filter(([k,v])=>typeof v==='number'&&v>0);if(player)unlockAchievement('first_steps');if((inventory.wood||0)>=25)unlockAchievement('wood_gatherer');if((inventory.stone||0)>=25)unlockAchievement('stone_collector');if(mats.length>=5)unlockAchievement('resourceful');if(achievementStats.chests>=1)unlockAchievement('treasure_hunter');if(achievementStats.chests>=10)unlockAchievement('treasure_expert');if(achievementStats.fishes>=1)unlockAchievement('fisher');if(achievementStats.fishes>=25)unlockAchievement('master_angler');if(achievementStats.crafts>=1)unlockAchievement('builder');if(achievementStats.crafts>=25)unlockAchievement('crafting_expert');if(achievementStats.islands.size>=5)unlockAchievement('explorer');if(achievementStats.islands.size>=20)unlockAchievement('world_traveller');if(achievementStats.kills>=10)unlockAchievement('wildling_hunter');if(achievementStats.kills>=50)unlockAchievement('monster_slayer');if(level>=10)unlockAchievement('experienced_survivor');if(level>=25)unlockAchievement('island_legend');}
+setInterval(()=>{if(typeof activeIsland!=='undefined')achievementStats.islands.add(activeIsland);checkAchievements();},3000);
+
 loadGlobalRecords(); setInterval(loadGlobalRecords,15000); renderBoss(1200,1200);
 
 const armorDefs={stone:{name:'Stone armour',cost:3,bonus:25,reduction:.1,tier:1},iron:{name:'Iron armour',cost:7,bonus:50,reduction:.2,tier:2},crystal:{name:'Crystal armour',cost:12,bonus:80,reduction:.3,tier:3}};
@@ -1063,7 +1058,7 @@ function attack(){
  const usedWeapon=equippedWeapon;const damage=usedWeapon?weaponDefs[usedWeapon].damage/10:1;target.hp-=damage;
  if(usedWeapon){weaponDurability[usedWeapon]=Math.max(0,(weaponDurability[usedWeapon]||weaponDefs[usedWeapon].maxDurability)-1);if(weaponDurability[usedWeapon]===0){ownedWeapons[usedWeapon]=false;equippedWeapon=null;toast(`${weaponDefs[usedWeapon].name} broke! Craft another sword.`);refreshSwordVisual();}else{toast(`${weaponDefs[usedWeapon].name}: ${weaponDurability[usedWeapon]}/${weaponDefs[usedWeapon].maxDurability} durability`);}}
  swordHolder.rotation.x=-.9;setTimeout(()=>{swordHolder.rotation.x=0;},120);gainXP(4);if(!usedWeapon)toast(target.hp<=0?'Wildling defeated!':'Hit with your fists!');
- if(target.hp<=0){target.alive=false;world.remove(target.mesh);if(target.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! You defeated the strongest monster! Treasure: 50 coins, 25 crystals, 40 iron, 100 stone, 20 food and 20 water, plus 1000 XP. The island seal is broken!');}else{inventory.food+=1;inventory.hide+=1;gainXP(30);toast('Wildling defeated! Collected 1 animal hide and 1 food.');}}
+ if(target.hp<=0){target.alive=false;achievementStats.kills++;world.remove(target.mesh);if(target.isDragonBoss){dragonTrialActive=false;dragonDefeated=true;inventory.coins+=50;inventory.crystal+=25;inventory.iron+=40;inventory.stone+=100;inventory.food+=20;inventory.water+=20;gainXP(1000);health=maxHealth;toast('DRAGON SLAIN! You defeated the strongest monster! Treasure: 50 coins, 25 crystals, 40 iron, 100 stone, 20 food and 20 water, plus 1000 XP. The island seal is broken!');}else{inventory.food+=1;inventory.hide+=1;gainXP(30);toast('Wildling defeated! Collected 1 animal hide and 1 food.');}}
  updateHUD();
 }
 function refreshSwordVisual(){
@@ -1213,7 +1208,7 @@ function craftRecipe(id){
        inventory[output]=(Number(inventory[output])||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
        if(output==='reinforcedBoat')toast('Reinforced boat upgrade crafted!');
        else if(output==='advancedRod'){fishingRod=true;toast('Advanced fishing rod crafted!');}
-       else toast(`${r.name} crafted!`);
+       else achievementStats.crafts++;toast(`${r.name} crafted!`);
        gainXP(8);
      }
    }
@@ -1299,7 +1294,7 @@ function fish(){
  else if(roll<0.34){fishType='salmon';fishName='Salmon';}
  else if(roll<0.69){fishType='cod';fishName='Cod';}
  else{fishType='whiting';fishName='Whiting';}
- inventory[fishType]=(Number(inventory[fishType])||0)+1;
+ inventory[fishType]=(Number(inventory[fishType])||0)+1;achievementStats.fishes++;
  gainXP(fishType==='shark'?40:fishType==='mackerel'?20:10);
  toast(`You caught ${fishName}! Wait 5 seconds before your next cast.`);
  updateHUD();
@@ -1449,10 +1444,10 @@ function interact(){
  const nearbyHouse=villageHouses.find(h=>Math.hypot(player.position.x-h.x,player.position.z-h.z)<4.5);
  if(nearbyHouse){activeHouse=nearbyHouse;nearbyHouse.shell.visible=false;nearbyHouse.interior.visible=true;player.position.set(nearbyHouse.x,0,nearbyHouse.z);aboardBoat=false;toast(nearbyHouse.hasChest?'You entered the cottage. Walk to the chest and press E to open it. Press E again to leave.':'You entered the cottage. Look around, then press E to leave.');return;}
  // The Verdant temple chest is inside the chamber, so players must walk through its doorway to loot it.
- if(activeIsland===12){const tc=decorations.find(o=>o.userData&&o.userData.isTempleChest);if(tc&&!tc.userData.opened&&Math.hypot(player.position.x-tc.position.x,player.position.z-tc.position.z)<4.2){tc.userData.opened=true;tc.rotation.x=-.65;inventory.coins+=12;inventory.gold+=2;inventory.food+=4;inventory.crystal+=1;gainXP(120);toast('TEMPLE TREASURE! Found 12 coins, 2 gold ore, 4 food and 1 rare crystal!');updateHUD();return;}}
+ if(activeIsland===12){const tc=decorations.find(o=>o.userData&&o.userData.isTempleChest);if(tc&&!tc.userData.opened&&Math.hypot(player.position.x-tc.position.x,player.position.z-tc.position.z)<4.2){tc.userData.opened=true;achievementStats.chests++;tc.rotation.x=-.65;inventory.coins+=12;inventory.gold+=2;inventory.food+=4;inventory.crystal+=1;gainXP(120);toast('TEMPLE TREASURE! Found 12 coins, 2 gold ore, 4 food and 1 rare crystal!');updateHUD();return;}}
  const nearbyIslandChest=islandLootChests.find(ch=>ch.islandIndex===activeIsland&&!ch.opened&&Math.hypot(player.position.x-ch.mesh.position.x,player.position.z-ch.mesh.position.z)<4.2);
- if(nearbyIslandChest){nearbyIslandChest.opened=true;nearbyIslandChest.mesh.rotation.x=-.55;const coins=3+(activeIsland%4);inventory.coins+=coins;inventory.wood+=2;inventory.food+=2;inventory.stone+=1;if(activeIsland===16)inventory.wheat+=2;gainXP(35);toast(`Island chest opened! Found ${coins} coins, 2 wood, 2 food and 1 stone.`);updateHUD();return;}
- if(activeIsland===6 && mountainChest && !mountainChestOpened && Math.hypot(player.position.x-mountainChest.position.x,player.position.z-mountainChest.position.z)<4.5){mountainChestOpened=true;mountainChest.rotation.x=-.12;inventory.iron+=5;inventory.crystal+=2;inventory.coins+=5;inventory.food+=3;gainXP(100);toast('SUMMIT TREASURE! Found 5 iron, 2 rare crystals, 5 coins and 3 food!');updateHUD();return;}
+ if(nearbyIslandChest){nearbyIslandChest.opened=true;achievementStats.chests++;nearbyIslandChest.mesh.rotation.x=-.55;const coins=3+(activeIsland%4);inventory.coins+=coins;inventory.wood+=2;inventory.food+=2;inventory.stone+=1;if(activeIsland===16)inventory.wheat+=2;gainXP(35);toast(`Island chest opened! Found ${coins} coins, 2 wood, 2 food and 1 stone.`);updateHUD();return;}
+ if(activeIsland===6 && mountainChest && !mountainChestOpened && Math.hypot(player.position.x-mountainChest.position.x,player.position.z-mountainChest.position.z)<4.5){mountainChestOpened=true;achievementStats.chests++;mountainChest.rotation.x=-.12;inventory.iron+=5;inventory.crystal+=2;inventory.coins+=5;inventory.food+=3;gainXP(100);toast('SUMMIT TREASURE! Found 5 iron, 2 rare crystals, 5 coins and 3 food!');updateHUD();return;}
  if(activeIsland===8 && !castleArenaActive && !castleArenaRewarded && Math.hypot(player.position.x-islandCenters[8].x,player.position.z-(islandCenters[8].z+34))<18){
   startCastleTrial();return;
  }
@@ -1506,6 +1501,7 @@ document.getElementById('items').addEventListener('click',e=>{if(e.target.closes
 document.getElementById('items').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-food-info]')){e.preventDefault();showFoodFishInfo();}});
 function setPointer(){if(renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();}
 document.getElementById('play').onclick=()=>{
+  if(!accountToken){document.getElementById('accountStatus').textContent='Create an account or log in before entering the island.';return;}
   if(mode==='online') { toast('Choose Create game or Join a game first.'); return; }
   document.getElementById('start').style.display='none';
   if(!isTouchDevice && innerWidth>700)setPointer();

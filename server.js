@@ -12,6 +12,14 @@ const PORT = process.env.PORT || 3000;
 const rooms = new Map();
 const savesFile = path.join(__dirname, 'player-saves.json');
 const recordsFile = path.join(__dirname, 'xp-records.json');
+const accountsFile=path.join(__dirname,'accounts.json'), achievementsFile=path.join(__dirname,'achievements.json');
+let accounts={},achievementData={};try{accounts=JSON.parse(fs.readFileSync(accountsFile,'utf8'))||{};}catch{}try{achievementData=JSON.parse(fs.readFileSync(achievementsFile,'utf8'))||{};}catch{}
+const sessions=new Map();function persistJson(f,d){try{const t=f+'.tmp';fs.writeFileSync(t,JSON.stringify(d,null,2));fs.renameSync(t,f);}catch(e){console.error(e.message);}}
+function cleanUsername(v){return String(v||'').trim().replace(/[^a-zA-Z0-9_ -]/g,'').slice(0,18);}function authUser(req){return sessions.get(String(req.headers.authorization||'').replace(/^Bearer\s+/i,''))||null;}function passHash(p,s){return crypto.scryptSync(p,s,64).toString('hex');}
+app.post('/api/account/register',(req,res)=>{const username=cleanUsername(req.body?.username),password=String(req.body?.password||''),key=username.toLowerCase();if(username.length<3)return res.status(400).json({error:'Username must be 3–18 characters.'});if(password.length<6||password.length>100)return res.status(400).json({error:'Password must be at least 6 characters.'});if(accounts[key])return res.status(409).json({error:'That username is already taken.'});const salt=crypto.randomBytes(16).toString('hex');accounts[key]={username,salt,passwordHash:passHash(password,salt)};persistJson(accountsFile,accounts);const token=crypto.randomBytes(32).toString('hex');sessions.set(token,key);res.json({token,username});});
+app.post('/api/account/login',(req,res)=>{const username=cleanUsername(req.body?.username),password=String(req.body?.password||''),key=username.toLowerCase(),a=accounts[key];if(!a||passHash(password,a.salt)!==a.passwordHash)return res.status(401).json({error:'Incorrect username or password.'});const token=crypto.randomBytes(32).toString('hex');sessions.set(token,key);res.json({token,username:a.username});});
+app.get('/api/account/achievements',(req,res)=>{const k=authUser(req);if(!k)return res.status(401).json({error:'Please log in.'});res.json({unlocked:achievementData[k]||[]});});app.post('/api/account/achievements',(req,res)=>{const k=authUser(req);if(!k)return res.status(401).json({error:'Please log in.'});const ids=Array.isArray(req.body?.unlocked)?req.body.unlocked.filter(x=>typeof x==='string').slice(0,20):[];achievementData[k]=[...new Set([...(achievementData[k]||[]),...ids])];persistJson(achievementsFile,achievementData);res.json({unlocked:achievementData[k]});});
+
 let globalRecords = [];
 try { globalRecords = JSON.parse(fs.readFileSync(recordsFile, 'utf8')); if (!Array.isArray(globalRecords)) globalRecords = []; } catch { globalRecords = []; }
 function persistRecords() { try { const tmp=recordsFile+'.tmp'; fs.writeFileSync(tmp, JSON.stringify(globalRecords, null, 2)); fs.renameSync(tmp, recordsFile); } catch(e) { console.error('Could not save XP records:', e.message); } }
@@ -19,19 +27,7 @@ function cleanCodename(v) { return String(v||'').replace(/[<>\u0000-\u001f]/g,''
 function rankFor(score) { return globalRecords.filter(r => Number(r.xp) > score).length + 1; }
 app.use(express.json({limit:'10kb'}));
 app.get('/api/xp-records', (_req,res) => res.json(globalRecords.slice(0,5)));
-app.post('/api/xp-records', (req,res) => {
-  const xp = Math.max(0, Math.floor(Math.min(999999999, Number(req.body?.xp)||0)));
-  const codename = cleanCodename(req.body?.codename);
-  const existing = globalRecords.find(r => r.codename.toLowerCase() === codename.toLowerCase());
-  const qualifying = globalRecords.length < 5 || xp > Number(globalRecords[globalRecords.length-1]?.xp || -1);
-  if (!codename) { res.json({qualifies: qualifying, rank: rankFor(xp), needsName: qualifying}); return; }
-  if (!qualifying && !existing) { res.json({qualifies:false, records:globalRecords.slice(0,5)}); return; }
-  if (existing) globalRecords = globalRecords.filter(r => r.codename.toLowerCase() !== codename.toLowerCase());
-  globalRecords.push({codename, xp, achievedAt: new Date().toISOString()});
-  globalRecords.sort((a,b)=>b.xp-a.xp || a.codename.localeCompare(b.codename));
-  globalRecords = globalRecords.slice(0,5); persistRecords();
-  res.json({qualifies:globalRecords.some(r=>r.codename.toLowerCase()===codename.toLowerCase() && r.xp===xp), records:globalRecords});
-});
+app.post('/api/xp-records',(req,res)=>{const key=authUser(req);if(!key)return res.status(401).json({error:'Log in to submit an XP record.'});const xp=Math.max(0,Math.floor(Math.min(999999999,Number(req.body?.xp)||0))),username=accounts[key].username;const existing=globalRecords.find(r=>String(r.username||r.codename||'').toLowerCase()===username.toLowerCase());const qualifying=globalRecords.length<5||xp>Number(globalRecords[globalRecords.length-1]?.xp||-1);if(!qualifying&&!existing)return res.json({qualifies:false,records:globalRecords.slice(0,5)});if(existing)globalRecords=globalRecords.filter(r=>String(r.username||r.codename||'').toLowerCase()!==username.toLowerCase());globalRecords.push({username,xp,achievedAt:new Date().toISOString()});globalRecords.sort((x,y)=>y.xp-x.xp||x.username.localeCompare(y.username));globalRecords=globalRecords.slice(0,5);persistRecords();res.json({qualifies:true,records:globalRecords});});
 let saves = {};
 try { saves = JSON.parse(fs.readFileSync(savesFile, 'utf8')); } catch { saves = {}; }
 let saveTimer = null;

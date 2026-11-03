@@ -1,0 +1,1 @@
+Accounts use salted scrypt password hashes. Accounts and achievement unlocks are persisted in accounts.json and achievements.json. Configure persistent disk on Render to retain these files across redeploys. Prototype only; do not reuse important passwords.
