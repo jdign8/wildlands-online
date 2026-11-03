@@ -11,7 +11,7 @@
   #globalRecords h2{font-size:13px;margin:0 0 8px;letter-spacing:.08em}
   .record-row{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #ffffff12;font-size:12px}
   .record-row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  @media(max-width:600px){#startBottomRow{flex-direction:column}#globalRecords{width:auto;max-height:160px}#startBottomRow #play{width:100%}}
+  @media(max-width:600px){#start{padding:10px 10px calc(18px + env(safe-area-inset-bottom));}#startCard{padding:18px;margin:0 auto;}#startBottomRow{flex-direction:column}#globalRecords{width:auto;max-height:160px}#startBottomRow #play{width:100%}}
 
   :root { color-scheme: dark; --panel:rgba(9,22,27,.88); --line:rgba(210,239,225,.2); }
   * { box-sizing:border-box }
@@ -67,8 +67,8 @@
   #hint { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); text-align:center; max-width:calc(100vw - 28px); white-space:nowrap }
   #hint strong { color:#fff }
   #toast { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:15px; font-weight:700; text-shadow:0 2px 8px #000; opacity:0; transition:opacity .2s; text-align:center; }
-  #start { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(#0a1416bb,#071017dd); z-index:5; padding:18px; }
-  #startCard { width:min(500px,100%); padding:24px; border-radius:18px; background:#101b21f2; border:1px solid #ffffff25; box-shadow:0 20px 80px #0008 }
+  #start { position:fixed; inset:0; display:flex; align-items:flex-start; justify-content:center; background:linear-gradient(#0a1416bb,#071017dd); z-index:5; padding:18px; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+  #startCard { width:min(500px,100%); flex:0 0 auto; margin:auto; padding:24px; border-radius:18px; background:#101b21f2; border:1px solid #ffffff25; box-shadow:0 20px 80px #0008 }
   #startCard h1 { margin:0 0 4px; font-size:26px; letter-spacing:.05em }
   #startCard .sub { color:#9fb4bf; margin:0 0 18px }
   .modeRow { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 }
