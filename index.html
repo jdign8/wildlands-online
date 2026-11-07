@@ -78,49 +78,51 @@
   #play { width:100%; background:#347b5b; font-weight:800; font-size:15px; margin-top:8px }
   #play:hover { background:#40966e }
   .small { font-size:12px; color:#9fb4bf; line-height:1.5 }
-  #mobile { display:none; position:fixed; inset:auto 0 max(12px, env(safe-area-inset-bottom)); z-index:4; justify-content:space-between; align-items:end; padding:0 12px; pointer-events:none; gap:12px; }
-  #mobile .cluster { display:grid; grid-template-columns:repeat(3, minmax(42px, 52px)); gap:5px; pointer-events:auto; }
-  #mobile button { padding:0 8px; min-height:46px; background:#10212de8; border:1px solid #ffffff40; box-shadow:0 3px 10px #0005; touch-action:none; -webkit-tap-highlight-color:transparent; }
-  #mobile .actions { display:grid; grid-template-columns:repeat(2, minmax(62px, 78px)); gap:6px; align-items:end; pointer-events:auto; }
-  /* Keep the action buttons centered so they don't cover the backpack on touch screens. */
-  @media (max-width:900px), (pointer:coarse) { #mobile .actions { position:fixed; left:50%; bottom:max(10px, env(safe-area-inset-bottom)); transform:translateX(-50%); } }
-  #mobile .actions button { font-size:12px; font-weight:700; }
-  #lookHelp { display:none; position:fixed; right:12px; top:50%; transform:translateY(-50%); z-index:2; padding:7px 9px; border-radius:9px; background:#10212d99; color:#fff9; font-size:11px; pointer-events:none; }
+  /* Phone-first touch layout: analogue-style left thumbstick and a compact right action pad. */
+  #mobile { display:none; position:fixed; inset:0; z-index:20; pointer-events:none; }
+  #mobile .joystick { position:absolute; left:max(14px,env(safe-area-inset-left)); bottom:max(18px,env(safe-area-inset-bottom)); width:clamp(108px,30vw,142px); height:clamp(108px,30vw,142px); border:2px solid #ffffff55; border-radius:50%; background:#10212d88; box-shadow:0 4px 18px #0007; pointer-events:auto; touch-action:none; }
+  #mobile .stick { position:absolute; left:50%; top:50%; width:48%; height:48%; transform:translate(-50%,-50%); border-radius:50%; border:2px solid #ffffff80; background:#8ac9c0bb; box-shadow:0 3px 12px #0008; pointer-events:none; }
+  #mobile button { padding:7px 5px; min-height:48px; background:#10212df0; border:1px solid #ffffff55; box-shadow:0 3px 10px #0007; touch-action:manipulation; -webkit-tap-highlight-color:transparent; pointer-events:auto; font-size:12px; font-weight:750; }
+  #mobile .actions { position:absolute; right:max(9px,env(safe-area-inset-right)); bottom:max(18px,env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(3,minmax(62px,68px)); gap:6px; width:max-content; pointer-events:auto; }
+  #mobile .actions button { min-height:48px; border-radius:13px; }
+  #mobile #swordBtn { background:#85443b; border-color:#ffb09c; }
+  #mobile #gatherBtn { background:#315845; border-color:#8ed8ac; }
+  #lookHelp { display:none; position:fixed; right:50%; top:54%; transform:translate(50%,-50%); z-index:2; padding:6px 9px; border-radius:9px; background:#10212d66; color:#ffffffa8; font-size:10px; pointer-events:none; }
   @media (max-width:900px), (pointer:coarse) {
-    #tradePanel { bottom:118px !important; max-height:42vh; overflow:auto; }
-    #quest { top:auto; bottom:225px; right:10px; width:min(190px, 44vw); padding:9px }
-    #quest p { font-size:11px }
-    #stats { top:100px; left:10px; width:min(175px, 44vw); padding:9px }
-    #inventory { right:10px; top:76px; bottom:auto; width:min(190px, 44vw); max-height:calc(100vh - 92px); overflow:auto; padding:8px; z-index:7; pointer-events:auto }
-    /* Keep the backpack above the touch buttons so they never cover each other. */
-    #mobile { left:0; right:0; bottom:max(10px, env(safe-area-inset-bottom)); }
-    #brand { left:10px; top:max(10px, env(safe-area-inset-top)) }
-    #brand h1 { font-size:15px }
-    #brand p { max-width:230px; font-size:11px }
+    #tradePanel { bottom:150px !important; max-height:38vh; overflow:auto; }
+    #quest { top:auto; bottom:240px; right:10px; width:min(180px,43vw); padding:8px }
+    #quest p { font-size:10px }
+    #stats { top:100px; left:10px; width:min(170px,43vw); padding:8px }
+    #inventory { right:10px; top:76px; bottom:auto; width:min(180px,43vw); max-height:42vh; overflow:auto; padding:8px; z-index:7; pointer-events:auto }
+    #brand { left:10px; top:max(10px,env(safe-area-inset-top)) }
+    #brand h1 { font-size:14px }
+    #brand p { max-width:210px; font-size:10px }
     #hint { display:none }
-    #mobile { display:flex }
-    #lookHelp { display:block; }
+    #mobile { display:block }
+    #lookHelp { display:block }
   }
   @media (max-width:520px) {
-    #mobile .actions { bottom:max(10px, env(safe-area-inset-bottom)); }
-    #quest { bottom:225px; width:160px; }
-    #stats { top:86px; width:145px; }
-    #inventory { width:150px; top:76px; max-height:calc(100vh - 92px); }
-    .panel { border-radius:10px; }
-    #mobile { padding:0 8px; gap:5px; }
-    #mobile .cluster { grid-template-columns:repeat(3, 40px); gap:4px; }
-    #mobile button { min-height:42px; font-size:13px; }
-    #mobile .actions { grid-template-columns:repeat(2, 62px); gap:4px; }
-    #mobile .actions button { font-size:11px; }
-    #lookHelp { top:48%; right:6px; font-size:10px; }
+    #quest { bottom:178px; width:145px; }
+    #stats { top:78px; width:132px; }
+    #inventory { width:140px; top:74px; max-height:38vh; }
+    #mobile .actions { grid-template-columns:repeat(3,56px); gap:4px; bottom:max(14px,env(safe-area-inset-bottom)); right:max(7px,env(safe-area-inset-right)); }
+    #mobile .actions button { min-height:43px; font-size:9px; padding:4px 2px; }
+    #mobile .joystick { width:102px; height:102px; left:max(10px,env(safe-area-inset-left)); bottom:max(15px,env(safe-area-inset-bottom)); }
+    #lookHelp { top:57%; font-size:9px; }
+  }
+  /* Larger touch targets for iPads and other tablet-sized touch screens. */
+  @media (min-width:521px) and (pointer:coarse) {
+    #mobile .joystick { width:150px; height:150px; left:max(20px,env(safe-area-inset-left)); bottom:max(22px,env(safe-area-inset-bottom)); }
+    #mobile .actions { grid-template-columns:repeat(3,76px); gap:8px; right:max(18px,env(safe-area-inset-right)); bottom:max(22px,env(safe-area-inset-bottom)); }
+    #mobile .actions button { min-height:58px; font-size:14px; padding:8px 5px; border-radius:15px; }
   }
   @media (orientation:landscape) and (max-height:500px) {
-    #stats { top:78px; width:150px; }
-    #quest { bottom:150px; width:175px; }
-    #inventory { top:76px; bottom:auto; width:175px; max-height:calc(100vh - 92px); overflow:auto; z-index:7; pointer-events:auto; }
-    #mobile .cluster { grid-template-columns:repeat(3, 42px); }
-    #mobile button { min-height:38px; }
-    #mobile .actions { grid-template-columns:repeat(2, 66px); }
+    #stats { top:70px; width:140px; }
+    #quest { bottom:145px; width:155px; }
+    #inventory { top:70px; width:155px; max-height:44vh; }
+    #mobile .joystick { width:100px; height:100px; bottom:max(8px,env(safe-area-inset-bottom)); }
+    #mobile .actions { grid-template-columns:repeat(3,62px); bottom:max(8px,env(safe-area-inset-bottom)); }
+    #mobile .actions button { min-height:40px; font-size:10px; }
   }
 </style>
 </head>
@@ -212,16 +214,14 @@
   </div>
 </div>
 <div id="lookHelp">Drag right side to look</div>
-<div id="mobile" aria-label="Touch controls">
-  <div class="cluster" aria-label="Movement">
-    <span></span><button data-key="KeyW" aria-label="Move forward">▲</button><span></span>
-    <button data-key="KeyA" aria-label="Move left">◀</button><button data-key="KeyS" aria-label="Move backward">▼</button><button data-key="KeyD" aria-label="Move right">▶</button>
-  </div>
-  <div class="actions">
-    <button id="gatherBtn">Gather / Mine</button><button id="swordBtn">Sword / Hit</button>
-    <button id="interactBtn">Interact / Eat</button><button id="fishBtn">Fish</button>
-    <button id="craftBtn">Campfire</button><button id="jumpBtn">Jump</button>
-    <button id="drinkBtn">Drink</button><button id="boardBoatBtn">Board boat</button><button id="boatMapBtn">Choose island</button>
+<div id="mobile" aria-label="Phone and tablet touch controls">
+  <div class="joystick" id="moveJoystick" role="application" aria-label="Move: drag the thumbstick in any direction"><div class="stick" id="moveStick"></div></div>
+  <div class="actions" aria-label="Game actions">
+    <button id="swordBtn">⚔ Attack</button><button id="gatherBtn">⛏ Gather</button>
+    <button id="jumpBtn">⬆ Jump</button><button id="interactBtn">✋ Interact</button>
+    <button id="fishBtn">🎣 Fish</button><button id="drinkBtn">💧 Drink</button>
+    <button id="craftBtn">🔥 Campfire</button><button id="boardBoatBtn">⛵ Boat</button>
+    <button id="boatMapBtn">🗺 Map</button>
   </div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
@@ -1601,25 +1601,23 @@ document.addEventListener('mousemove',e=>{if(locked){yaw-=e.movementX*.0022;pitc
 document.addEventListener('keydown',e=>{if(dead){e.preventDefault();return;}keys[e.code]=true;if(e.code==='KeyC')craft();if(e.code==='KeyE')interact();if(e.code==='KeyF')fish();if(e.code==='KeyB')craftBoat();if(e.code==='KeyR')craftFishingRod();if(e.code==='KeyQ')attack();if(e.code==='Space'&&!e.repeat&&player.position.y<.03)player.userData.vy=5.2;});
 document.getElementById('restartAfterDeath').addEventListener('click',()=>location.reload());
 document.addEventListener('keyup',e=>keys[e.code]=false);
-// Robust touch movement controls: capture each press so movement continues only
-// while the button is held, and always release keys if iPad Safari cancels a touch.
-const releaseAllMovement=()=>{for(const k of ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys[k]=false;};
-document.querySelectorAll('#mobile [data-key]').forEach(b=>{
-  const k=b.dataset.key;
-  const down=e=>{
-    if(e.cancelable)e.preventDefault();
-    keys[k]=true;
-    try{if(e.pointerId!==undefined&&b.setPointerCapture)b.setPointerCapture(e.pointerId);}catch{}
-  };
-  const up=e=>{if(e&&e.cancelable)e.preventDefault();keys[k]=false;};
-  b.addEventListener('pointerdown',down,{passive:false});
-  b.addEventListener('pointerup',up,{passive:false});
-  b.addEventListener('pointercancel',up,{passive:false});
-  b.addEventListener('lostpointercapture',up);
-  b.addEventListener('touchstart',down,{passive:false});
-  b.addEventListener('touchend',up,{passive:false});
-  b.addEventListener('touchcancel',up,{passive:false});
-});
+// Analogue-style mobile thumbstick. Drag in any direction for smooth 8-way movement.
+const moveJoystick=document.getElementById('moveJoystick'),moveStick=document.getElementById('moveStick');
+let joystickPointer=null,joystickX=0,joystickY=0;
+const clearJoystick=()=>{joystickPointer=null;joystickX=0;joystickY=0;moveStick.style.transform='translate(-50%,-50%)';for(const k of ['KeyW','KeyA','KeyS','KeyD'])keys[k]=false;};
+const updateJoystick=e=>{
+  const rect=moveJoystick.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  const max=rect.width*.31,dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy),scale=len>max?max/len:1;
+  const x=dx*scale,y=dy*scale;joystickX=x/max;joystickY=y/max;
+  moveStick.style.transform=`translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`;
+  const deadzone=.22;keys.KeyW=joystickY< -deadzone;keys.KeyS=joystickY>deadzone;keys.KeyA=joystickX< -deadzone;keys.KeyD=joystickX>deadzone;
+};
+moveJoystick.addEventListener('pointerdown',e=>{if(dead)return;e.preventDefault();joystickPointer=e.pointerId;try{moveJoystick.setPointerCapture(e.pointerId);}catch{}updateJoystick(e);});
+moveJoystick.addEventListener('pointermove',e=>{if(e.pointerId===joystickPointer){e.preventDefault();updateJoystick(e);}});
+moveJoystick.addEventListener('pointerup',e=>{if(e.pointerId===joystickPointer)clearJoystick();});
+moveJoystick.addEventListener('pointercancel',clearJoystick);
+moveJoystick.addEventListener('lostpointercapture',clearJoystick);
+const releaseAllMovement=()=>{clearJoystick();for(const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])keys[k]=false;};
 window.addEventListener('blur',releaseAllMovement);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseAllMovement();});
 const gatherBtn=document.getElementById('gatherBtn');
