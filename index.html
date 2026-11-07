@@ -136,6 +136,7 @@
   <div id="bossPanel" class="panel" style="display:none;position:absolute;left:50%;top:12px;transform:translateX(-50%);width:min(340px,80vw);z-index:9;text-align:center"><strong>🐗 ISLAND GUARDIAN</strong><div style="height:10px;background:#3a2020;border-radius:8px;overflow:hidden;margin:6px 0"><div id="bossFill" style="height:100%;width:100%;background:linear-gradient(90deg,#e84c3d,#ffb347)"></div></div><div id="bossHealthText" style="font-size:12px">1200 / 1200 HP</div><div style="font-size:11px">Defeat it for team rewards!</div></div>
   <div id="quest" class="panel"><h2>Current mission</h2><p id="mission">Gather 5 wood and 3 stone to prepare your first camp.</p><p id="levelText">Level 1 · Survivor</p><p id="worldText">World: Private solo</p></div>
   <div id="leaderboard" class="panel"><h2>🏆 XP Leaderboard</h2><div id="leaderboardRows">Join a multiplayer game to compete.</div></div>
+  <div id="deathOverlay" role="dialog" aria-modal="true" style="display:none;position:fixed;inset:0;z-index:200;background:#071016eF;align-items:center;justify-content:center;text-align:center;padding:24px;color:#fff"><div style="max-width:340px;background:#142a30;border:2px solid #a8c8b7;border-radius:16px;padding:24px"><h1 style="margin:0 0 10px">You were defeated</h1><p>Your run has ended. You cannot move, craft, gather or interact until you start a new run.</p><button id="restartAfterDeath" style="min-height:46px;width:100%">Start a new run</button></div></div>
   <div id="inventory" class="panel"><h2>Backpack</h2><p class="small">Materials and resources only. Crafted items are tracked by their crafting recipes.</p>
     <button id="craftBookBtn">📖 Crafting Book · All recipes</button>
     <div id="weaponStatus" style="font-size:11px;color:#bcd8c9;line-height:1.3">Equipped: fists · Craft equipment in the Crafting Book.</div>
@@ -1158,9 +1159,10 @@ function renderCraftBook(){
  document.getElementById('recipeList').innerHTML=list.map(r=>{const missing=getMissingIngredients(r.cost||{}).length>0;const boatExists=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat);const locked=(r.special==='weapon'&&weaponDefs[r.weapon]?.level&&level<weaponDefs[r.weapon].level)||(r.special==='reinforcedBoat'&&!boatExists)||(r.special==='advancedRod'&&!fishingRod)||(r.special==='campfire'&&inventory.campfire>0)||(r.special==='boat'&&boatExists)||(r.special==='rod'&&fishingRod);return `<button class="recipe" data-recipe="${r.id}" ${locked?'disabled':''}><strong>${r.icon} ${r.name}</strong><span class="ingredients">${recipeCostText(r.cost)}</span><span class="recipeNote">${r.desc}${missing?' · Missing ingredients':locked?' · Requires prerequisite':''}</span></button>`;}).join('');
  document.querySelectorAll('.recipe').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();craftRecipe(b.dataset.recipe);});
 }
-function openCraftBook(){renderCraftBook();document.getElementById('craftBook').style.display='block';}
+function openCraftBook(){if(dead)return;renderCraftBook();document.getElementById('craftBook').style.display='block';}
 function closeCraftBook(){document.getElementById('craftBook').style.display='none';}
 function craftRecipe(id){
+ if(dead)return;
  const now=Date.now();if(now-lastCraftActionAt<350)return;lastCraftActionAt=now;
  const r=craftingRecipes.find(x=>x.id===id);if(!r)return;
  const before={...inventory},xpBefore=xp,levelBefore=level,boatBefore=craftedBoat,rodBefore=fishingRod,ownedBefore={...ownedWeapons},durabilityBefore={...weaponDurability},equippedBefore=equippedWeapon;
@@ -1231,6 +1233,7 @@ function craftRecipe(id){
  }catch(err){rollback('Craft failed unexpectedly. All ingredients were restored.');console.error('Craft rollback:',err);}
 }
 function craftSword(){
+ if(dead)return;
  const key=document.getElementById('weaponSelect').value,def=weaponDefs[key];
  if(def.level&&level<def.level){toast(`${def.name} requires level ${def.level}`);return;}
  const missing=Object.entries(def.cost).filter(([k,v])=>inventory[k]<v);
@@ -1244,6 +1247,7 @@ function equipSword(){
  if(!(weaponDurability[key]>0)){toast(`${weaponDefs[key].name} is broken — craft it again.`);return;}equippedWeapon=key;refreshSwordVisual();toast(`${weaponDefs[key].name} equipped · ${weaponDurability[key]}/${weaponDefs[key].maxDurability} durability`);updateHUD();
 }
 function craft(){
+ if(dead)return;
  if(inventory.campfire>0){toast('You already built your first campfire');return;}
  if(inventory.wood<5||inventory.stone<3){toast(`Need 5 wood and 3 stone (you have ${inventory.wood} wood, ${inventory.stone} stone)`);return;}
  const spent=spendIngredientsAtomically({wood:5,stone:3});if(!spent.ok){toast('Not enough materials: 5 wood and 3 stone are required.');return;}inventory.campfire++;
@@ -1277,16 +1281,19 @@ function drinkWater(){
  toast('No water left! Find the blue spring pool on this island or travel to another island.');
 }
 function craftBoat(){
+ if(dead)return;
  if(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat){craftedBoat=true;inventory.craftedBoat=true;toast('You already crafted a boat.');return;}
  if(inventory.wood<5||inventory.stone<2){toast(`Boat needs 5 wood and 2 stone. You have ${inventory.wood} wood and ${inventory.stone} stone.`);return;}
  const spent=spendIngredientsAtomically({wood:5,stone:2});if(!spent.ok){toast('Boat needs 5 wood and 2 stone.');return;}craftedBoat=true;inventory.craftedBoat=true;aboardBoat=false;boatPosition={x:player.position.x+2,z:player.position.z+1.5};ensureBoatVisual();if(boatVisual)boatVisual.position.set(boatPosition.x,0,boatPosition.z);toast('Boat crafted! Walk near it and tap Board boat. Tap Leave boat when you reach land.');updateHUD();
 }
 function craftFishingRod(){
+ if(dead)return;
  if(fishingRod){toast('You already have a fishing rod.');return;}
  if(inventory.wood<3||inventory.iron<1){toast('Fishing rod needs 3 wood and 1 iron ore. Mine at Redstone Cay.');return;}
  const spent=spendIngredientsAtomically({wood:3,iron:1});if(!spent.ok){toast('Fishing rod needs 3 wood and 1 iron ore.');return;}fishingRod=true;toast('Fishing rod crafted! Fish near the shoreline.');updateHUD();
 }
 function fish(){
+ if(dead)return;
  if(dead)return;
  if(!fishingRod){toast('Craft a fishing rod first: 3 wood + 1 iron ore.');return;}
  const now=performance.now(), remaining=5000-(now-lastFishCastAt);
@@ -1501,6 +1508,7 @@ function interact(){
  toast('Find berries or defeat a wildling for food. Press C to craft a campfire.');
 }
 function showFoodFishInfo(){
+ if(dead)return;
  const fishTotal=inventory.salmon+inventory.cod+inventory.whiting;
  toast(`Food & fish — Salmon: ${inventory.salmon} (+45 hunger, +8 health); Cod: ${inventory.cod} (+35 hunger, +6 health); Whiting: ${inventory.whiting} (+20 hunger, +3 health). Other food: ${inventory.food}; berries: ${inventory.berry}. Use Interact / Eat to consume food.`);
 }
@@ -1577,7 +1585,8 @@ renderer.domElement.addEventListener('click', e=>{
 });
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;});
 document.addEventListener('mousemove',e=>{if(locked){yaw-=e.movementX*.0022;pitch-=e.movementY*.0018;pitch=Math.max(-.75,Math.min(.35,pitch));}});
-document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyC')craft();if(e.code==='KeyE')interact();if(e.code==='KeyF')fish();if(e.code==='KeyB')craftBoat();if(e.code==='KeyR')craftFishingRod();if(e.code==='KeyQ')attack();if(e.code==='Space'&&!e.repeat&&player.position.y<.03)player.userData.vy=5.2;});
+document.addEventListener('keydown',e=>{if(dead){e.preventDefault();return;}keys[e.code]=true;if(e.code==='KeyC')craft();if(e.code==='KeyE')interact();if(e.code==='KeyF')fish();if(e.code==='KeyB')craftBoat();if(e.code==='KeyR')craftFishingRod();if(e.code==='KeyQ')attack();if(e.code==='Space'&&!e.repeat&&player.position.y<.03)player.userData.vy=5.2;});
+document.getElementById('restartAfterDeath').addEventListener('click',()=>location.reload());
 document.addEventListener('keyup',e=>keys[e.code]=false);
 // Robust touch movement controls: capture each press so movement continues only
 // while the button is held, and always release keys if iPad Safari cancels a touch.
@@ -1745,7 +1754,7 @@ function animate(now){
   if(castleArenaActive && castleArenaWildlings.length && castleArenaWildlings.every(e=>!e.alive)){
    castleArenaActive=false;castleArenaRewarded=true;inventory.coins+=8;gainXP(100);toast('CASTLE CHAMPION! You defeated all 3 tough wildlings and earned 8 coins + 100 XP! The castle is now open.');updateHUD();
   }
-  if(health<=0&&!dead){dead=true;toast('You were overwhelmed. Refresh to try again.');document.getElementById('mission').textContent='You were defeated. Refresh the page to start a new run.';checkGlobalRecord();}
+  if(health<=0&&!dead){dead=true;for(const k of Object.keys(keys))keys[k]=false;document.exitPointerLock?.();document.getElementById('craftBook').style.display='none';document.getElementById('tradePanel').style.display='none';document.getElementById('boatMapPanel').style.display='none';document.getElementById('deathOverlay').style.display='flex';document.getElementById('mission').textContent='You were defeated. Start a new run to play again.';toast('You were defeated. Your run has ended.');checkGlobalRecord();}
   if(Math.floor(elapsed)%2===0&&Math.floor(elapsed)!==Math.floor(elapsed-dt))updateHUD();
  }
  // Day/night tint: a full cycle lasts about three minutes.
