@@ -138,6 +138,8 @@
   <div id="bossPanel" class="panel" style="display:none;position:absolute;left:50%;top:12px;transform:translateX(-50%);width:min(340px,80vw);z-index:9;text-align:center"><strong>🐗 ISLAND GUARDIAN</strong><div style="height:10px;background:#3a2020;border-radius:8px;overflow:hidden;margin:6px 0"><div id="bossFill" style="height:100%;width:100%;background:linear-gradient(90deg,#e84c3d,#ffb347)"></div></div><div id="bossHealthText" style="font-size:12px">1200 / 1200 HP</div><div style="font-size:11px">Defeat it for team rewards!</div></div>
   <div id="quest" class="panel"><h2>Current mission</h2><p id="mission">Gather 5 wood and 3 stone to prepare your first camp.</p><p id="levelText">Level 1 · Survivor</p><p id="worldText">World: Private solo</p></div>
   <div id="leaderboard" class="panel"><h2>🏆 XP Leaderboard</h2><div id="leaderboardRows">Join a multiplayer game to compete.</div></div>
+  <div id="questBoardPanel" role="dialog" aria-modal="true" style="display:none;position:fixed;inset:0;z-index:190;background:#071016eF;align-items:center;justify-content:center;padding:20px;pointer-events:auto"><div style="width:min(430px,94vw);max-height:80vh;overflow:auto;background:#142a30;border:2px solid #b18b58;border-radius:16px;padding:20px;color:#fff"><h2>📜 Village Quests & Missions</h2><p id="questBoardInfo">Choose a mission from the board.</p><button id="questBoardAction" style="width:100%;min-height:46px">Accept mission</button><button id="closeQuestBoard" style="width:100%;min-height:42px;margin-top:8px">Close</button></div></div>
+  <div id="furnacePanel" role="dialog" aria-modal="true" style="display:none;position:fixed;inset:0;z-index:190;background:#071016eF;align-items:center;justify-content:center;padding:20px;pointer-events:auto"><div style="width:min(430px,94vw);max-height:80vh;overflow:auto;background:#24282b;border:2px solid #bd8050;border-radius:16px;padding:20px;color:#fff"><h2>🔥 Oldstead Cooking Furnace</h2><p>Cook raw food to make meals that restore more hunger. Each recipe uses 1 raw item and makes 1 cooked meal.</p><div style="display:grid;gap:8px"><button data-cook="food">Cook raw meat → Cooked meat (+45 hunger)</button><button data-cook="salmon">Cook salmon → Cooked salmon (+60 hunger)</button><button data-cook="cod">Cook cod → Cooked cod (+50 hunger)</button><button data-cook="whiting">Cook whiting → Cooked whiting (+35 hunger)</button><button data-cook="mackerel">Cook mackerel → Cooked mackerel (+65 hunger)</button><button data-cook="shark">Cook shark → Cooked shark (+95 hunger)</button></div><button id="closeFurnace" style="width:100%;min-height:42px;margin-top:10px">Close</button></div></div>
   <div id="deathOverlay" role="dialog" aria-modal="true" style="display:none;position:fixed;inset:0;z-index:200;background:#071016eF;align-items:center;justify-content:center;text-align:center;padding:24px;color:#fff"><div style="max-width:340px;background:#142a30;border:2px solid #a8c8b7;border-radius:16px;padding:24px"><h1 style="margin:0 0 10px">You were defeated</h1><p>Your run has ended. You cannot move, craft, gather or interact until you start a new run.</p><button id="restartAfterDeath" style="min-height:46px;width:100%">Start a new run</button></div></div>
   <div id="inventory" class="panel"><h2>Backpack · <span id="backpackCount">0 / 40</span></h2><p class="small">40-item capacity. Craft Medium and Large Backpacks to upgrade to 60 and 80 items.</p>
     <button id="craftBookBtn">📖 Crafting Book · All recipes</button>
@@ -277,6 +279,9 @@ const water = new THREE.Mesh(new THREE.CircleGeometry(620,128),waterMat); water.
 const world = new THREE.Group(); scene.add(world);
 const resources = [], enemies = [], decorations=[];
 const beds=[];
+let emeraldState=null;
+const emeraldStateKey='wildlands-emerald-run';
+
 function addTree(x,z,scale=1){
  const g=new THREE.Group();
  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.19*scale,.32*scale,2.05*scale,9),trunkMat); trunk.position.y=1.02*scale; trunk.castShadow=true; g.add(trunk);
@@ -311,7 +316,7 @@ function addWheat(x,z){
 }
 function addOre(x,z,type='iron'){
  const g=new THREE.Group();
- const oreColors={crystal:0x59e6ef,copper:0xc87945,silver:0xcbd5df,gold:0xffc928,obsidian:0x292a42,sulphur:0xf3e56b,frost:0x8deaff};
+ const oreColors={crystal:0x59e6ef,copper:0xc87945,silver:0xcbd5df,gold:0xffc928,obsidian:0x292a42,sulphur:0xf3e56b,frost:0x8deaff,emerald:0x087c45};
  // Gold is bright, reflective metallic nuggets; sulphur is a pale, matte cluster of sharp crystals.
  const oreMat=type==='gold'?new THREE.MeshStandardMaterial({color:oreColors.gold,roughness:.24,metalness:.82}):mat(oreColors[type]||0x9b6844,type==='sulphur'?.88:.32);
  if(type==='sulphur'){
@@ -319,9 +324,9 @@ function addOre(x,z,type='iron'){
   const base=new THREE.Mesh(new THREE.DodecahedronGeometry(.42,0),baseMat);base.position.y=.27;base.scale.set(1.25,.65,1.05);base.castShadow=true;g.add(base);
   for(let i=0;i<6;i++){const h=.34+Math.random()*.42,crystal=new THREE.Mesh(new THREE.ConeGeometry(.18+Math.random()*.08,h,5),i%2?oreMat:baseMat);crystal.position.set((Math.random()-.5)*.62,.25+h*.45,(Math.random()-.5)*.48);crystal.rotation.z=(Math.random()-.5)*.34;crystal.rotation.x=(Math.random()-.5)*.28;crystal.castShadow=true;g.add(crystal);}
  }else{
-  const count=type==='gold'?7:5;
+  const count=type==='gold'?7:type==='emerald'?4:5;
   for(let i=0;i<count;i++){
-   const size=type==='gold'?.22+Math.random()*.18:.38+Math.random()*.2;
+   const size=type==='gold'?.22+Math.random()*.18:type==='emerald'?.18+Math.random()*.14:.38+Math.random()*.2;
    const chunk=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),oreMat);
    chunk.position.set((Math.random()-.5)*(type==='gold'?1.0:.8),.28+Math.random()*.4,(Math.random()-.5)*(type==='gold'?.78:.62));
    chunk.rotation.set(Math.random(),Math.random(),Math.random());chunk.castShadow=true;g.add(chunk);
@@ -330,7 +335,7 @@ function addOre(x,z,type='iron'){
  if(type==='iron'){const fleckMat=mat(0xc5b8a5,.32);for(let i=0;i<3;i++){const fleck=new THREE.Mesh(new THREE.DodecahedronGeometry(.12,0),fleckMat);fleck.position.set((Math.random()-.5)*.65,.55+Math.random()*.2,(Math.random()-.5)*.5);g.add(fleck);}}
  g.position.set(x,0,z);world.add(g);
  const islandIndex=islandCenters.reduce((best,c,i)=>Math.hypot(c.x-x,c.z-z)<Math.hypot(islandCenters[best].x-x,islandCenters[best].z-z)?i:best,0);
- resources.push({mesh:g,type,amount:(type==='gold'?2:(type==='crystal'||type==='obsidian'||type==='frost')?1:2),hp:2,alive:true,islandIndex});return g;
+ resources.push({mesh:g,type,amount:type==='emerald'?1:(type==='gold'?2:(type==='crystal'||type==='obsidian'||type==='frost')?1:2),hp:type==='emerald'?4:2,alive:true,islandIndex});return g;
 }
 function addEnemy(x,z,hp=18,nightSpawn=false){
  const g=new THREE.Group(); const hide=mat(0x5e7350), skin=mat(0xb98668), dark=mat(0x2c332a);
@@ -380,8 +385,19 @@ for (const c of islandCenters.slice(1)) {
 }
 // Keep the central ruin and shoreline repairer clear of random resource/enemy spawns.
 {const c=islandCenters.find(i=>i.name==='Oldstead Isle');for(const r of resources){const dx=r.mesh.position.x-c.x,dz=r.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){r.alive=false;world.remove(r.mesh);}}for(const e of enemies){const dx=e.mesh.position.x-c.x,dz=e.mesh.position.z-c.z,dist=Math.hypot(dx,dz);if(dist<19||Math.hypot(dx,dz-(c.radius-12))<8){e.alive=false;world.remove(e.mesh);}}}
+// Exactly one emerald deposit is generated per run. Its hidden position stays fixed through refreshes,
+// then the death-screen restart clears it so the next run chooses a different hiding place.
+try{emeraldState=JSON.parse(localStorage.getItem(emeraldStateKey)||'null');}catch{emeraldState=null;}
+if(!emeraldState||!Number.isInteger(emeraldState.islandIndex)||!Number.isFinite(emeraldState.x)||!Number.isFinite(emeraldState.z)){
+ const possible=[1,2,3,4,5,6,10,12,13,14,15,16,17,18,19];
+ const islandIndex=possible[Math.floor(Math.random()*possible.length)],center=islandCenters[islandIndex];
+ const islandTrees=resources.filter(r=>r.type==='wood'&&Math.hypot(r.mesh.position.x-center.x,r.mesh.position.z-center.z)<center.radius-10);
+ let x,z;if(islandTrees.length){const tree=islandTrees[Math.floor(Math.random()*islandTrees.length)];const a=Math.random()*Math.PI*2;x=tree.mesh.position.x+Math.cos(a)*1.05;z=tree.mesh.position.z+Math.sin(a)*1.05;}else{const a=Math.random()*Math.PI*2,rr=20+Math.random()*(center.radius-30);x=center.x+Math.cos(a)*rr;z=center.z+Math.sin(a)*rr;}
+ emeraldState={islandIndex,x,z,collected:false,sold:false};try{localStorage.setItem(emeraldStateKey,JSON.stringify(emeraldState));}catch{}
+}
+if(!emeraldState.collected&&!emeraldState.sold){const hiddenEmerald=addOre(emeraldState.x,emeraldState.z,'emerald');hiddenEmerald.scale.setScalar(.48);hiddenEmerald.position.y=-.13;}
 const villageHouses=[], villagers=[];
-let oldsteadHouse=null, oldsteadHouseRepaired=false, oldsteadSecondBed=false, oldsteadStoredFood=0;
+let oldsteadHouse=null, oldsteadHouseRepaired=false, oldsteadSecondBed=false, oldsteadStoredFood=0, oldsteadFurnaceGroup=null;
 function oldsteadHouseSafeRadius(){return 65;}
 // Oldstead Isle: a ruined cottage in the middle and a repairer waiting near the shoreline.
 {
@@ -411,6 +427,13 @@ function oldsteadHouseSafeRadius(){return 65;}
  const foodChest=new THREE.Group();const foodBox=new THREE.Mesh(new THREE.BoxGeometry(1.05,.65,.72),mat(0x81502b));foodBox.position.set(c.x+2,.5,c.z-1.2);foodChest.add(foodBox);
  const foodLid=new THREE.Mesh(new THREE.BoxGeometry(1.08,.18,.76),mat(0xb17a3c));foodLid.position.set(c.x+2,.91,c.z-1.2);foodChest.add(foodLid);repaired.add(foodChest);
  oldsteadHouse={x:c.x,z:c.z,ruined,repaired,bed:houseBed,chest:foodChest};
+ // The furnace sits outside the cottage but remains hidden until the repair is complete.
+ oldsteadFurnaceGroup=new THREE.Group();const furnaceStone=mat(0x686b69),furnaceMetal=mat(0x383f43),furnaceGlow=new THREE.MeshBasicMaterial({color:0xff762b});
+ const furnaceBase=new THREE.Mesh(new THREE.BoxGeometry(2.1,1.35,1.8),furnaceStone);furnaceBase.position.y=.68;oldsteadFurnaceGroup.add(furnaceBase);
+ const furnaceMouth=new THREE.Mesh(new THREE.BoxGeometry(.9,.62,.12),furnaceMetal);furnaceMouth.position.set(0,.62,.93);oldsteadFurnaceGroup.add(furnaceMouth);
+ const furnaceFire=new THREE.Mesh(new THREE.SphereGeometry(.25,10,8),furnaceGlow);furnaceFire.position.set(0,.63,1.02);oldsteadFurnaceGroup.add(furnaceFire);
+ const chimney=new THREE.Mesh(new THREE.CylinderGeometry(.25,.32,.9,8),furnaceStone);chimney.position.set(.62,1.65,-.35);oldsteadFurnaceGroup.add(chimney);
+ oldsteadFurnaceGroup.position.set(c.x+8.2,0,c.z-1.5);oldsteadFurnaceGroup.visible=false;world.add(oldsteadFurnaceGroup);
  // A small sign by the house advertises the repair price.
  const sign=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,2,7),trunkMat);post.position.y=1;sign.add(post);
  const board=new THREE.Mesh(new THREE.BoxGeometry(3.8,.8,.18),woodMat);board.position.set(0,1.65,0);sign.add(board);
@@ -549,6 +572,15 @@ let dragonPortalActive=false, dragonTrialActive=false, dragonDefeated=false, dra
  tradeVillager(c.x,c.z-20,0x6c9b72,'medic','Mira the Healer');
  const signpost=new THREE.Group();const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,2,6),trunkMat);post.position.y=1;signpost.add(post);const board=new THREE.Mesh(new THREE.BoxGeometry(4.5,.85,.18),woodMat);board.position.set(0,1.55,0);signpost.add(board);signpost.position.set(c.x,0,c.z+24);world.add(signpost);
 }
+
+// Coincrest Village mission board: the player accepts and claims a sequence of increasingly difficult quests.
+let questBoard=null;
+{const c=islandCenters.find(i=>i.name==='Coincrest Village'),g=new THREE.Group();const postMat=trunkMat,boardMat=mat(0x795234),paperMat=mat(0xe0d2a8);
+ for(const x of [-1.75,1.75]){const post=new THREE.Mesh(new THREE.BoxGeometry(.22,2.8,.22),postMat);post.position.set(x,1.4,0);g.add(post);}
+ const board=new THREE.Mesh(new THREE.BoxGeometry(4.1,1.8,.22),boardMat);board.position.set(0,2.05,0);g.add(board);const notice=new THREE.Mesh(new THREE.BoxGeometry(2.9,1.1,.04),paperMat);notice.position.set(0,2.05,.14);g.add(notice);g.position.set(c.x-8,0,c.z+25);world.add(g);questBoard={mesh:g,x:g.position.x,z:g.position.z};}
+// A small shore hut and emerald buyer on the starting island.
+{const c=islandCenters[0],hut=new THREE.Group(),wall=mat(0x89613f),roof=mat(0x574337);const base=new THREE.Mesh(new THREE.BoxGeometry(5.8,3.4,4.8),wall);base.position.y=1.7;hut.add(base);const top=new THREE.Mesh(new THREE.ConeGeometry(4.5,2.3,4),roof);top.position.y=4.5;top.rotation.y=Math.PI/4;hut.add(top);const door=new THREE.Mesh(new THREE.BoxGeometry(1.1,2.1,.12),trunkMat);door.position.set(0,1.05,2.45);hut.add(door);hut.position.set(c.x+57,0,c.z+34);world.add(hut);decorations.push(hut);
+ const g=new THREE.Group(),shirt=mat(0x2c8b62),skin=mat(0xf0c6a0),pants=mat(0x46505a);const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.55,4,8),shirt);torso.position.y=.95;g.add(torso);const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),skin);head.position.y=1.52;g.add(head);const hat=new THREE.Mesh(new THREE.CylinderGeometry(.28,.32,.16,8),mat(0x276447));hat.position.y=1.76;g.add(hat);g.position.set(c.x+54,0,c.z+28);world.add(g);villagers.push({mesh:g,job:'emeraldTrader',name:'Emerald Keeper'});}
 
 // Coincrest's forbidden portal: 50 stone opens the way to Dragonfall Isle.
 function makePortal(x,z,glow=0x49e9f2){
@@ -914,7 +946,7 @@ function connectMultiplayer(action) {
   });
   socket.on('yourSave', (save) => {
     if(!save)return;
-    if(save.inventory){Object.assign(inventory,save.inventory);normalizeMaterialInventory();armorType=save.inventory.armorType||null;maxHealth=100+(armorType&&armorDefs[armorType]?armorDefs[armorType].bonus:0);refreshArmorVisual();craftedBoat=!!(save.inventory.craftedBoat||save.inventory.boat||save.inventory.reinforcedBoat);inventory.craftedBoat=craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;refreshSwordVisual();}
+    if(save.inventory){Object.assign(inventory,save.inventory);normalizeMaterialInventory();armorType=save.inventory.armorType||null;maxHealth=100+(armorType&&armorDefs[armorType]?armorDefs[armorType].bonus:0);refreshArmorVisual();craftedBoat=!!(save.inventory.craftedBoat||save.inventory.boat||save.inventory.reinforcedBoat);inventory.craftedBoat=craftedBoat;fishingRod=!!save.inventory.fishingRod;ownedWeapons.wood=!!save.inventory.woodSword;ownedWeapons.stone=!!save.inventory.stoneSword;ownedWeapons.iron=!!save.inventory.ironSword;ownedWeapons.crystal=!!save.inventory.crystalSword;Object.assign(weaponDurability,save.inventory.weaponDurability||{});for(const k of Object.keys(ownedWeapons)){if(ownedWeapons[k]&&!(weaponDurability[k]>0))weaponDurability[k]=weaponDefs[k].maxDurability;}equippedWeapon=ownedWeapons[save.inventory.equippedWeapon]?save.inventory.equippedWeapon:null;if(save.inventory.pickaxes){for(const k of Object.keys(ownedPickaxes))ownedPickaxes[k]=save.inventory.pickaxes[k]===true;saveOwnedPickaxes();}refreshSwordVisual();}
     if(Number.isFinite(save.health)) health=save.health;
     if(Number.isFinite(save.hunger)) hunger=save.hunger;
     if(Number.isFinite(save.thirst)) thirst=save.thirst;
@@ -945,7 +977,7 @@ function renderLeaderboard(rows){
   all.sort((a,b)=>b.xp-a.xp||b.level-a.level||a.name.localeCompare(b.name));
   list.innerHTML=all.length?all.map((p,i)=>`<div class="leader-row ${p.id===mySocketId?'me':''}"><span>${i+1}. ${p.name}${p.id===mySocketId?' (you)':''}</span><span>${p.xp} XP</span></div>`).join(''):'Waiting for players…';
 }
-function saveInventoryPayload(){return {...inventory,craftedBoat,fishingRod,armorType,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,weaponDurability:{...weaponDurability},equippedWeapon:equippedWeapon||null};}
+function saveInventoryPayload(){return {...inventory,pickaxes:{...ownedPickaxes},craftedBoat,fishingRod,armorType,woodSword:!!ownedWeapons.wood,stoneSword:!!ownedWeapons.stone,ironSword:!!ownedWeapons.iron,crystalSword:!!ownedWeapons.crystal,weaponDurability:{...weaponDurability},equippedWeapon:equippedWeapon||null};}
 function sendNetworkState() {
   if(socket && socket.connected && mode==='online') {
     socket.emit('move', {x:player.position.x, z:player.position.z, rot:player.rotation.y, xp, level});
@@ -956,10 +988,17 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,fibre:0,hide:0,berry:0,wheat:0,food:0,salmon:0,cod:0,whiting:0,mackerel:0,shark:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0,copperIngots:0,silverIngots:0,goldenSword:0,obsidianBlade:0,frostBlade:0,shelter:0,bed:0,animalHide:0,plantFibre:0};
+const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,emerald:0,fibre:0,hide:0,berry:0,wheat:0,food:0,cookedFood:0,salmon:0,cod:0,whiting:0,mackerel:0,shark:0,cookedSalmon:0,cookedCod:0,cookedWhiting:0,cookedMackerel:0,cookedShark:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0,copperIngots:0,silverIngots:0,goldenSword:0,obsidianBlade:0,frostBlade:0,shelter:0,bed:0,animalHide:0,plantFibre:0};
+if(emeraldState&&emeraldState.collected&&!emeraldState.sold)inventory.emerald=1;
+const ownedPickaxes={wood:false,stone:false,iron:false,crystal:false};
+function saveOwnedPickaxes(){try{localStorage.setItem('wildlands-owned-pickaxes',JSON.stringify(ownedPickaxes));}catch{}}
+try{const savedPickaxes=JSON.parse(localStorage.getItem('wildlands-owned-pickaxes')||'{}');for(const k of Object.keys(ownedPickaxes))ownedPickaxes[k]=savedPickaxes[k]===true;}catch{}
+const pickaxeTierNames=['No pickaxe','Wooden Pickaxe','Stone Pickaxe','Iron Pickaxe','Crystal Pickaxe'];
+function currentPickaxeTier(){return ownedPickaxes.crystal?4:ownedPickaxes.iron?3:ownedPickaxes.stone?2:ownedPickaxes.wood?1:0;}
+
 let backpackTier=0; // 0=40 items, 1=60 items, 2=80 items
-try{backpackTier=Math.max(0,Math.min(2,Number(localStorage.getItem('wildlands-backpack-tier'))||0));advancedFishingRod=localStorage.getItem('wildlands-advanced-rod')==='1';}catch{}
 let advancedFishingRod=false;
+try{backpackTier=Math.max(0,Math.min(2,Number(localStorage.getItem('wildlands-backpack-tier'))||0));advancedFishingRod=localStorage.getItem('wildlands-advanced-rod')==='1';}catch{}
 let craftedBoat=false, fishingRod=false, boatVisual=null, aboardBoat=false, boatPosition={x:0,z:4}, activeHouse=null, chestOpened=false;
 let fishingCasts=0, lastFishCastAt=-10000, boatDestinationIndex=null;
 
@@ -1018,17 +1057,17 @@ function updateHUD(){
  craftedBoat=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat); inventory.craftedBoat=craftedBoat; if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','fibre','hide','rope','cloth','copperIngots','silverIngots','berry','wheat','food','salmon','cod','whiting','mackerel','shark','water','coins'];
- const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',fibre:'🌿 Plant fibre',plantFibre:'🌿 Plant fibre',hide:'🦌 Animal hide',animalHide:'🦌 Animal hide',rope:'🪢 Rope',cloth:'🧵 Cloth',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',berry:'🫐 Berries',wheat:'🌾 Wheat',food:'🍖 Food',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',mackerel:'🐟 Rare mackerel (+50 hunger)',shark:'🦈 Super-rare shark (+80 hunger)',water:'💧 Water',coins:'🪙 Coins'};
+ const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','emerald','copperIngots','silverIngots','fibre','hide','rope','cloth','berry','wheat','food','cookedFood','salmon','cod','whiting','mackerel','shark','cookedSalmon','cookedCod','cookedWhiting','cookedMackerel','cookedShark','water','coins'];
+ const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',emerald:'💚 Emerald',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',fibre:'🌿 Plant fibre',plantFibre:'🌿 Plant fibre',hide:'🦌 Animal hide',animalHide:'🦌 Animal hide',rope:'🪢 Rope',cloth:'🧵 Cloth',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',berry:'🫐 Berries',wheat:'🌾 Wheat',food:'🥩 Raw meat (+28 hunger)',cookedFood:'🍖 Cooked meat (+45 hunger)',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',mackerel:'🐟 Rare mackerel (+50 hunger)',shark:'🦈 Super-rare shark (+80 hunger)',cookedSalmon:'🍣 Cooked salmon (+60 hunger)',cookedCod:'🍣 Cooked cod (+50 hunger)',cookedWhiting:'🍣 Cooked whiting (+35 hunger)',cookedMackerel:'🍣 Cooked mackerel (+65 hunger)',cookedShark:'🍣 Cooked shark (+95 hunger)',water:'💧 Water',coins:'🪙 Coins'};
  document.getElementById('backpackCount').textContent=`${backpackItemCount()} / ${backpackCapacity()}`;
- document.getElementById('items').innerHTML=backpackMaterials.map(k=>{const v=k==='fibre'?((Number(inventory.fibre)||0)+(Number(inventory.plantFibre)||0)):k==='hide'?((Number(inventory.hide)||0)+(Number(inventory.animalHide)||0)):(Number(inventory[k])||0),label=materialLabels[k],foodItem=['food','salmon','cod','whiting','mackerel','shark','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('');
+ document.getElementById('items').innerHTML=backpackMaterials.map(k=>{const v=k==='fibre'?((Number(inventory.fibre)||0)+(Number(inventory.plantFibre)||0)):k==='hide'?((Number(inventory.hide)||0)+(Number(inventory.animalHide)||0)):(Number(inventory[k])||0),label=materialLabels[k],foodItem=['food','cookedFood','salmon','cod','whiting','mackerel','shark','cookedSalmon','cookedCod','cookedWhiting','cookedMackerel','cookedShark','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('');
  document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  if(dragonTrialActive){document.getElementById('mission').textContent=`DRAGONFALL BOSS FIGHT — Giant Dragon HP: ${Math.max(0,Math.ceil(dragonBoss?.hp||0))}/${dragonBoss?.maxHp||420}. Defeat it to unlock the portal and claim the hoard.`;}
- document.getElementById('sailBtn').textContent='Choose island';
+ const sailButton=document.getElementById('sailBtn');if(sailButton)sailButton.textContent='Choose island';
  document.getElementById('boardBoatBtn').textContent=aboardBoat?'Leave boat':'Board boat';
- document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${advancedFishingRod?'advanced':fishingRod?'built':'not built'}`;
+ document.getElementById('travelStatus').textContent=`Boat: ${craftedBoat?'built':'not built'} · Fishing rod: ${advancedFishingRod?'advanced':fishingRod?'built':'not built'} · ${pickaxeTierNames[currentPickaxeTier()]}`;
  const needWood=Math.max(0,5-inventory.wood),needStone=Math.max(0,3-inventory.stone);
  document.getElementById('mission').textContent=inventory.campfire>0?'Camp secured! Explore the island, defeat 3 wildlings, and reach level 2.':`Gather ${needWood} wood and ${needStone} stone, then press C to craft a campfire and bed. At night, stand beside the bed and press E or Interact / Eat to sleep.`;
 }
@@ -1040,8 +1079,11 @@ function nearestResource(){
 function gather(){
  if(dead)return;
  const r=nearestResource();
- if(!r){toast('Move close to a resource and tap Gather / Hit. Mine pale-blue crystal clusters on Frostpeak Island for frost shards; sulphur is pale yellow and spiky, gold is shiny metallic. Wildlings drop animal hide.');return;}
- r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);const accepted=addToBackpack(r.type,r.amount);if(accepted<r.amount){r.alive=false;world.remove(r.mesh);toast(`Backpack full! Collected ${accepted} of ${r.amount} items.`);updateHUD();return;}if(r.type==='berry'){const fibreAdded=addToBackpack('fibre',1);gainXP(8);toast(`Collected ${r.amount} berries and 1 plant fibre`);}else if(r.type==='fibre'){gainXP(8);toast(`Collected ${r.amount} plant fibre`);}else if(r.type==='wheat'){gainXP(10);toast(`Harvested ${r.amount} wheat. Take it to Tilly on Cloverfield Isle and sell 5 wheat for 3 coins.`);}else{gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${{iron:'iron ore',copper:'copper ore',silver:'silver ore',gold:'gold ore',obsidian:'obsidian',sulphur:'sulphur',frost:'frost shards',crystal:'crystal',wood:'wood',stone:'stone'}[r.type]||r.type}`);}updateHUD();}
+ if(!r){toast('Move close to a resource and tap Gather / Hit.');return;}
+ const oreTiers={copper:1,iron:1,silver:2,sulphur:2,frost:2,gold:3,obsidian:3,crystal:3,emerald:4};const requiredTier=oreTiers[r.type]||0;
+ if(requiredTier>currentPickaxeTier()){toast(requiredTier===4?'The emerald is incredibly hard. You need a Crystal Pickaxe to mine it.':`You need a ${pickaxeTierNames[requiredTier]} to mine ${r.type} ore.`);return;}
+ if(backpackItemCount()+r.amount>backpackCapacity()){toast('Your backpack is full. Make room before gathering this resource.');return;}
+ r.hp--; if(r.hp<=0){r.alive=false;world.remove(r.mesh);const accepted=addToBackpack(r.type,r.amount);if(accepted<r.amount){r.alive=false;world.remove(r.mesh);toast(`Backpack full! Collected ${accepted} of ${r.amount} items.`);updateHUD();return;}recordQuestProgress(r.type,accepted);if(r.type==='emerald'){if(emeraldState){emeraldState.collected=true;try{localStorage.setItem(emeraldStateKey,JSON.stringify(emeraldState));}catch{}}toast('💚 YOU FOUND THE HIDDEN EMERALD! Take it to the shore hut for 10 coins and 15 crystal.');}else if(r.type==='berry'){const fibreAdded=addToBackpack('fibre',1);gainXP(8);toast(`Collected ${r.amount} berries and 1 plant fibre`);}else if(r.type==='fibre'){gainXP(8);toast(`Collected ${r.amount} plant fibre`);}else if(r.type==='wheat'){gainXP(10);toast(`Harvested ${r.amount} wheat. Take it to Tilly on Cloverfield Isle and sell 5 wheat for 3 coins.`);}else{gainXP(r.type==='wood'?12:(r.type==='stone'||r.type==='iron'||r.type==='crystal')?14:8);toast(`Collected ${r.amount} ${{iron:'iron ore',copper:'copper ore',silver:'silver ore',gold:'gold ore',obsidian:'obsidian',sulphur:'sulphur',frost:'frost shards',crystal:'crystal',wood:'wood',stone:'stone'}[r.type]||r.type}`);}updateHUD();}
  else {toast(`Gathering ${r.type}… ${r.hp} hit${r.hp===1?'':'s'} left`);updateHUD();}
 }
 function attack(){
@@ -1093,6 +1135,23 @@ function addToBackpack(item,amount){
  if(accepted>0)inventory[item]=(Number(inventory[item])||0)+accepted;
  return accepted;
 }
+const villageQuests=[
+ {title:'The Village Woodpile',type:'wood',goal:20,rewardCoins:3,rewardXP:30,desc:'Collect 20 wood for the village builders.'},
+ {title:'Stone for the Road',type:'stone',goal:30,rewardCoins:5,rewardXP:50,desc:'Collect 30 stone to repair the village road.'},
+ {title:'Tools for the Guard',type:'iron',goal:12,rewardCoins:8,rewardXP:75,desc:'Collect 12 iron ore for the village guards.'},
+ {title:'Crystal Supplies',type:'crystal',goal:8,rewardCoins:12,rewardXP:100,desc:'Collect 8 crystal for the village workshop.'},
+ {title:'The Golden Stockpile',type:'gold',goal:10,rewardCoins:18,rewardXP:150,desc:'Collect 10 gold ore for the village treasury.'}
+];
+let villageQuestIndex=0,villageQuestAccepted=false,villageQuestProgress=0;
+const villageQuestSaveKey='wildlands-village-quests';
+try{const savedQuests=JSON.parse(localStorage.getItem(villageQuestSaveKey)||'{}');villageQuestIndex=Math.max(0,Math.min(villageQuests.length,Number(savedQuests.index)||0));villageQuestAccepted=savedQuests.accepted===true;villageQuestProgress=Math.max(0,Number(savedQuests.progress)||0);if(villageQuestIndex<villageQuests.length)villageQuestProgress=Math.min(villageQuests[villageQuestIndex].goal,villageQuestProgress);else villageQuestAccepted=false;}catch{}
+function saveVillageQuests(){try{localStorage.setItem(villageQuestSaveKey,JSON.stringify({index:villageQuestIndex,accepted:villageQuestAccepted,progress:villageQuestProgress}));}catch{}}
+function updateQuestBoard(){const panel=document.getElementById('questBoardInfo'),button=document.getElementById('questBoardAction');if(villageQuestIndex>=villageQuests.length){panel.textContent='You have completed every mission on this board. The villagers thank you!';button.textContent='All missions complete';button.disabled=true;return;}const q=villageQuests[villageQuestIndex];button.disabled=false;if(!villageQuestAccepted){panel.textContent=`Available mission ${villageQuestIndex+1}/${villageQuests.length}: ${q.title}. ${q.desc} Reward: ${q.rewardCoins} coins + ${q.rewardXP} XP.`;button.textContent='Accept mission';}else{panel.textContent=`${q.title}: ${Math.min(villageQuestProgress,q.goal)} / ${q.goal} ${q.type}. ${q.desc} Reward: ${q.rewardCoins} coins + ${q.rewardXP} XP.`;button.textContent=villageQuestProgress>=q.goal?'Claim reward':'Mission in progress';}}
+function openQuestBoard(){updateQuestBoard();document.getElementById('questBoardPanel').style.display='flex';}
+function recordQuestProgress(type,amount){if(!villageQuestAccepted||villageQuestIndex>=villageQuests.length)return;const q=villageQuests[villageQuestIndex];if(q.type===type){villageQuestProgress=Math.min(q.goal,villageQuestProgress+Math.max(0,amount||0));saveVillageQuests();updateQuestBoard();}}
+function handleQuestBoardAction(){if(villageQuestIndex>=villageQuests.length)return;if(!villageQuestAccepted){villageQuestAccepted=true;villageQuestProgress=0;saveVillageQuests();toast('Mission accepted! Check the board for your progress.');}else{const q=villageQuests[villageQuestIndex];if(villageQuestProgress<q.goal){toast(`Keep going! You need ${q.goal-villageQuestProgress} more ${q.type}.`);return;}if(backpackItemCount()+q.rewardCoins>backpackCapacity()){toast('Make room in your backpack for the coin reward before claiming this mission.');return;}addToBackpack('coins',q.rewardCoins);gainXP(q.rewardXP);villageQuestIndex++;villageQuestAccepted=false;villageQuestProgress=0;saveVillageQuests();toast(`Mission completed! Earned ${q.rewardCoins} coins and ${q.rewardXP} XP.`);updateHUD();}updateQuestBoard();}
+function openFurnace(){document.getElementById('furnacePanel').style.display='flex';}
+function cookFood(type){const cookedKey=type==='food'?'cookedFood':'cooked'+type[0].toUpperCase()+type.slice(1);const names={food:'meat',salmon:'salmon',cod:'cod',whiting:'whiting',mackerel:'mackerel',shark:'shark'};if(!Object.prototype.hasOwnProperty.call(inventory,type)||!Object.prototype.hasOwnProperty.call(inventory,cookedKey)){toast('That food cannot be cooked here.');return;}if((Number(inventory[type])||0)<1){toast(`You need 1 ${names[type]} to cook it.`);return;}inventory[type]--;inventory[cookedKey]=(Number(inventory[cookedKey])||0)+1;toast(`Cooked ${names[type]}! It will restore more hunger when eaten.`);updateHUD();}
 const craftingRecipes=[
  {id:'campfire',name:'Campfire & Bed',icon:'🔥',cat:'Survival',cost:{wood:5,stone:3},desc:'Build your first campfire and a bed.',special:'campfire'},
  {id:'wood',name:'Wooden Sword',icon:'🗡️',cat:'Weapons',cost:{wood:4},desc:'10 damage · 15 durability',special:'weapon',weapon:'wood'},
@@ -1107,6 +1166,10 @@ const craftingRecipes=[
  {id:'waterskin',name:'Waterskin',icon:'💧',cat:'Survival',cost:{hide:2,fibre:2},desc:'A portable water container.',out:'waterskin'},
  {id:'reinforcedBoat',name:'Reinforced Boat',icon:'⛵',cat:'Travel',cost:{wood:12,fibre:6,copper:4},desc:'An advanced boat upgrade (requires a boat first).',special:'reinforcedBoat'},
  {id:'advancedRod',name:'Advanced Fishing Rod',icon:'🎣',cat:'Tools',cost:{wood:3,fibre:3,silver:1},desc:'A better fishing rod for experienced fishers.',special:'advancedRod'},
+ {id:'woodPickaxe',name:'Wooden Pickaxe',icon:'⛏️',cat:'Tools',cost:{wood:5,stone:2},desc:'Mines basic ores: copper and iron.',special:'pickaxe',pickaxe:'wood'},
+ {id:'stonePickaxe',name:'Stone Pickaxe',icon:'⛏️',cat:'Tools',cost:{wood:3,stone:5},desc:'Mines stronger ores: silver, sulphur and frost. Requires a Wooden Pickaxe.',special:'pickaxe',pickaxe:'stone'},
+ {id:'ironPickaxe',name:'Iron Pickaxe',icon:'⛏️',cat:'Tools',cost:{wood:3,iron:4},desc:'Mines advanced ores: gold, obsidian and crystal. Requires a Stone Pickaxe.',special:'pickaxe',pickaxe:'iron'},
+ {id:'crystalPickaxe',name:'Crystal Pickaxe',icon:'💎',cat:'Tools',cost:{wood:3,crystal:4},desc:'Mines every ore, including the hidden emerald. Requires an Iron Pickaxe.',special:'pickaxe',pickaxe:'crystal'},
  {id:'mediumBackpack',name:'Medium Backpack',icon:'🎒',cat:'Survival',cost:{wood:8,hide:5},desc:'Increases backpack capacity from 40 to 60 items.',special:'mediumBackpack'},
  {id:'largeBackpack',name:'Large Backpack',icon:'🎒',cat:'Survival',cost:{wood:12,hide:8,crystal:2},desc:'Increases backpack capacity from 60 to 80 items. Requires the Medium Backpack.',special:'largeBackpack'}
 ];
@@ -1157,7 +1220,7 @@ function renderCraftBook(){
  document.getElementById('recipeTabs').innerHTML=cats.map(c=>`<button data-cat="${c}" class="${activeRecipeCategory===c?'selected':''}">${c}</button>`).join('');
  document.querySelectorAll('#recipeTabs button').forEach(b=>b.onclick=()=>{activeRecipeCategory=b.dataset.cat;renderCraftBook();});
  const list=craftingRecipes.filter(r=>activeRecipeCategory==='All'||r.cat===activeRecipeCategory);
- document.getElementById('recipeList').innerHTML=list.map(r=>{const missing=getMissingIngredients(r.cost||{}).length>0;const boatExists=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat);const locked=(r.special==='weapon'&&weaponDefs[r.weapon]?.level&&level<weaponDefs[r.weapon].level)||(r.special==='reinforcedBoat'&&!boatExists)||(r.special==='advancedRod'&&(!fishingRod||advancedFishingRod))||(r.special==='mediumBackpack'&&backpackTier>=1)||(r.special==='largeBackpack'&&backpackTier<1)||(r.special==='campfire'&&inventory.campfire>0)||(r.special==='boat'&&boatExists)||(r.special==='rod'&&fishingRod);return `<button class="recipe" data-recipe="${r.id}" ${locked?'disabled':''}><strong>${r.icon} ${r.name}</strong><span class="ingredients">${recipeCostText(r.cost)}</span><span class="recipeNote">${r.desc}${missing?' · Missing ingredients':locked?' · Requires prerequisite':''}</span></button>`;}).join('');
+ document.getElementById('recipeList').innerHTML=list.map(r=>{const missing=getMissingIngredients(r.cost||{}).length>0;const boatExists=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat);const locked=(r.special==='weapon'&&weaponDefs[r.weapon]?.level&&level<weaponDefs[r.weapon].level)||(r.special==='reinforcedBoat'&&!boatExists)||(r.special==='advancedRod'&&(!fishingRod||advancedFishingRod))||(r.special==='mediumBackpack'&&backpackTier>=1)||(r.special==='largeBackpack'&&backpackTier<1)||(r.special==='campfire'&&inventory.campfire>0)||(r.special==='boat'&&boatExists)||(r.special==='rod'&&fishingRod)||(r.special==='pickaxe'&&(ownedPickaxes[r.pickaxe]||({stone:!ownedPickaxes.wood,iron:!ownedPickaxes.stone,crystal:!ownedPickaxes.iron}[r.pickaxe]||false)));return `<button class="recipe" data-recipe="${r.id}" ${locked?'disabled':''}><strong>${r.icon} ${r.name}</strong><span class="ingredients">${recipeCostText(r.cost)}</span><span class="recipeNote">${r.desc}${missing?' · Missing ingredients':locked?' · Requires prerequisite':''}</span></button>`;}).join('');
  document.querySelectorAll('.recipe').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();craftRecipe(b.dataset.recipe);});
 }
 function openCraftBook(){if(dead)return;renderCraftBook();document.getElementById('craftBook').style.display='block';}
@@ -1166,12 +1229,13 @@ function craftRecipe(id){
  if(dead)return;
  const now=Date.now();if(now-lastCraftActionAt<350)return;lastCraftActionAt=now;
  const r=craftingRecipes.find(x=>x.id===id);if(!r)return;
- const before={...inventory},xpBefore=xp,levelBefore=level,boatBefore=craftedBoat,rodBefore=fishingRod,ownedBefore={...ownedWeapons},durabilityBefore={...weaponDurability},equippedBefore=equippedWeapon;
+ const before={...inventory},xpBefore=xp,levelBefore=level,boatBefore=craftedBoat,rodBefore=fishingRod,ownedBefore={...ownedWeapons},durabilityBefore={...weaponDurability},equippedBefore=equippedWeapon,pickaxesBefore={...ownedPickaxes};
  const rollback=(message)=>{
    for(const k of Object.keys(inventory))if(!Object.prototype.hasOwnProperty.call(before,k))delete inventory[k];
    Object.assign(inventory,before);xp=xpBefore;level=levelBefore;craftedBoat=boatBefore;fishingRod=rodBefore;
    for(const k of Object.keys(ownedWeapons))delete ownedWeapons[k];Object.assign(ownedWeapons,ownedBefore);
    for(const k of Object.keys(weaponDurability))delete weaponDurability[k];Object.assign(weaponDurability,durabilityBefore);equippedWeapon=equippedBefore;
+   Object.assign(ownedPickaxes,pickaxesBefore);saveOwnedPickaxes();
    refreshSwordVisual();updateHUD();renderCraftBook();toast(message||'Craft failed. All ingredients were restored.');
  };
  try{
@@ -1189,8 +1253,9 @@ function craftRecipe(id){
    if(r.special==='mediumBackpack'&&backpackTier>=1){toast('You already have the Medium Backpack or better.');return;}
    if(r.special==='largeBackpack'&&backpackTier<1){toast('Craft the Medium Backpack first. No materials were used.');return;}
    if(r.special==='largeBackpack'&&backpackTier>=2){toast('You already have the Large Backpack.');return;}
+   if(r.special==='pickaxe'){const previous={stone:'wood',iron:'stone',crystal:'iron'}[r.pickaxe];if(ownedPickaxes[r.pickaxe]){toast(`You already crafted the ${r.name}.`);return;}if(previous&&!ownedPickaxes[previous]){toast(`Craft the ${previous} pickaxe first. Nothing was used.`);return;}}
    const output=r.out||r.id;
-   if(!r.special||!['campfire','boat','rod','weapon','advancedRod','mediumBackpack','largeBackpack'].includes(r.special)){
+   if(!r.special||!['campfire','boat','rod','weapon','advancedRod','mediumBackpack','largeBackpack','pickaxe'].includes(r.special)){
      if(!output||!Object.prototype.hasOwnProperty.call(inventory,output)){toast('This recipe output is unavailable. No materials were used.');return;}
    }
    const missing=getMissingIngredients(r.cost||{});
@@ -1223,6 +1288,8 @@ function craftRecipe(id){
        advancedFishingRod=true;try{localStorage.setItem('wildlands-advanced-rod','1');}catch{};toast('Advanced Fishing Rod crafted! Fish-catching chance increased slightly.');
      }else if(r.special==='weapon'){
        const def=weaponDefs[r.weapon];ownedWeapons[r.weapon]=true;weaponDurability[r.weapon]=def.maxDurability;equippedWeapon=r.weapon;refreshSwordVisual();gainXP(12);toast(`${def.name} crafted and equipped!`);
+     }else if(r.special==='pickaxe'){
+       ownedPickaxes[r.pickaxe]=true;saveOwnedPickaxes();gainXP(12);toast(`${r.name} crafted! You can now mine stronger ores.`);
      }else{
        inventory[output]=(Number(inventory[output])||0)+(output==='copperIngots'||output==='silverIngots'?2:1);
        if(output==='reinforcedBoat')toast('Reinforced boat upgrade crafted!');
@@ -1240,6 +1307,7 @@ function craftRecipe(id){
    else if(r.special==='mediumBackpack')success=backpackTier>=1;
    else if(r.special==='largeBackpack')success=backpackTier>=2;
    else if(r.special==='weapon')success=ownedWeapons[r.weapon]===true;
+   else if(r.special==='pickaxe')success=ownedPickaxes[r.pickaxe]===true;
    else success=(Number(inventory[output])||0)>(Number(before[output])||0);
    if(!success){rollback('Craft did not complete. All ingredients were restored.');return;}
    updateHUD();renderCraftBook();
@@ -1444,6 +1512,8 @@ function interact(){
  }
  if(activeIsland===6){const c=islandCenters[6];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+79.5))<8.5){caveInterior=true;aboardBoat=false;player.position.set(caveRoomOrigin.x,0,caveRoomOrigin.z+5);yaw=Math.PI;player.userData.vy=0;toast('You entered Crownspire Cave! Mine the glowing crystal and iron deposits. Walk to the doorway and press E to leave.');updateHUD();return;}}
  if(dragonTrialActive){toast('The Dragonfall seal is locked! Defeat the giant dragon before you can leave.');return;}
+ if(activeIsland===7&&questBoard&&Math.hypot(player.position.x-questBoard.x,player.position.z-questBoard.z)<5.5){openQuestBoard();return;}
+ if(activeIsland===11&&oldsteadHouseRepaired&&oldsteadFurnaceGroup&&Math.hypot(player.position.x-oldsteadFurnaceGroup.position.x,player.position.z-oldsteadFurnaceGroup.position.z)<5.5){openFurnace();return;}
  if(activeIsland===7){const c=islandCenters[7];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+36))<7.5){if(!dragonPortalActive){if(inventory.stone<50){toast(`The Dragon Portal needs 50 stone to activate. You have ${inventory.stone}.`);return;}inventory.stone-=50;dragonPortalActive=true;dragonTrialActive=true;activeIsland=9;unlockAchievement('dragon_challenger');aboardBoat=false;player.position.set(islandCenters[9].x,0,islandCenters[9].z+27);yaw=Math.PI;player.userData.vy=0;toast('PORTAL ACTIVATED! 50 stone consumed. You are trapped on Dragonfall Isle until you defeat the strongest monster: the giant dragon!');updateHUD();return;}if(!dragonDefeated){toast('The portal leads to Dragonfall Isle, but the dragon must be defeated before you can return.');return;}activeIsland=7;player.position.set(c.x,0,c.z+29);yaw=0;toast('You returned safely to Coincrest Village.');updateHUD();return;}}
  if(activeIsland===9 && Math.hypot(player.position.x-islandCenters[9].x,player.position.z-(islandCenters[9].z+38))<7.5){if(dragonTrialActive){toast('The portal is sealed until the dragon is defeated!');return;}if(dragonDefeated){activeIsland=7;player.position.set(islandCenters[7].x,0,islandCenters[7].z+29);yaw=0;toast('You returned to Coincrest Village with the dragon treasure!');updateHUD();return;}}
  if(activeHouse && activeHouse.isOldstead){
@@ -1479,6 +1549,7 @@ function interact(){
   startCastleTrial();return;
  }
  const nearbyVillager=villagers.find(v=>player.position.distanceTo(v.mesh.position)<3.4);
+ if(nearbyVillager&&nearbyVillager.job==='emeraldTrader'){if(inventory.emerald<1){toast('Emerald Keeper: Bring me the single hidden emerald and I will pay 10 coins and 15 crystal.');return;}if(backpackItemCount()-1+25>backpackCapacity()){toast('Make room in your backpack for the 10 coins and 15 crystal reward before handing in the emerald.');return;}inventory.emerald-=1;addToBackpack('coins',10);addToBackpack('crystal',15);if(emeraldState){emeraldState.sold=true;try{localStorage.setItem(emeraldStateKey,JSON.stringify(emeraldState));}catch{}}toast('Emerald exchanged! You received 10 coins and 15 crystal.');updateHUD();return;}
  if(nearbyVillager && nearbyVillager.job==='houseRepairer'){
   if(oldsteadHouseRepaired){
    if(!oldsteadSecondBed){if(inventory.coins<1){toast('Oldstead Repairer: I can build a second bed for 1 coin. You do not have enough coins yet.');return;}inventory.coins-=1;oldsteadSecondBed=true;
@@ -1489,7 +1560,7 @@ function interact(){
   if(inventory.wood<40||inventory.stone<20){toast(`Oldstead Repairer: I can repair the ruined house for 40 wood and 20 stone. You have ${inventory.wood} wood and ${inventory.stone} stone. Nothing was taken.`);return;}
   const paid=spendIngredientsAtomically({wood:40,stone:20});
   if(!paid.ok){toast('You need 40 wood and 20 stone. Nothing was taken.');return;}
-  oldsteadHouseRepaired=true;oldsteadHouse.ruined.visible=false;oldsteadHouse.repaired.visible=true;
+  oldsteadHouseRepaired=true;oldsteadHouse.ruined.visible=false;oldsteadHouse.repaired.visible=true;if(oldsteadFurnaceGroup)oldsteadFurnaceGroup.visible=true;
   for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(Math.hypot(e.mesh.position.x-oldsteadHouse.x,e.mesh.position.z-oldsteadHouse.z)<oldsteadHouseSafeRadius()){world.remove(e.mesh);enemies.splice(i,1);}}
   gainXP(50);toast('The house is rebuilt! Monsters cannot spawn on Oldstead Isle. Press E by the house to enter; use the bed to sleep and the chest to store food. Talk to the repairer again to buy a second bed for 1 coin.');updateHUD();return;
  }
@@ -1510,6 +1581,12 @@ function interact(){
   health=Math.min(maxHealth,health+20);hunger=Math.max(0,hunger-3);thirst=Math.max(0,thirst-3);
   toast('You slept until morning. The island is calmer for now.');updateHUD();return;
  }
+ if(inventory.cookedShark>0){inventory.cookedShark--;hunger=Math.min(100,hunger+95);health=Math.min(maxHealth,health+22);toast('You ate cooked shark: +95 hunger and +22 health.');updateHUD();return;}
+ if(inventory.cookedMackerel>0){inventory.cookedMackerel--;hunger=Math.min(100,hunger+65);health=Math.min(maxHealth,health+13);toast('You ate cooked mackerel: +65 hunger and +13 health.');updateHUD();return;}
+ if(inventory.cookedSalmon>0){inventory.cookedSalmon--;hunger=Math.min(100,hunger+60);health=Math.min(maxHealth,health+12);toast('You ate cooked salmon: +60 hunger and +12 health.');updateHUD();return;}
+ if(inventory.cookedCod>0){inventory.cookedCod--;hunger=Math.min(100,hunger+50);health=Math.min(maxHealth,health+9);toast('You ate cooked cod: +50 hunger and +9 health.');updateHUD();return;}
+ if(inventory.cookedWhiting>0){inventory.cookedWhiting--;hunger=Math.min(100,hunger+35);health=Math.min(maxHealth,health+6);toast('You ate cooked whiting: +35 hunger and +6 health.');updateHUD();return;}
+ if(inventory.cookedFood>0){inventory.cookedFood--;hunger=Math.min(100,hunger+45);health=Math.min(maxHealth,health+10);toast('You ate cooked meat: +45 hunger and +10 health.');updateHUD();return;}
  if(inventory.salmon>0){inventory.salmon--;hunger=Math.min(100,hunger+45);health=Math.min(maxHealth,health+8);toast('You ate salmon: +45 hunger and +8 health.');updateHUD();return;}
  if(inventory.cod>0){inventory.cod--;hunger=Math.min(100,hunger+35);health=Math.min(maxHealth,health+6);toast('You ate cod: +35 hunger and +6 health.');updateHUD();return;}
  if(inventory.whiting>0){inventory.whiting--;hunger=Math.min(100,hunger+20);health=Math.min(maxHealth,health+3);toast('You ate whiting: +20 hunger and +3 health.');updateHUD();return;}
@@ -1522,8 +1599,7 @@ function interact(){
 }
 function showFoodFishInfo(){
  if(dead)return;
- const fishTotal=inventory.salmon+inventory.cod+inventory.whiting;
- toast(`Food & fish — Salmon: ${inventory.salmon} (+45 hunger, +8 health); Cod: ${inventory.cod} (+35 hunger, +6 health); Whiting: ${inventory.whiting} (+20 hunger, +3 health). Other food: ${inventory.food}; berries: ${inventory.berry}. Use Interact / Eat to consume food.`);
+ toast(`Cooked meals — Salmon: ${inventory.cookedSalmon} (+60); cod: ${inventory.cookedCod} (+50); whiting: ${inventory.cookedWhiting} (+35); mackerel: ${inventory.cookedMackerel} (+65); shark: ${inventory.cookedShark} (+95); meat: ${inventory.cookedFood} (+45). Raw meat: ${inventory.food}; raw fish: ${inventory.salmon+inventory.cod+inventory.whiting+inventory.mackerel+inventory.shark}; berries: ${inventory.berry}. Cook food at the Oldstead Furnace.`);
 }
 document.getElementById('items').addEventListener('click',e=>{if(e.target.closest('[data-food-info]'))showFoodFishInfo();});
 document.getElementById('items').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-food-info]')){e.preventDefault();showFoodFishInfo();}});

@@ -1,14 +1,19 @@
-Wildlands Online combined update
+Wildlands Online update
 
-Upload index.html, server.js and package.json together to Render.
-Keep your existing accounts.json, achievements.json, sessions.json, player-saves.json and xp-records.json files.
+Files included:
+- index.html
+- server.js
+- package.json
 
-Included:
-- Existing account/login and achievement server code from the uploaded source.
-- Existing defeated overlay and dead-state checks.
-- Crafting Book cleanup: removed unused/unimplemented recipes (reinforced chest, watchtower, advanced furnace, repair kit, copper pickaxe, silver armour, obsidian axe, frost clothing, crystal lantern, crystal teleporter, copper/silver ingots, golden sword, obsidian blade, frost blade, and old backpack recipe).
-- Basic backpack capacity 40 items; Medium Backpack 60; Large Backpack 80.
-- Advanced Fishing Rod increases chance per cast from 10% to 13%.
-- Existing world locations remain in the world.
+Replace the matching files in your existing GitHub repository with these files, then let Render redeploy.
 
-Note: Backpack upgrade tier and advanced rod flag are stored in the browser's localStorage on that device. This build has syntax and ZIP-integrity checks only; it has not been live-tested on Render or iPad Safari.
+This update adds:
+- Coincrest Village quest and mission board with saved progress and increasing rewards.
+- Oldstead Isle cooking furnace outside the house; it appears after the house is rebuilt.
+- Cooking for raw meat and fish to make meals that restore more hunger.
+- Four pickaxes with the approved crafting costs and ore mining tiers.
+- One hidden emerald ore per run, mineable only with the Crystal Pickaxe.
+- Shore hut trader that exchanges the emerald for 10 coins and 15 crystal.
+- Pickaxe, emerald and cooked-food multiplayer save support.
+
+The uploaded phone/iPad joystick controls have been kept unchanged.
