@@ -172,6 +172,7 @@
       <button id="sellWhitingBtn">Sell 1 whiting → 1 coin</button><button id="sellMackerelBtn">Sell 1 rare mackerel → 8 coins</button><button id="sellSharkBtn">Sell 1 super-rare shark → 25 coins</button>
     </div>
     <div id="wheatTradeOptions" style="display:none;gap:4px;flex-direction:column"><button id="sellWheatBtn">Sell 5 wheat → 3 coins</button></div>
+    <div id="woolTradeOptions" style="display:none;gap:4px;flex-direction:column"><button id="sellWoolBtn">Sell 1 wool → 2 coins</button></div>
     <button id="closeTradeBtn" style="margin-top:5px">Close</button>
   </div>
   <div id="hint" class="panel"><strong>WASD</strong> move · <strong>Mouse</strong> look · <strong>Click</strong> gather/attack · <strong>E</strong> interact · <strong>C</strong> craft campfire · <strong>Space</strong> jump</div>
@@ -206,7 +207,7 @@
       <p class="small">Choose Create game to host, or Join a game to enter an existing host's world.</p>
     </div>
     <p class="small" id="modeInfo">Private world: play solo without connecting to a server.</p>
-    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. On Cloverfield Isle, harvest golden wheat and sell 5 wheat to Tilly for 3 coins. Search each island for its treasure chest.</p>
+    <p class="small">Controls: WASD to move, mouse to look, click to gather or attack, E to interact, C to craft a campfire. On iPad, use the movement pad on the lower left and action buttons on the lower right; the backpack stays above them. Tap Sword / Hit to attack. Craft a fishing rod and boat in your backpack, fish near shore, mine ore, then sail to other islands. On Oldstead Isle, find the repairer at the shoreline to restore the ruined house for 40 wood and 20 stone. On Cloverfield Isle, harvest golden wheat and visit the new sheep paddock. Press E / Interact beside a sheep to shear 2 wool; its fleece regrows after about a minute. Sell 1 wool to Tilly for 2 coins, or craft a Wool Jacket with 6 wool and 3 plant fibre. Frostpeak Island is freezing: without the jacket, your health slowly drops. Search each island for its treasure chest.</p>
 <div id="accountPanel"><strong>Account</strong><p class="small">Create an account or log in. Your username is used for XP records.</p><input id="accountUsername" maxlength="18" autocomplete="username" placeholder="Username (3–18 characters)"><input id="accountPassword" type="password" maxlength="100" autocomplete="current-password" placeholder="Password (at least 6 characters)"><div class="modeRow"><button id="registerAccount" type="button">Create account</button><button id="loginAccount" type="button">Log in</button></div><div id="accountStatus" class="small">Create an account or log in to continue.</div></div>
     <div id="startBottomRow">
       <button id="play">ENTER THE ISLAND</button>
@@ -253,7 +254,7 @@ scene.add(new THREE.HemisphereLight(0xdff6ff,0x45553b,2.15));
 scene.fog=new THREE.Fog(0x9dc8c9,260,920);
 const sun = new THREE.DirectionalLight(0xffedcb,2.45); sun.position.set(-25,35,15); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
 const mat = (color, roughness=1) => new THREE.MeshStandardMaterial({color,roughness});
-const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x1d8da8,roughness:.2,metalness:.12}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e);
+const grassMat=mat(0x4c8750), snowMat=mat(0xe8f2f4), meadowMat=mat(0x83b95b), sandMat=mat(0xd6c28e), waterMat=new THREE.MeshStandardMaterial({color:0x1d8da8,roughness:.2,metalness:.12}), trunkMat=mat(0x765038), leafMat=mat(0x2d7546), leaf2Mat=mat(0x4b9655), stoneMat=mat(0x858b88), rockDark=mat(0x5a6662), woodMat=mat(0x9d7047), playerMat=mat(0xe9c39b), shirtMat=mat(0x3b7882), enemyMat=mat(0x8c604c), goldMat=mat(0xe5c45e), woolJacketMat=mat(0x9bbfca), sheepWoolMat=mat(0xf2eee3), sheepShornMat=mat(0x858987), sheepFaceMat=mat(0x393c3d), sheepLegMat=mat(0x51483f);
 const flowerMats=[mat(0xf1d76e),mat(0xe5a5b8),mat(0xe6eee5)];
 const islandCenters = [{x:0,z:0,name:'The Shore',radius:95,biome:'forest'},{x:220,z:0,name:'Pinewatch Isle',radius:68,biome:'forest'},{x:-220,z:18,name:'Redstone Cay',radius:68,biome:'mines'},{x:0,z:220,name:'Frostpeak Island',radius:72,biome:'snow'},{x:0,z:-220,name:'Sunmeadow Isle',radius:70,biome:'meadow'},{x:220,z:220,name:'Hearthstone Village',radius:76,biome:'forest'},{x:-220,z:-220,name:'Crownspire Mountain',radius:100,biome:'mountain'},{x:220,z:-220,name:'Coincrest Village',radius:76,biome:'village'},{x:-220,z:220,name:'Kingsfall Castle Isle',radius:88,biome:'castle'},{x:0,z:440,name:'Dragonfall Isle',radius:74,biome:'dragon'},{x:220,z:440,name:'Emberpeak Volcano Isle',radius:82,biome:'volcano'},{x:-220,z:440,name:'Oldstead Isle',radius:76,biome:'forest'},{x:440,z:0,name:'Verdant Wilds',radius:82,biome:'jungle'},{x:-440,z:0,name:'Ashenfall Isle',radius:78,biome:'ashen'},{x:440,z:220,name:'Murkmire Isle',radius:78,biome:'swamp'},{x:-440,z:220,name:'Sunscorch Desert',radius:82,biome:'desert'},{x:440,z:-220,name:'Cloverfield Isle',radius:76,biome:'farm'},{x:-440,z:-220,name:'Skyreach Isles',radius:76,biome:'sky'},{x:440,z:440,name:'Stormwatch Isle',radius:82,biome:'storm'},{x:-440,z:440,name:'Coralgrave Isle',radius:80,biome:'reef'}];
 islandCenters.forEach(c=>{c.radius=Math.round(c.radius*1.12);});
@@ -800,6 +801,21 @@ function addLandmarkCylinder(c,material,rTop,rBottom,h,x,z,y=0,sides=8){const m=
  addLandmarkBox(c,shadow,3,4,3,0,5,9);const jewel=new THREE.Mesh(new THREE.OctahedronGeometry(.9,0),gold);jewel.position.set(c.x,12,c.z+5);world.add(jewel);decorations.push(jewel);
  for(const [x,z,h] of [[-24,-10,5],[24,-6,7],[-20,22,4],[25,20,6]])addLandmarkCylinder(c,sandstone,.8,1.2,h,x,z);
 }
+const farmSheep=[];
+const farmSheepSaveKey='wildlands-farm-sheep-regrowth';
+let savedSheepRegrowth=[];try{savedSheepRegrowth=JSON.parse(localStorage.getItem(farmSheepSaveKey)||'[]');if(!Array.isArray(savedSheepRegrowth))savedSheepRegrowth=[];}catch{}
+function setSheepWoolLook(sheep){sheep.woolBody.material=sheep.hasWool?sheepWoolMat:sheepShornMat;sheep.woolBody.scale.set(sheep.hasWool?.82:.72,sheep.hasWool?.64:.43,sheep.hasWool?.58:.46);}
+function createFarmSheep(c,lx,lz,index){
+ const group=new THREE.Group();
+ const woolBody=new THREE.Mesh(new THREE.SphereGeometry(.72,12,9),sheepWoolMat);woolBody.position.set(0,.9,0);woolBody.castShadow=true;group.add(woolBody);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.31,10,8),sheepFaceMat);head.position.set(.58,1.08,-.02);head.castShadow=true;group.add(head);
+ const muzzle=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),sheepWoolMat);muzzle.position.set(.79,.99,-.02);group.add(muzzle);
+ for(const side of [-1,1]){const ear=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),sheepFaceMat);ear.scale.set(1,.45,1.5);ear.position.set(.53,1.27,side*.27);group.add(ear);}
+ for(const x of [-.42,.4])for(const z of [-.29,.29]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.075,.09,.55,6),sheepLegMat);leg.position.set(x,.3,z);leg.castShadow=true;group.add(leg);}
+ group.position.set(c.x+lx,0,c.z+lz);group.rotation.y=(index%2)*Math.PI;world.add(group);
+ const readyAt=Number(savedSheepRegrowth[index])||0;const sheep={mesh:group,woolBody,hasWool:readyAt<=Date.now(),readyAt};setSheepWoolLook(sheep);farmSheep.push(sheep);
+}
+function saveSheepRegrowth(){try{localStorage.setItem(farmSheepSaveKey,JSON.stringify(farmSheep.map(s=>s.readyAt||0)));}catch{}}
 {
  const c=islandCenters.find(i=>i.name==='Cloverfield Isle'),wall=mat(0xe1d0a5),roof=mat(0x98583d),wood=mat(0x775239),crop=mat(0x8baf47);
  addLandmarkBox(c,wall,10,5,8,0,0,.2);const r=new THREE.Mesh(new THREE.ConeGeometry(7,4,4),roof);r.position.set(c.x,7,c.z);r.rotation.y=Math.PI/4;world.add(r);decorations.push(r);
@@ -807,6 +823,14 @@ function addLandmarkCylinder(c,material,rTop,rBottom,h,x,z,y=0,sides=8){const m=
  for(const row of [-15,-10,10,15])for(let i=-2;i<=2;i++)addLandmarkBox(c,crop,.35,.35,7,i*2,row,.1);
  addLandmarkCylinder(c,wood,.25,.35,4,18,-8);addLandmarkCone(c,wall,1.5,1.5,18,-8,4);
  const farmerGroup=new THREE.Group(),farmerBody=new THREE.Mesh(new THREE.CapsuleGeometry(.35,.65,4,8),mat(0x66834c)),farmerHead=new THREE.Mesh(new THREE.SphereGeometry(.24,10,8),mat(0xd9ad85)),farmerHat=new THREE.Mesh(new THREE.CylinderGeometry(.38,.45,.18,8),mat(0xc49b45));farmerBody.position.y=.85;farmerHead.position.y=1.48;farmerHat.position.y=1.72;farmerGroup.add(farmerBody,farmerHead,farmerHat);farmerGroup.position.set(c.x+22,0,c.z-8);world.add(farmerGroup);villagers.push({mesh:farmerGroup,job:'farmTrader',name:'Tilly the Farmer'});
+ // Fenced paddock beside the crop fields, with an opening as a gate.
+ for(const [x,z] of [[-43,14],[-17,14],[-43,38],[-17,38]])addLandmarkBox(c,wood,.32,1.35,.32,x,z,0);
+ addLandmarkBox(c,wood,26,.18,.22,-30,14,.78);addLandmarkBox(c,wood,26,.18,.22,-30,14,.34);
+ addLandmarkBox(c,wood,.22,.18,24,-43,26,.78);addLandmarkBox(c,wood,.22,.18,24,-43,26,.34);
+ addLandmarkBox(c,wood,.22,.18,24,-17,26,.78);addLandmarkBox(c,wood,.22,.18,24,-17,26,.34);
+ addLandmarkBox(c,wood,10,.18,.22,-38,38,.78);addLandmarkBox(c,wood,10,.18,.22,-38,38,.34);
+ addLandmarkBox(c,wood,10,.18,.22,-22,38,.78);addLandmarkBox(c,wood,10,.18,.22,-22,38,.34);
+ for(const [sx,sz] of [[-37,20],[-30,20],[-23,21],[-36,31],[-25,31]])createFarmSheep(c,sx,sz,farmSheep.length);
 }
 {
  const c=islandCenters.find(i=>i.name==='Skyreach Isles'),rock=mat(0x8d999f),crystal=mat(0x77e7ff,.24),bridge=mat(0x6e5b48);
@@ -988,7 +1012,7 @@ function sendNetworkState() {
 }
 
 const campfires=[];
-const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,emerald:0,fibre:0,hide:0,berry:0,wheat:0,food:0,cookedFood:0,salmon:0,cod:0,whiting:0,mackerel:0,shark:0,cookedSalmon:0,cookedCod:0,cookedWhiting:0,cookedMackerel:0,cookedShark:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0,copperIngots:0,silverIngots:0,goldenSword:0,obsidianBlade:0,frostBlade:0,shelter:0,bed:0,animalHide:0,plantFibre:0};
+const inventory={wood:0,stone:0,iron:0,crystal:0,copper:0,silver:0,gold:0,obsidian:0,sulphur:0,frost:0,emerald:0,fibre:0,hide:0,berry:0,wheat:0,wool:0,woolJacket:0,food:0,cookedFood:0,salmon:0,cod:0,whiting:0,mackerel:0,shark:0,cookedSalmon:0,cookedCod:0,cookedWhiting:0,cookedMackerel:0,cookedShark:0,water:2,campfire:0,coins:0,rope:0,cloth:0,leatherArmour:0,waterskin:0,largeBackpack:0,reinforcedChest:0,watchtower:0,advancedFurnace:0,repairKit:0,crystalLantern:0,reinforcedBoat:0,advancedRod:0,copperPickaxe:0,silverArmour:0,obsidianAxe:0,frostClothing:0,teleporter:0,copperIngots:0,silverIngots:0,goldenSword:0,obsidianBlade:0,frostBlade:0,shelter:0,bed:0,animalHide:0,plantFibre:0};
 if(emeraldState&&emeraldState.collected&&!emeraldState.sold)inventory.emerald=1;
 const ownedPickaxes={wood:false,stone:false,iron:false,crystal:false};
 function saveOwnedPickaxes(){try{localStorage.setItem('wildlands-owned-pickaxes',JSON.stringify(ownedPickaxes));}catch{}}
@@ -1004,7 +1028,7 @@ let fishingCasts=0, lastFishCastAt=-10000, boatDestinationIndex=null;
 
 const weaponDefs={wood:{name:'Wooden Sword',damage:10,color:0x9b7045,cost:{wood:4},maxDurability:15},stone:{name:'Stone Sword',damage:20,color:0x9aa7a9,cost:{wood:4,stone:3},maxDurability:30},iron:{name:'Iron Sword',damage:35,color:0xd6dfe4,cost:{wood:3,iron:4},maxDurability:50},crystal:{name:'Crystal Sword',damage:50,color:0x56e4ed,cost:{wood:3,crystal:3},level:3,maxDurability:70}};
 const ownedWeapons={};const weaponDurability={};let equippedWeapon=null;
-let health=100,maxHealth=100,armorType=null,hunger=100,thirst=100,xp=0,level=1,dead=false;
+let health=100,maxHealth=100,armorType=null,hunger=100,thirst=100,xp=0,level=1,dead=false,coldDamageClock=0,wasCold=false;
 let lastRecordCheck = -1, recordPromptOpen = false;
 function totalExperience(){ return Math.max(0, Math.floor((level-1)*100 + xp)); }
 function renderGlobalRecords(rows){
@@ -1058,11 +1082,12 @@ function updateHUD(){
  craftedBoat=!!(craftedBoat||inventory.craftedBoat||inventory.boat||inventory.reinforcedBoat); inventory.craftedBoat=craftedBoat; if(craftedBoat) ensureBoatVisual();
  for(const [name,val] of [['health',health],['hunger',hunger],['thirst',thirst]]){document.getElementById(name+'Fill').style.width=(name==='health'?Math.max(0,val/maxHealth*100):Math.max(0,val))+'%';document.getElementById(name+'Num').textContent=name==='health'?`${Math.ceil(val)}/${maxHealth}`:Math.ceil(val);}
  document.getElementById('levelNum').textContent=level;document.getElementById('xpText').textContent=`${Math.floor(xp)} / ${level*100} XP`;document.getElementById('xpFill').style.width=(xp/(level*100)*100)+'%';
- const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','emerald','copperIngots','silverIngots','fibre','hide','rope','cloth','berry','wheat','food','cookedFood','salmon','cod','whiting','mackerel','shark','cookedSalmon','cookedCod','cookedWhiting','cookedMackerel','cookedShark','water','coins'];
- const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',emerald:'💚 Emerald',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',fibre:'🌿 Plant fibre',plantFibre:'🌿 Plant fibre',hide:'🦌 Animal hide',animalHide:'🦌 Animal hide',rope:'🪢 Rope',cloth:'🧵 Cloth',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',berry:'🫐 Berries',wheat:'🌾 Wheat',food:'🥩 Raw meat (+28 hunger)',cookedFood:'🍖 Cooked meat (+45 hunger)',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',mackerel:'🐟 Rare mackerel (+50 hunger)',shark:'🦈 Super-rare shark (+80 hunger)',cookedSalmon:'🍣 Cooked salmon (+60 hunger)',cookedCod:'🍣 Cooked cod (+50 hunger)',cookedWhiting:'🍣 Cooked whiting (+35 hunger)',cookedMackerel:'🍣 Cooked mackerel (+65 hunger)',cookedShark:'🍣 Cooked shark (+95 hunger)',water:'💧 Water',coins:'🪙 Coins'};
+ const backpackMaterials=['wood','stone','iron','crystal','copper','silver','gold','obsidian','sulphur','frost','emerald','wool','copperIngots','silverIngots','fibre','hide','rope','cloth','berry','wheat','food','cookedFood','salmon','cod','whiting','mackerel','shark','cookedSalmon','cookedCod','cookedWhiting','cookedMackerel','cookedShark','water','coins'];
+ const materialLabels={wood:'🪵 Wood',stone:'🪨 Stone',iron:'⛏️ Iron ore',crystal:'💎 Crystal',copper:'🟠 Copper ore',silver:'⚪ Silver ore',gold:'🟡 Gold ore',obsidian:'⬛ Obsidian',sulphur:'🟨 Sulphur',frost:'❄️ Frost shards',emerald:'💚 Emerald',wool:'🐑 Wool',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',fibre:'🌿 Plant fibre',plantFibre:'🌿 Plant fibre',hide:'🦌 Animal hide',animalHide:'🦌 Animal hide',rope:'🪢 Rope',cloth:'🧵 Cloth',copperIngots:'🟠 Copper ingots',silverIngots:'⚪ Silver ingots',berry:'🫐 Berries',wheat:'🌾 Wheat',food:'🥩 Raw meat (+28 hunger)',cookedFood:'🍖 Cooked meat (+45 hunger)',salmon:'🐟 Salmon (+45 hunger)',cod:'🐠 Cod (+35 hunger)',whiting:'🐟 Whiting (+20 hunger)',mackerel:'🐟 Rare mackerel (+50 hunger)',shark:'🦈 Super-rare shark (+80 hunger)',cookedSalmon:'🍣 Cooked salmon (+60 hunger)',cookedCod:'🍣 Cooked cod (+50 hunger)',cookedWhiting:'🍣 Cooked whiting (+35 hunger)',cookedMackerel:'🍣 Cooked mackerel (+65 hunger)',cookedShark:'🍣 Cooked shark (+95 hunger)',water:'💧 Water',coins:'🪙 Coins'};
  document.getElementById('backpackCount').textContent=`${backpackItemCount()} / ${backpackCapacity()}`;
  document.getElementById('items').innerHTML=backpackMaterials.map(k=>{const v=k==='fibre'?((Number(inventory.fibre)||0)+(Number(inventory.plantFibre)||0)):k==='hide'?((Number(inventory.hide)||0)+(Number(inventory.animalHide)||0)):(Number(inventory[k])||0),label=materialLabels[k],foodItem=['food','cookedFood','salmon','cod','whiting','mackerel','shark','cookedSalmon','cookedCod','cookedWhiting','cookedMackerel','cookedShark','berry'].includes(k);return `<div class="item ${foodItem?'foodInfoItem':''}" ${foodItem?'data-food-info="true" role="button" tabindex="0" title="Tap to see food and fish in your backpack"':''}><span>${label}</span><strong>${v}</strong></div>`;}).join('');
- document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none');
+ document.getElementById('weaponStatus').textContent=(equippedWeapon?`Equipped: ${weaponDefs[equippedWeapon].name} · ${weaponDefs[equippedWeapon].damage} damage · ${weaponDurability[equippedWeapon]}/${weaponDefs[equippedWeapon].maxDurability} durability`:'Equipped: fists · Craft a sword to improve damage')+' · Armour: '+(armorType?armorDefs[armorType].name+' (+'+armorDefs[armorType].bonus+' max health)':'none')+' · Clothing: '+(inventory.woolJacket>0?'Wool Jacket ❄️':'No winter jacket');
+ if(body)body.material=inventory.woolJacket>0?woolJacketMat:shirtMat;
  document.getElementById('levelText').textContent=`Level ${level} · ${['Survivor','Forager','Pathfinder','Wilderness Expert','Island Legend'][Math.min(level-1,4)]}`;
  document.getElementById('worldText').textContent='Island: '+islandCenters[activeIsland].name+' · '+(mode==='solo'?'Private solo':(socket&&socket.connected?'Multiplayer · '+(document.getElementById('roomCode').value||'island-1'):'Connecting…'));
  if(dragonTrialActive){document.getElementById('mission').textContent=`DRAGONFALL BOSS FIGHT — Giant Dragon HP: ${Math.max(0,Math.ceil(dragonBoss?.hp||0))}/${dragonBoss?.maxHp||420}. Defeat it to unlock the portal and claim the hoard.`;}
@@ -1127,7 +1152,7 @@ function refreshSwordVisual(){
 }
 function backpackCapacity(){return backpackTier>=2?80:backpackTier===1?60:40;}
 function backpackItemCount(){
- const excluded=new Set(['campfire','largeBackpack','mediumBackpack','reinforcedBoat','advancedRod','leatherArmour','waterskin','reinforcedChest','watchtower','advancedFurnace','repairKit','crystalLantern','teleporter','copperPickaxe','silverArmour','obsidianAxe','frostClothing','copperIngots','silverIngots','goldenSword','obsidianBlade','frostBlade','shelter','bed','craftedBoat','boat']);
+ const excluded=new Set(['woolJacket','campfire','largeBackpack','mediumBackpack','reinforcedBoat','advancedRod','leatherArmour','waterskin','reinforcedChest','watchtower','advancedFurnace','repairKit','crystalLantern','teleporter','copperPickaxe','silverArmour','obsidianAxe','frostClothing','copperIngots','silverIngots','goldenSword','obsidianBlade','frostBlade','shelter','bed','craftedBoat','boat']);
  return Object.entries(inventory).reduce((sum,[k,v])=>sum+(excluded.has(k)||typeof v==='boolean'?0:Math.max(0,Math.floor(Number(v)||0))),0);
 }
 function addToBackpack(item,amount){
@@ -1177,7 +1202,8 @@ const craftingRecipes=[
  {id:'ironPickaxe',name:'Iron Pickaxe',icon:'⛏️',cat:'Tools',cost:{wood:3,iron:4},desc:'Mines advanced ores: gold, obsidian and crystal. Requires a Stone Pickaxe.',special:'pickaxe',pickaxe:'iron'},
  {id:'crystalPickaxe',name:'Crystal Pickaxe',icon:'💎',cat:'Tools',cost:{wood:3,crystal:4},desc:'Mines every ore, including the hidden emerald. Requires an Iron Pickaxe.',special:'pickaxe',pickaxe:'crystal'},
  {id:'mediumBackpack',name:'Medium Backpack',icon:'🎒',cat:'Survival',cost:{wood:8,hide:5},desc:'Increases backpack capacity from 40 to 60 items.',special:'mediumBackpack'},
- {id:'largeBackpack',name:'Large Backpack',icon:'🎒',cat:'Survival',cost:{wood:12,hide:8,crystal:2},desc:'Increases backpack capacity from 60 to 80 items. Requires the Medium Backpack.',special:'largeBackpack'}
+ {id:'largeBackpack',name:'Large Backpack',icon:'🎒',cat:'Survival',cost:{wood:12,hide:8,crystal:2},desc:'Increases backpack capacity from 60 to 80 items. Requires the Medium Backpack.',special:'largeBackpack'},
+ {id:'woolJacket',name:'Wool Jacket',icon:'🧥',cat:'Armour',cost:{wool:6,fibre:3},desc:'Keeps you warm on Frostpeak Island and prevents freezing damage.',out:'woolJacket'}
 ];
 let activeRecipeCategory='All';
 let lastCraftActionAt=0;
@@ -1518,6 +1544,7 @@ function interact(){
  }
  if(activeIsland===6){const c=islandCenters[6];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+79.5))<8.5){caveInterior=true;aboardBoat=false;player.position.set(caveRoomOrigin.x,0,caveRoomOrigin.z+5);yaw=Math.PI;player.userData.vy=0;toast('You entered Crownspire Cave! Mine the glowing crystal and iron deposits. Walk to the doorway and press E to leave.');updateHUD();return;}}
  if(dragonTrialActive){toast('The Dragonfall seal is locked! Defeat the giant dragon before you can leave.');return;}
+ if(activeIsland===16){const nearest=farmSheep.reduce((best,s)=>{const d=player.position.distanceTo(s.mesh.position);return !best||d<best.d?{sheep:s,d}:best;},null);if(nearest&&nearest.d<4.8){const sheep=nearest.sheep;if(!sheep.hasWool){toast('This sheep has already been sheared. Its wool will grow back soon.');return;}const gained=addToBackpack('wool',2);if(gained<1){toast('Your backpack is full. Make room before shearing this sheep.');return;}sheep.hasWool=false;sheep.readyAt=Date.now()+60000;setSheepWoolLook(sheep);saveSheepRegrowth();gainXP(5);toast(`Sheared the sheep and collected ${gained} wool. Its fleece regrows in about a minute.`);updateHUD();return;}}
  if(activeIsland===7&&questBoard&&Math.hypot(player.position.x-questBoard.x,player.position.z-questBoard.z)<5.5){openQuestBoard();return;}
  if(activeIsland===11&&oldsteadHouseRepaired&&oldsteadFurnaceGroup&&Math.hypot(player.position.x-oldsteadFurnaceGroup.position.x,player.position.z-oldsteadFurnaceGroup.position.z)<5.5){openFurnace();return;}
  if(activeIsland===7){const c=islandCenters[7];if(Math.hypot(player.position.x-c.x,player.position.z-(c.z+36))<7.5){if(!dragonPortalActive){if(inventory.stone<50){toast(`The Dragon Portal needs 50 stone to activate. You have ${inventory.stone}.`);return;}inventory.stone-=50;dragonPortalActive=true;dragonTrialActive=true;activeIsland=9;unlockAchievement('dragon_challenger');aboardBoat=false;player.position.set(islandCenters[9].x,0,islandCenters[9].z+27);yaw=Math.PI;player.userData.vy=0;toast('PORTAL ACTIVATED! 50 stone consumed. You are trapped on Dragonfall Isle until you defeat the strongest monster: the giant dragon!');updateHUD();return;}if(!dragonDefeated){toast('The portal leads to Dragonfall Isle, but the dragon must be defeated before you can return.');return;}activeIsland=7;player.position.set(c.x,0,c.z+29);yaw=0;toast('You returned safely to Coincrest Village.');updateHUD();return;}}
@@ -1574,8 +1601,8 @@ function interact(){
   if(['woodTrader','armourer','medic','fishTrader','farmTrader'].includes(nearbyVillager.job)){
    tradeNPC=nearbyVillager;tradeMode=nearbyVillager.job;document.getElementById('tradePanel').style.display='block';
    document.getElementById('tradeTitle').textContent=nearbyVillager.job==='woodTrader'?'🪵 Wood Exchange':nearbyVillager.job==='armourer'?'🛡️ Village Armoury':nearbyVillager.job==='medic'?'🧪 Village Healer':nearbyVillager.job==='farmTrader'?'🌾 Cloverfield Farm Market':'🎣 Pinewatch Fish Buyer';
-   document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':nearbyVillager.job==='armourer'?`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`:nearbyVillager.job==='medic'?`You have ${inventory.coins} coins. Buy medicine for 1 coin to restore your health to full.`:nearbyVillager.job==='farmTrader'?`Harvest the golden wheat stalks in the fields, then sell 5 wheat for 3 coins. You have ${inventory.wheat} wheat and ${inventory.coins} coins.`:`Sell fish caught at the Pinewatch dock: salmon for 3 coins, cod for 2 coins, or whiting for 1 coin. You have ${inventory.salmon} salmon, ${inventory.cod} cod and ${inventory.whiting} whiting.`;
-   document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';document.getElementById('medicineTradeOptions').style.display=nearbyVillager.job==='medic'?'flex':'none';document.getElementById('fishTradeOptions').style.display=nearbyVillager.job==='fishTrader'?'flex':'none';document.getElementById('wheatTradeOptions').style.display=nearbyVillager.job==='farmTrader'?'flex':'none';return;
+   document.getElementById('tradeDescription').textContent=nearbyVillager.job==='woodTrader'?'Trade 30 wood for 1 coin. Tap again to make another trade.':nearbyVillager.job==='armourer'?`You have ${inventory.coins} coins. Armour increases your maximum health and reduces incoming damage.`:nearbyVillager.job==='medic'?`You have ${inventory.coins} coins. Buy medicine for 1 coin to restore your health to full.`:nearbyVillager.job==='farmTrader'?`Harvest wheat or shear sheep in the paddock. Sell 5 wheat for 3 coins or 1 wool for 2 coins. You have ${inventory.wheat} wheat and ${inventory.wool} wool.`:`Sell fish caught at the Pinewatch dock: salmon for 3 coins, cod for 2 coins, or whiting for 1 coin. You have ${inventory.salmon} salmon, ${inventory.cod} cod and ${inventory.whiting} whiting.`;
+   document.getElementById('woodTradeOptions').style.display=nearbyVillager.job==='woodTrader'?'block':'none';document.getElementById('armourTradeOptions').style.display=nearbyVillager.job==='armourer'?'flex':'none';document.getElementById('medicineTradeOptions').style.display=nearbyVillager.job==='medic'?'flex':'none';document.getElementById('fishTradeOptions').style.display=nearbyVillager.job==='fishTrader'?'flex':'none';document.getElementById('wheatTradeOptions').style.display=nearbyVillager.job==='farmTrader'?'flex':'none';document.getElementById('woolTradeOptions').style.display=nearbyVillager.job==='farmTrader'?'flex':'none';return;
   }
   if(nearbyVillager.job==='arenaMaster'){toast(castleArenaRewarded?'Arena Master Tor: You are the castle champion!':'Arena Master Tor: Walk through the castle gate to face 3 tough wildlings. Defeat them to earn 8 coins and 100 XP!');return;} toast(nearbyVillager.name+': '+(nearbyVillager.job==='farmer'?'Welcome! The village is peaceful.':nearbyVillager.job==='trader'?'Have a look around our little village!':'Lovely weather for exploring, isn’t it?'));return;
  }
@@ -1726,6 +1753,7 @@ document.getElementById('sellCodBtn').onclick=()=>sellFish('cod',2,'Cod');
 document.getElementById('sellMackerelBtn').onclick=()=>{if(inventory.mackerel>0){inventory.mackerel--;inventory.coins+=8;toast('Sold rare mackerel for 8 coins.');updateHUD();}else toast('You do not have a mackerel to sell.');};
 document.getElementById('sellSharkBtn').onclick=()=>{if(inventory.shark>0){inventory.shark--;inventory.coins+=25;toast('Sold super-rare shark for 25 coins!');updateHUD();}else toast('You do not have a shark to sell.');};
 document.getElementById('sellWhitingBtn').onclick=()=>sellFish('whiting',1,'Whiting');
+document.getElementById('sellWoolBtn').onclick=()=>{if(tradeMode!=='farmTrader'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Tilly on Cloverfield Isle to sell wool.');return;}if(inventory.wool<1){toast('You do not have any wool to sell.');return;}inventory.wool--;inventory.coins+=2;document.getElementById('tradeDescription').textContent=`Sold 1 wool for 2 coins. You have ${inventory.wool} wool and ${inventory.coins} coins.`;toast('Sold 1 wool for 2 coins!');updateHUD();};
 function buyArmour(type){if(tradeMode!=='armourer'||!tradeNPC||player.position.distanceTo(tradeNPC.mesh.position)>5){toast('Stand beside Ada at the Armoury to buy armour.');return;}const def=armorDefs[type],current=armorType?armorDefs[armorType]:null;if(current&&current.tier>=def.tier){toast(`You already have ${current.name} or better.`);return;}if(inventory.coins<def.cost){toast(`${def.name} costs ${def.cost} coins. You have ${inventory.coins}.`);return;}inventory.coins-=def.cost;armorType=type;maxHealth=100+def.bonus;health=maxHealth;refreshArmorVisual();document.getElementById('tradeDescription').textContent=`Equipped ${def.name}! Maximum health is now ${maxHealth}.`;toast(`${def.name} equipped! Max health increased to ${maxHealth}.`);updateHUD();}
 document.getElementById('stoneArmourBtn').onclick=()=>buyArmour('stone');document.getElementById('ironArmourBtn').onclick=()=>buyArmour('iron');document.getElementById('crystalArmourBtn').onclick=()=>buyArmour('crystal');
 document.getElementById('craftBtn').onclick=craft;
@@ -1786,9 +1814,15 @@ function animate(now){
   if(tradeNPC&&player.position.distanceTo(tradeNPC.mesh.position)>7){document.getElementById('tradePanel').style.display='none';tradeMode=null;tradeNPC=null;}
   if(craftedBoat&&!caveInterior){ensureBoatVisual();if(boatVisual){if(aboardBoat){boatPosition={x:player.position.x,z:player.position.z+0.38};boatVisual.position.set(boatPosition.x,0,boatPosition.z);boatVisual.rotation.y=player.rotation.y;}else{boatVisual.position.set(boatPosition.x,0,boatPosition.z);}}}
   if(mode==='online' && Math.floor(elapsed*10)!==Math.floor((elapsed-dt)*10)) sendNetworkState();
+  for(const sheep of farmSheep){if(!sheep.hasWool&&sheep.readyAt>0&&Date.now()>=sheep.readyAt){sheep.hasWool=true;sheep.readyAt=0;setSheepWoolLook(sheep);saveSheepRegrowth();}}
   hunger=Math.max(0,hunger-dt*.17);thirst=Math.max(0,thirst-dt*.27);
   if(hunger===0||thirst===0)health=Math.max(0,health-dt*1.6);
   if(health>0&&health<maxHealth)health=Math.min(maxHealth,health+dt*1.0);
+  const isFreezing=activeIsland===3&&!(Number(inventory.woolJacket)>0);
+  if(isFreezing){coldDamageClock+=dt;if(coldDamageClock>=1){health=Math.max(0,health-2);coldDamageClock-=1;}}else coldDamageClock=0;
+  if(isFreezing&&!wasCold)toast('FREEZING! Frostpeak Island is dangerously cold. Craft a Wool Jacket from 6 wool and 3 plant fibre to stay warm.');
+  if(!isFreezing&&wasCold&&activeIsland===3)toast('You are warm again. Your Wool Jacket is protecting you.');
+  wasCold=isFreezing;
   const cycleValue=(Math.sin(elapsed*.035)+1)/2;
   const isNight=cycleValue<.18;
   if(isNight&&!wasNight){
@@ -1803,7 +1837,7 @@ function animate(now){
    toast('DAYBREAK! The 50 extra night monsters have disappeared.');
   }
   wasNight=isNight;night=isNight?1:0;
-  const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isNight?(activeIsland===9?'🌙 Night · Dragonfall has no wildlings':'🌋 Night · Volcano erupting'):'☀️ Day';
+  const timeText=document.getElementById('timeText');if(timeText)timeText.textContent=isFreezing?`🥶 Frostpeak · FREEZING · ${isNight?'Night':'Day'}`:activeIsland===3?`🧥 Frostpeak · Warm in your Wool Jacket · ${isNight?'Night':'Day'}`:(isNight?(activeIsland===9?'🌙 Night · Dragonfall has no wildlings':'🌋 Night · Volcano erupting'):'☀️ Day');
   // The volcano erupts at night even when the player is exploring another island.
   if(volcanoLavaSpout&&volcanoIsland){
    volcanoLavaSpout.visible=isNight;

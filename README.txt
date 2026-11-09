@@ -1,19 +1,20 @@
-Wildlands Online update
+Wildlands Online — Farming & Winter Update
 
-Files included:
-- index.html
-- server.js
-- package.json
+Replace the matching index.html and server.js in your existing GitHub repository with these versions. Keep package.json. Let Render redeploy after the files are committed.
 
-Replace the matching files in your existing GitHub repository with these files, then let Render redeploy.
+New farming features:
+- Cloverfield Isle now has a fenced sheep paddock with five sheep.
+- Press E / Interact beside a sheep to shear it and collect 2 wool.
+- A sheared sheep regrows its fleece after about 60 seconds. Shearing cooldowns are remembered on that device.
+- Sell 1 wool to Tilly the Farmer for 2 coins.
+- Craft a Wool Jacket in the Crafting Book using 6 wool and 3 plant fibre.
+- The Wool Jacket is shown as clothing and changes the player's shirt appearance.
+- Frostpeak Island now causes freezing damage if the player does not have a Wool Jacket. Wearing the jacket prevents the cold damage.
+- Multiplayer save handling now includes wool and the Wool Jacket.
 
-This update adds:
-- Coincrest Village quest and mission board with saved progress and increasing rewards.
-- Oldstead Isle cooking furnace outside the house; it appears after the house is rebuilt.
-- Cooking for raw meat and fish to make meals that restore more hunger.
-- Four pickaxes with the approved crafting costs and ore mining tiers.
-- One hidden emerald ore per run, mineable only with the Crystal Pickaxe.
-- Shore hut trader that exchanges the emerald for 10 coins and 15 crystal.
-- Pickaxe, emerald and cooked-food multiplayer save support.
+Previous features retained:
+- Mission board and close button fix from the previous update.
+- Automatic account sign-in restoration and Log out button.
+- Existing cooking furnace, pickaxes, emerald, missions, touch joystick and other game systems.
 
-The uploaded phone/iPad joystick controls have been kept unchanged.
+The inline JavaScript and server.js passed Node syntax checks. The ZIP archive passed its integrity check. This is not a live browser, Render, iPad or phone test.
